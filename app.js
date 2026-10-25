@@ -1,4 +1,3 @@
-// File: app.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getDatabase, ref, onValue, set, get, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
@@ -35,57 +34,36 @@ let lastCommentTime = 0;
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
 let currentLang = localStorage.getItem('lang') || 'id';
 
+// ================= ICONS SVG MAPPING (MINECRAFT THEME) =================
+const catIcons = {
+    'Semua': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    'Texture': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    'Map': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+    'Launcher': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    'Plugin Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
+    'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
+    'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
+};
 
 // ================= DICTIONARY TRANSLATE =================
 const dict = {
   'id': {
-    verifying_session: "Memverifikasi sesi...", login_title: "Masuk ke Akun", login_subtitle: "Belum punya akun?",
-    login_switch: "Daftar di sini", login_btn: "Masuk", or_via: "atau via", login_google: "Masuk dengan Google",
-    create_username_title: "Buat Username", create_username_desc: "Hanya huruf, angka, dan underscore (3-16 karakter).",
-    save_username: "Simpan Username", my_profile: "Profil Saya", change_photo: "UBAH FOTO", logout: "Keluar Akun",
-    submit_new_item: "Kirim Baru", cancel: "Batal", category_label: "Kategori*", title_label: "Judul Item*",
-    version_label: "Versi MCPE*", server_name_label: "Nama Server*", server_ip_label: "IP Server*",
-    server_port_label: "Port*", supported_version_label: "Versi yang Didukung*", desc_label: "Deskripsi*",
-    img_preview_label: "Gambar Preview*", choose_file: "Pilih File", file_download_label: "File Download / Mod*",
-    upload_now: "Upload Sekarang", admin_panel: "Panel Admin", queue: "Antrean", no_queue: "Tidak ada antrean.",
-    nav_home: "Beranda", nav_upload: "Upload", nav_profile: "Profil", cat_all: "Semua",
-    translate_ui: "Translate UI (ID/EN)", support: "Layanan / Bantuan", notifications: "Notifikasi",
-    no_notifications: "Belum ada notifikasi.", search_placeholder: "Cari item, mod, atau server...",
-    description: "Deskripsi", translate: "Terjemahkan", show_original: "Lihat asli", comments: "Komentar",
-    post_comment: "Kirim Komentar", login_to_comment: "Silakan masuk untuk memberikan komentar.",
-    loading_comments: "Memuat komentar...", reply: "Balas", delete: "Hapus", post_reply: "Kirim",
-    cancel_reply: "Batal", show_replies: "Lihat {count} balasan", hide_replies: "Sembunyikan balasan",
-    replying_to: "Membalas", info: "Informasi", ok: "Oke", confirm_title: "Konfirmasi",
-    error_file_type: "File yang dipilih bukan gambar!", error_file_size: "Ukuran foto maksimal 5 MB!",
-    error_save: "Gagal menyimpan: ", error_offline: "Periksa koneksi internet.", auto_translate: "Auto-Translate: ",
-    already_in_lang: "Sudah dalam bahasa ini", edit_bio: "Edit Bio (Maks 80 kar):", save_bio: "Simpan Bio",
-    joined: "Bergabung", items_published: "Item Publik", email_placeholder: "Alamat Email",
-    password_placeholder: "Password (Min 6)", write_comment_placeholder: "Tulis komentar...",
+    verifying_session: "Memverifikasi sesi...", login_title: "Masuk ke Akun", login_subtitle: "Belum punya akun?", login_switch: "Daftar di sini", login_btn: "Masuk", or_via: "atau via", login_google: "Masuk dengan Google",
+    create_username_title: "Buat Username", create_username_desc: "Hanya huruf, angka, dan underscore (3-16 karakter).", save_username: "Simpan Username",
+    my_profile: "Profil Saya", change_photo: "UBAH FOTO", logout: "Keluar Akun", submit_new_item: "Kirim Baru", cancel: "Batal",
+    category_label: "Kategori*", title_label: "Judul Item*", version_label: "Versi MCPE*", server_name_label: "Nama Server*", server_ip_label: "IP Server*", server_port_label: "Port*", supported_version_label: "Versi yang Didukung*", desc_label: "Deskripsi*", img_preview_label: "Gambar Preview*", choose_file: "Upload dari perangkat", file_download_label: "File Download / Mod*", upload_now: "Upload Sekarang",
+    admin_panel: "Panel Admin", queue: "Antrean", no_queue: "Tidak ada antrean.", nav_home: "Beranda", nav_upload: "Upload", nav_profile: "Profil", cat_all: "Semua", translate_ui: "Translate UI (ID/EN)", support: "Layanan / Bantuan", notifications: "Notifikasi", no_notifications: "Belum ada notifikasi.", search_placeholder: "Cari item, mod, atau server...", description: "Deskripsi", translate: "Terjemahkan", show_original: "Lihat asli", comments: "Komentar", post_comment: "Kirim Komentar", login_to_comment: "Silakan masuk untuk memberikan komentar.", loading_comments: "Memuat komentar...", reply: "Balas", delete: "Hapus", post_reply: "Kirim", cancel_reply: "Batal", show_replies: "Lihat {count} balasan", hide_replies: "Sembunyikan balasan", replying_to: "Membalas", info: "Informasi", ok: "Oke", confirm_title: "Konfirmasi",
+    error_file_type: "File yang dipilih bukan gambar!", error_file_size: "Ukuran foto maksimal 5 MB!", error_save: "Gagal menyimpan: ", error_offline: "Periksa koneksi internet.", auto_translate: "Auto-Translate: ", already_in_lang: "Sudah dalam bahasa ini", edit_bio: "Edit Bio (Maks 80 kar):", save_bio: "Simpan Bio", joined: "Bergabung", items_published: "Item Publik", email_placeholder: "Alamat Email", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Tulis komentar...",
     error_title: "Terjadi Kesalahan", error_load_account: "Gagal memuat akun, coba lagi.", try_again: "Coba Lagi"
   },
   'en': {
-    verifying_session: "Verifying session...", login_title: "Sign In", login_subtitle: "Don't have an account?",
-    login_switch: "Sign up here", login_btn: "Sign In", or_via: "or via", login_google: "Sign in with Google",
-    create_username_title: "Create Username", create_username_desc: "Letters, numbers, and underscores only (3-16 chars).",
-    save_username: "Save Username", my_profile: "My Profile", change_photo: "CHANGE PHOTO", logout: "Logout",
-    submit_new_item: "Submit New", cancel: "Cancel", category_label: "Category*", title_label: "Item Title*",
-    version_label: "MCPE Version*", server_name_label: "Server Name*", server_ip_label: "Server IP*",
-    server_port_label: "Port*", supported_version_label: "Supported Version*", desc_label: "Description*",
-    img_preview_label: "Preview Image*", choose_file: "Choose File", file_download_label: "Download File / Mod*",
-    upload_now: "Upload Now", admin_panel: "Admin Panel", queue: "Queue", no_queue: "No queue.",
-    nav_home: "Home", nav_upload: "Upload", nav_profile: "Profile", cat_all: "All",
-    translate_ui: "Translate UI (ID/EN)", support: "Support / Help", notifications: "Notifications",
-    no_notifications: "No notifications yet.", search_placeholder: "Search items, mods, or servers...",
-    description: "Description", translate: "Translate", show_original: "Show original", comments: "Comments",
-    post_comment: "Post Comment", login_to_comment: "Please sign in to post a comment.",
-    loading_comments: "Loading comments...", reply: "Reply", delete: "Delete", post_reply: "Send",
-    cancel_reply: "Cancel", show_replies: "View {count} replies", hide_replies: "Hide replies",
-    replying_to: "Replying to", info: "Information", ok: "OK", confirm_title: "Confirm",
-    error_file_type: "Selected file is not an image!", error_file_size: "Photo size max 5 MB!",
-    error_save: "Failed to save: ", error_offline: "Check internet connection.", auto_translate: "Auto-Translate: ",
-    already_in_lang: "Already in this language", edit_bio: "Edit Bio (Max 80 chars):", save_bio: "Save Bio",
-    joined: "Joined", items_published: "Public Items", email_placeholder: "Email Address",
-    password_placeholder: "Password (Min 6)", write_comment_placeholder: "Write a comment...",
+    verifying_session: "Verifying session...", login_title: "Sign In", login_subtitle: "Don't have an account?", login_switch: "Sign up here", login_btn: "Sign In", or_via: "or via", login_google: "Sign in with Google",
+    create_username_title: "Create Username", create_username_desc: "Letters, numbers, and underscores only (3-16 chars).", save_username: "Save Username",
+    my_profile: "My Profile", change_photo: "CHANGE PHOTO", logout: "Logout", submit_new_item: "Submit New", cancel: "Cancel",
+    category_label: "Category*", title_label: "Item Title*", version_label: "MCPE Version*", server_name_label: "Server Name*", server_ip_label: "Server IP*", server_port_label: "Port*", supported_version_label: "Supported Version*", desc_label: "Description*", img_preview_label: "Preview Image*", choose_file: "Upload from device", file_download_label: "Download File / Mod*", upload_now: "Upload Now",
+    admin_panel: "Admin Panel", queue: "Queue", no_queue: "No queue.", nav_home: "Home", nav_upload: "Upload", nav_profile: "Profile", cat_all: "All", translate_ui: "Translate UI (ID/EN)", support: "Support / Help", notifications: "Notifications", no_notifications: "No notifications yet.", search_placeholder: "Search items, mods, or servers...", description: "Description", translate: "Translate", show_original: "Show original", comments: "Comments", post_comment: "Post Comment", login_to_comment: "Please sign in to post a comment.", loading_comments: "Loading comments...", reply: "Reply", delete: "Delete", post_reply: "Send", cancel_reply: "Cancel", show_replies: "View {count} replies", hide_replies: "Hide replies", replying_to: "Replying to", info: "Information", ok: "OK", confirm_title: "Confirm",
+    error_file_type: "Selected file is not an image!", error_file_size: "Photo size max 5 MB!", error_save: "Failed to save: ", error_offline: "Check internet connection.", auto_translate: "Auto-Translate: ", already_in_lang: "Already in this language", edit_bio: "Edit Bio (Max 80 chars):", save_bio: "Save Bio", joined: "Joined", items_published: "Public Items", email_placeholder: "Email Address", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Write a comment...",
     error_title: "An Error Occurred", error_load_account: "Failed to load account, please try again.", try_again: "Try Again"
   }
 };
@@ -102,9 +80,28 @@ function formatDate(timestamp) {
     return new Intl.DateTimeFormat(locale, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp));
 }
 
+// Mengisi filter Chips di Beranda secara dinamis
+function renderCategoryChips() {
+    const cont = document.getElementById('category-filter-container');
+    if(!cont) return;
+    cont.innerHTML = '';
+    Object.keys(catIcons).forEach(cat => {
+        const isActive = cat === currentCategoryFilter;
+        cont.innerHTML += `<button class="chip ${isActive?'active':''}" onclick="window.setCategoryFilter('${cat}', this)">
+            ${catIcons[cat]} <span data-i18n="${cat === 'Semua' ? 'cat_all' : ''}">${cat === 'Semua' ? t('cat_all') : cat}</span>
+        </button>`;
+    });
+}
+document.addEventListener('DOMContentLoaded', renderCategoryChips);
+
 window.applyLanguage = () => {
-  document.querySelectorAll('[data-i18n]').forEach(el => { el.innerText = t(el.getAttribute('data-i18n')); });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n]').forEach(el => { 
+      const txt = t(el.getAttribute('data-i18n'));
+      if(txt) el.innerText = txt; 
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { 
+      el.placeholder = t(el.getAttribute('data-i18n-placeholder')); 
+  });
   const autoEl = document.getElementById('auto-translate-status');
   if(autoEl) { autoEl.innerText = autoTranslateEnabled ? "ON" : "OFF"; autoEl.className = autoTranslateEnabled ? "text-success" : "text-danger"; }
 
@@ -120,6 +117,7 @@ window.switchLanguage = () => {
   currentLang = currentLang === 'id' ? 'en' : 'id';
   localStorage.setItem('lang', currentLang);
   window.applyLanguage();
+  renderCategoryChips();
   window.closeAllDrawers();
 };
 
@@ -212,16 +210,20 @@ window.openCategorySheet = () => {
    document.getElementById('sheet-title').innerText = "Pilih Kategori";
    const opts = document.getElementById('sheet-options');
    opts.innerHTML = '';
-   const current = document.getElementById('selected-category-text').innerText;
+   const current = document.getElementById('selected-category-text-wrap').innerText.trim();
    categoryOptions.forEach(cat => {
        const isSel = cat === current;
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')">${cat} ${isSel ? '<svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>`;
+       // SVG Checkmark Custom
+       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')">
+           <div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}
+       </div>`;
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
 };
 
 window.selectCategoryForm = (cat) => {
-   document.getElementById('selected-category-text').innerText = cat;
+   document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons[cat]} <span>${cat}</span>`;
    window.closeBottomSheet();
    if(cat === 'Server') {
        document.getElementById('form-standard-container').classList.add('hidden');
@@ -241,7 +243,8 @@ window.openVersionSheet = () => {
    const current = document.getElementById('selected-version-text').innerText;
    versionOptions.forEach(ver => {
        const isSel = ver === current;
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${isSel ? '<svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>`;
+       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
 };
@@ -256,7 +259,7 @@ window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEa
 
 function getRoleBadge(role) {
     if (role === 'admin' || role === 'dev') return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
-    if (role === 'member') return `<span class="badge-role badge-verified">Member</span>`;
+    if (role === 'user' || role === 'member') return `<span class="badge-role badge-verified">Member</span>`;
     return '';
 }
 
@@ -306,7 +309,6 @@ function updateHeaderAuthUI() {
     }
 }
 
-// Alur pemuatan setelah Auth
 function proceedToHome(user, pData) {
      currentUsername = pData.username;
      isAdmin = pData.role === 'admin' || pData.role === 'dev';
@@ -323,6 +325,9 @@ function proceedToHome(user, pData) {
      listenNotifications();
      window.switchScreen('screen-home');
      fetchAllItemsAndRender();
+     
+     // Set Injeksi awal form tambah
+     document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons['Mod']} <span>Mod</span>`;
 }
 
 setPersistence(auth, browserLocalPersistence).then(() => {
@@ -334,19 +339,17 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           if (pSnap.exists() && pSnap.val().username) {
              proceedToHome(user, pSnap.val());
           } else {
-             // Migrasi sekali jika ada di /users (menghindari error layar username terus-terusan)
              const uSnap = await get(ref(db, `users/${user.uid}/username`));
              if (uSnap.exists() && uSnap.val()) {
                  const oldUsername = uSnap.val();
+                 const oldUserLower = oldUsername.toLowerCase();
+                 const isAdm = (await get(ref(db, `admins/${user.uid}`))).val() === true;
+                 
                  const updates = {};
-                 updates[`usernames/${oldUsername.toLowerCase()}`] = user.uid;
                  updates[`profiles/${user.uid}`] = {
-                     username: oldUsername,
-                     role: 'member',
-                     joinedAt: serverTimestamp(),
-                     avatar: '',
-                     itemCount: 0
+                     username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0
                  };
+                 updates[`usernames/${oldUserLower}`] = user.uid;
                  await update(ref(db), updates);
                  proceedToHome(user, updates[`profiles/${user.uid}`]);
              } else {
@@ -354,7 +357,6 @@ setPersistence(auth, browserLocalPersistence).then(() => {
              }
           }
       } catch (err) {
-          console.error("Gagal memuat akun:", err);
           document.getElementById('screen-error-msg').innerText = "Gagal memuat akun: " + err.message;
           window.switchScreen('screen-error');
       }
@@ -362,12 +364,11 @@ setPersistence(auth, browserLocalPersistence).then(() => {
       currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI();
       window.switchScreen('screen-home');
       fetchAllItemsAndRender();
+      document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons['Mod']} <span>Mod</span>`;
     }
     window.applyLanguage();
   });
-}).catch(() => { 
-    window.switchScreen('screen-home'); fetchAllItemsAndRender(); 
-});
+}).catch(() => { window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
 
 window.saveUsername = async () => {
   const username = document.getElementById('input-username').value.trim();
@@ -380,27 +381,20 @@ window.saveUsername = async () => {
   btn.disabled = true; btn.innerText = "Menyimpan..."; errEl.innerText = "";
   try {
     const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { 
-        errEl.innerText = "Username terpakai!"; btn.disabled = false; btn.innerText = t('save_username'); return; 
-    }
+    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { errEl.innerText = "Username terpakai!"; btn.disabled = false; btn.innerText = t('save_username'); return; }
+    
+    const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true;
+    const dp = currentUser.photoURL || generateDefaultAvatar(username);
 
     const updates = {};
     updates[`usernames/${usernameLower}`] = currentUser.uid;
-    updates[`profiles/${currentUser.uid}`] = { 
-        username: username, avatar: '', role: 'member', joinedAt: serverTimestamp(), itemCount: 0 
-    };
-    
+    updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0 };
     await update(ref(db), updates);
-    
-    proceedToHome(currentUser, { username: username, role: 'member', avatar: '' });
-  } catch (e) { 
-      console.error("Ditolak saat saveUsername:", e.message);
-      errEl.innerText = "Akses ditolak, hubungi admin. " + e.message;
-      btn.disabled = false; btn.innerText = t('save_username');
-  }
+    proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
+  } catch (e) { errEl.innerText = "Akses ditolak, hubungi admin. " + e.message; btn.disabled = false; btn.innerText = t('save_username'); }
 };
 
-// ================= UPLOAD FOTO PROFIL KE RTDB (/profiles) =================
+// ================= UPLOAD FOTO PROFIL =================
 window.handleProfileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -424,9 +418,7 @@ window.handleProfileUpload = async (event) => {
               let quality = 0.8;
               let base64Image = canvas.toDataURL('image/jpeg', quality); 
               
-              while (base64Image.length > 40000 && quality > 0.4) {
-                  quality -= 0.1; base64Image = canvas.toDataURL('image/jpeg', quality);
-              }
+              while (base64Image.length > 40000 && quality > 0.4) { quality -= 0.1; base64Image = canvas.toDataURL('image/jpeg', quality); }
               if (base64Image.length > 40000) {
                   canvas.width = 192; canvas.height = 192;
                   ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, 192, 192);
@@ -434,7 +426,6 @@ window.handleProfileUpload = async (event) => {
                   if (base64Image.length > 40000) throw new Error("Gambar terlalu kompleks.");
               }
 
-              // Simpan Langsung ke Database Profil, TANPA Auth updateProfile
               await update(ref(db, `profiles/${currentUser.uid}`), { avatar: base64Image });
               
               document.getElementById('profile-img').src = base64Image; document.getElementById('sidebar-profile-img').src = base64Image;
@@ -513,7 +504,7 @@ window.markNotifRead = async (notifId) => { if(!currentUser) return; await updat
 
 // ================= SEARCH, FILTER & LAYOUT =================
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
-window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); btnElement.classList.add('active'); renderItemsToUI(); };
+window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; renderCategoryChips(); renderItemsToUI(); };
 
 function fetchAllItemsAndRender() {
   onValue(ref(db, 'items_public'), (snapshot) => {
@@ -573,6 +564,8 @@ window.openDetail = async (itemId) => {
     document.getElementById('btn-translate-desc').disabled = false;
 
     const actionContainer = document.getElementById('detail-action-container'); const statusContainer = document.getElementById('detail-server-status-container');
+    const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+
     if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version;
         statusContainer.classList.remove('hidden');
@@ -581,7 +574,7 @@ window.openDetail = async (itemId) => {
         fetchServerStatus('detail-'+item.id, ipTarget);
     } else {
         statusContainer.classList.add('hidden');
-        actionContainer.innerHTML = `<a href="${item.url_file}" target="_blank" class="btn btn-primary" style="text-decoration:none;">Download File</a>`;
+        actionContainer.innerHTML = `<a href="${item.url_file}" target="_blank" class="btn btn-primary" style="text-decoration:none;">${dlIconSVG} Download File</a>`;
     }
 
     loadComments(itemId);
@@ -601,6 +594,7 @@ function renderItemsToUI() {
   if (displayItems.length === 0) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; return; }
 
   const isSpecific = currentCategoryFilter !== 'Semua'; const cardClass = isSpecific ? 'card-vertical' : 'card-horizontal';
+  const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
   let htmlBuf = '';
   displayItems.forEach(item => {
@@ -617,11 +611,11 @@ function renderItemsToUI() {
         actionBtnHTML = `<button class="btn btn-secondary" style="flex:1; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.copyText('${ipTarget}')">Salin IP</button>`;
         setTimeout(()=>fetchServerStatus(item.id, ipTarget), 100);
       } else {
-        actionBtnHTML = `<a href="${item.url_file}" target="_blank" onclick="event.stopPropagation();" class="btn btn-primary" style="flex:1; text-align:center; padding:10px; text-decoration:none;">Download</a>`;
+        actionBtnHTML = `<a href="${item.url_file}" target="_blank" onclick="event.stopPropagation();" class="btn btn-primary" style="flex:1; text-align:center; padding:10px; text-decoration:none;">${dlIconSVG} Download</a>`;
       }
 
       htmlBuf += `
-      <div class="${cardClass}" style="margin-bottom:15px; cursor:pointer;" onclick="window.openDetail('${item.id}')">
+      <div class="${cardClass}" style="margin-bottom:15px;" onclick="window.openDetail('${item.id}')">
         <div class="card-img-wrapper"><img src="${item.url_img}" class="card-img" onerror="this.src='https://via.placeholder.com/300'"></div>
         <div class="card-body">
           <h3 class="font-bold" style="font-size:16px; margin-bottom:4px;">${item.title}</h3>
@@ -643,20 +637,20 @@ window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
   if (file.size > 5 * 1024 * 1024) { window.showModalAlert("Max 5MB"); e.target.value = ''; return; }
   const reader = new FileReader();
-  reader.onload = (e) => { localImageBase64 = e.target.result; document.getElementById('img-status').innerText = `✓ Gambar siap`; document.getElementById('add-img').value = ""; };
+  reader.onload = (e) => { localImageBase64 = e.target.result; document.getElementById('img-status').innerText = `✓ Gambar dipilih`; document.getElementById('add-img').value = ""; };
   reader.readAsDataURL(file);
 };
 window.handleLocalFile = (e) => {
   const file = e.target.files[0]; if (!file) return;
   if (file.size > 5 * 1024 * 1024) { window.showModalAlert("Max 5MB"); e.target.value = ''; return; }
   const reader = new FileReader();
-  reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File siap`; document.getElementById('add-file').value = ""; };
+  reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File dipilih`; document.getElementById('add-file').value = ""; };
   reader.readAsDataURL(file);
 };
 
 window.submitItem = async () => {
   if (!currentUser) return;
-  const cat = document.getElementById('selected-category-text').innerText;
+  const cat = document.getElementById('selected-category-text-wrap').innerText.trim();
   const desc_id = document.getElementById('add-desc').value.trim();
   const finalImg = localImageBase64 || document.getElementById('add-img').value.trim();
   let title, version, finalFile, serverIp, serverPort;
@@ -681,6 +675,13 @@ window.submitItem = async () => {
     
     get(ref(db, `profiles/${currentUser.uid}/itemCount`)).then(s=>{ update(ref(db, `profiles/${currentUser.uid}`), {itemCount: (s.val()||0)+1}); });
     window.switchScreen('screen-home');
+    
+    // Reset Form fields
+    document.getElementById('add-title').value = ''; document.getElementById('add-version').value = '';
+    document.getElementById('add-server-name').value = ''; document.getElementById('add-server-ip').value = '';
+    document.getElementById('add-desc').value = ''; document.getElementById('add-img').value = ''; document.getElementById('add-file').value = '';
+    document.getElementById('img-status').innerText = ''; document.getElementById('file-status').innerText = '';
+    localImageBase64 = null; localFileBase64 = null;
   } catch (e) { window.showModalAlert(t('error_save')); }
   document.getElementById('btn-submit-item').disabled = false;
 };
@@ -736,6 +737,8 @@ window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus perman
 // ================= KOMENTAR & BALASAN =================
 window.updateCommentCounter = (inputId, counterId) => { document.getElementById(counterId).innerText = `${document.getElementById(inputId).value.length}/200`; };
 
+const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+
 function loadComments(itemId) {
     const commentsList = document.getElementById('comments-list');
     commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">${t('loading_comments')}</p>`;
@@ -777,7 +780,7 @@ function loadComments(itemId) {
                         <div class="comment-actions" style="gap:10px;">
                             <button class="comment-action-btn" onclick="window.translateComment('${reply.id}')"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="btn-text-${reply.id}">${t('translate')}</span></button>
                             <button class="comment-action-btn" onclick="window.showReplyBox('${comment.id}', '${reply.username}')"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg> ${t('reply')}</button>
-                            ${isReplyOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${reply.id}')">${t('delete')}</button>` : ''}
+                            ${isReplyOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${reply.id}')">${trashIconSVG} ${t('delete')}</button>` : ''}
                         </div>
                     </div>`;
                 }));
@@ -804,7 +807,7 @@ function loadComments(itemId) {
                 <div class="comment-actions">
                     <button class="comment-action-btn" onclick="window.translateComment('${comment.id}')"><svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="btn-text-${comment.id}">${t('translate')}</span></button>
                     <button class="comment-action-btn" onclick="window.showReplyBox('${comment.id}', '${comment.username}')"><svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg> ${t('reply')}</button>
-                    ${isOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${comment.id}')">${t('delete')}</button>` : ''}
+                    ${isOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} ${t('delete')}</button>` : ''}
                 </div>
                 <div id="reply-box-${comment.id}" class="reply-input-area hidden">
                     <div class="reply-to-text">${t('replying_to')} @<span id="reply-target-${comment.id}">${comment.username}</span></div>
