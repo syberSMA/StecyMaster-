@@ -6,8 +6,15 @@
   <title>StecyMaster Forum</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- CROPPER JS LIBRARY -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
 <body>
+
+  <!-- HIDDEN IFRAME UNTUK FORCE DOWNLOAD API (Tanpa Tab Baru) -->
+  <iframe id="download-iframe" style="display:none;"></iframe>
 
   <!-- LAYER DIALOG GLOBAL -->
   <div id="dialogLayer">
@@ -27,6 +34,20 @@
         <button class="btn btn-danger" style="flex:1;" id="btn-dialog-confirm" data-i18n="ok">Yakin</button>
       </div>
     </div>
+
+    <!-- CROPPER MODAL (KHUSUS BANNER SERVER 468x60) -->
+    <div id="dialog-cropper" class="dialog-box" style="width:95%; max-width: 600px; padding:15px;">
+       <h3 class="font-bold text-main" style="margin-bottom:10px;">Crop Banner Server</h3>
+       <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">Gunakan area terang untuk menyesuaikan banner (Rasio 468x60).</p>
+       <div style="width: 100%; height: 250px; background: #000; overflow:hidden;">
+           <img id="cropper-image" src="" style="max-width: 100%; display:block;">
+       </div>
+       <div class="flex" style="gap:10px; margin-top:15px;">
+           <button class="btn btn-secondary" style="flex:1;" onclick="window.cancelCrop()">Batal</button>
+           <button class="btn btn-primary" style="flex:1;" onclick="window.confirmCrop()">Potong & Simpan</button>
+       </div>
+    </div>
+
     <div id="dialog-user-profile" class="dialog-box" style="padding:0; overflow:hidden;">
         <div style="background:var(--bg-surface); padding:20px; text-align:center; position:relative;">
             <button onclick="window.closeDialog('dialog-user-profile')" style="position:absolute; top:10px; right:10px; color:var(--text-muted);"><svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -84,7 +105,7 @@
       </div>
   </div>
 
-  <!-- CUSTOM BOTTOM SHEET (Kategori & Versi) -->
+  <!-- CUSTOM BOTTOM SHEET (Multi-Fungsi) -->
   <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="window.closeBottomSheet()">
     <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
       <div style="width:40px; height:5px; background:var(--border-color); border-radius:3px; margin:0 auto 20px;"></div>
@@ -146,7 +167,7 @@
         </div>
   </div>
 
-  <!-- DRAWER KIRI -->
+  <!-- DRAWER KIRI (MENU UTAMA) -->
   <div id="drawer-overlay" class="drawer-overlay" onclick="window.closeAllDrawers()"></div>
   <div id="side-drawer" class="side-drawer drawer-left">
     <div style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:10px;">
@@ -157,11 +178,17 @@
       <div id="sidebar-role"></div>
     </div>
     <ul class="drawer-menu">
+      <!-- TOMBOL ADMIN PANEL DI SIDEBAR -->
+      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="border-bottom:2px dashed var(--danger); margin-bottom:5px;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--danger)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="text-danger font-bold" data-i18n="admin_panel">Admin Panel</span>
+      </li>
+
       <li onclick="window.switchLanguage()">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" fill="currentColor" stroke="none"/></svg>
         <span data-i18n="translate_ui">Translate UI (ID/EN)</span>
       </li>
-      <!-- TOGGLE AUTO TRANSLATE MCPE -->
+      <!-- TOGGLE AUTO TRANSLATE -->
       <li onclick="window.toggleAutoTranslate(event)" id="menu-auto-translate" style="justify-content: space-between;">
         <div class="flex items-center" style="gap:12px;">
            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12zm10 6c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6z"/></svg>
@@ -198,7 +225,6 @@
     <button class="header-btn" style="position:absolute; top:20px; left:20px; padding:10px; background:var(--bg-surface); border-radius:50%; border:1px solid var(--border-color);" onclick="window.switchScreen('screen-home')">
         <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
     </button>
-
     <div style="margin: auto; padding: 30px; background: var(--bg-surface); border-radius: 12px; width: 90%; max-width: 400px; text-align: center; margin-top: 15vh; border: 1px solid var(--border-color);">
       <h2 class="text-primary font-bold" id="auth-title-text" style="font-size: 24px; margin-bottom: 5px;" data-i18n="login_title">Masuk ke Akun</h2>
       <p style="color:var(--text-muted); font-size:14px; margin-bottom: 25px;">
@@ -249,11 +275,7 @@
           <span id="notif-badge" class="notif-badge-icon hidden">0</span>
         </button>
         <button id="btn-login-header" class="btn btn-primary hidden" style="padding: 6px 12px; font-size:12px; width:auto;" onclick="window.switchScreen('screen-login')" data-i18n="login_btn">Masuk</button>
-        <button id="btn-open-admin" class="hidden" onclick="window.switchScreen('screen-admin')" style="padding: 0;">
-           <span style="background: var(--danger); color: white; font-size:10px; padding:6px 10px; border-radius:12px; font-weight:bold; display: flex; align-items: center; gap: 4px;">
-             <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span data-i18n="admin_panel">Admin</span>
-           </span>
-        </button>
+        <!-- TOMBOL ADMIN SUDAH DIPINDAH KE SIDEBAR -->
       </div>
     </header>
 
@@ -263,15 +285,11 @@
         <input type="text" id="search-input" class="text-selectable" data-i18n-placeholder="search_placeholder" placeholder="Cari item..." oninput="window.handleSearch(this.value)">
       </div>
     </div>
-
-    <div class="category-container" id="category-filter-container">
-      <!-- Diinjeksi JS agar tersinkron -->
-    </div>
-
+    <div class="category-container" id="category-filter-container"></div>
     <div id="public-items-container" class="content-list">
       <div class="loader" style="margin-top: 40px;"></div>
     </div>
-
+    
     <nav class="bottom-nav">
       <button class="nav-item active" onclick="window.switchScreen('screen-home')">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span>
@@ -332,9 +350,7 @@
     <div style="padding: 20px; padding-bottom:100px;">
       <label class="form-label" data-i18n="category_label">Kategori*</label>
       <div class="input-field flex items-center justify-between" onclick="window.openCategorySheet()" style="cursor:pointer; margin-bottom:20px;">
-        <div class="flex items-center" style="gap:8px; font-weight:600; color:var(--primary);" id="selected-category-text-wrap">
-             <!-- Injeksi JS agar ikon muncul -->
-        </div>
+        <div class="flex items-center" style="gap:8px; font-weight:600; color:var(--primary);" id="selected-category-text-wrap"></div>
         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
 
@@ -346,6 +362,16 @@
       <div id="wrapper-title-server" class="hidden">
         <label class="form-label" data-i18n="server_name_label">Nama Server*</label>
         <input type="text" id="add-server-name" class="input-field text-selectable" placeholder="Masukkan nama server...">
+        
+        <!-- Field Baru: NEGARA -->
+        <label class="form-label">Negara / Lokasi Server*</label>
+        <div class="input-field flex items-center justify-between" onclick="window.openCountrySheet()" style="cursor:pointer; margin-bottom:15px;">
+            <div class="flex items-center" style="gap:8px; font-weight:600;" id="selected-country-text-wrap">
+                <img src="https://flagcdn.com/id.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>Indonesia</span>
+            </div>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
         <div class="flex" style="gap:10px;">
           <div style="flex:2;">
             <label class="form-label" data-i18n="server_ip_label">IP Server*</label>
@@ -367,12 +393,10 @@
       <label class="form-label" data-i18n="desc_label">Deskripsi*</label>
       <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
       
-      <label class="form-label"><span data-i18n="img_preview_label">Gambar Preview*</span> (Umum Max 5MB | Server Max 8MB & GIF support, rasio 16:9)</label>
+      <label class="form-label"><span data-i18n="img_preview_label">Gambar Preview*</span> (Umum Max 5MB | Server Max 8MB & GIF support, rasio banner 468x60)</label>
       <div class="upload-card-wrapper">
           <input type="url" id="add-img" class="input-field text-selectable" style="margin-bottom:0;" placeholder="Masukkan URL Gambar...">
-          <div class="divider-or">
-              <div class="line"></div><div class="text">ATAU</div><div class="line"></div>
-          </div>
+          <div class="divider-or"><div class="line"></div><div class="text">ATAU</div><div class="line"></div></div>
           <label class="file-upload-box">
              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
              <span data-i18n="choose_file">Upload dari perangkat</span> 
@@ -385,9 +409,7 @@
         <label class="form-label" id="label-file-download"><span data-i18n="file_download_label">File Download / Mod*</span> (Max 5MB)</label>
         <div class="upload-card-wrapper">
           <input type="url" id="add-file" class="input-field text-selectable" style="margin-bottom:0;" placeholder="Masukkan URL File...">
-          <div class="divider-or">
-              <div class="line"></div><div class="text">ATAU</div><div class="line"></div>
-          </div>
+          <div class="divider-or"><div class="line"></div><div class="text">ATAU</div><div class="line"></div></div>
           <label class="file-upload-box">
              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
              <span data-i18n="choose_file">Upload dari perangkat</span> 
