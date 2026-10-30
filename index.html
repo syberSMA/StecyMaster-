@@ -9,11 +9,9 @@
 </head>
 <body>
 
-  <!-- LAYER DIALOG GLOBAL (Paling Atas) -->
+  <!-- LAYER DIALOG GLOBAL -->
   <div id="dialogLayer">
     <div class="dialog-overlay" onclick="window.closeTopDialog()"></div>
-    
-    <!-- Dialog Alert/Informasi -->
     <div id="dialog-alert" class="dialog-box">
       <h3 id="dialog-alert-title" class="text-primary font-bold" style="margin-bottom: 10px;" data-i18n="info">Informasi</h3>
       <p id="dialog-alert-msg" style="color:var(--text-main); font-size:14px; margin-bottom:20px; line-height:1.4;"></p>
@@ -21,8 +19,6 @@
         <button class="btn btn-primary" onclick="window.closeDialog('dialog-alert')" style="width:120px;" data-i18n="ok">Oke</button>
       </div>
     </div>
-
-    <!-- Dialog Confirm -->
     <div id="dialog-confirm" class="dialog-box">
       <h3 id="dialog-confirm-title" class="text-primary font-bold" style="margin-bottom: 10px;" data-i18n="confirm_title">Konfirmasi</h3>
       <p id="dialog-confirm-msg" style="color:var(--text-main); font-size:14px; margin-bottom:20px; line-height:1.4;"></p>
@@ -31,13 +27,11 @@
         <button class="btn btn-danger" style="flex:1;" id="btn-dialog-confirm" data-i18n="ok">Yakin</button>
       </div>
     </div>
-
-    <!-- Dialog Profil Publik -->
     <div id="dialog-user-profile" class="dialog-box" style="padding:0; overflow:hidden;">
         <div style="background:var(--bg-surface); padding:20px; text-align:center; position:relative;">
             <button onclick="window.closeDialog('dialog-user-profile')" style="position:absolute; top:10px; right:10px; color:var(--text-muted);"><svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            <div class="avatar-container" style="width:80px; height:80px; margin:0 auto 10px;">
-                <img id="pub-profile-img" src="" alt="Avatar">
+            <div class="avatar-container skeleton" style="width:80px; height:80px; margin:0 auto 10px;">
+                <img id="pub-profile-img" src="" alt="Avatar" class="lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
             </div>
             <h2 id="pub-profile-name" class="font-bold text-main" style="margin-bottom:5px;">User</h2>
             <div id="pub-profile-role" style="margin-bottom:10px;"></div>
@@ -60,7 +54,6 @@
         </div>
     </div>
     
-    <!-- Modal Penolakan Admin -->
     <div id="dialog-reject-admin" class="dialog-box">
       <h3 class="text-danger font-bold" style="margin-bottom: 10px; text-align: center;">Tolak Item</h3>
       <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; text-align: center;">Berikan alasan penolakan untuk dikirim ke notifikasi user.</p>
@@ -102,11 +95,11 @@
 
   <!-- MODAL DETAIL ITEM -->
   <div id="screen-detail-container">
-        <div class="detail-header-img-wrapper img-click-wrapper">
+        <div class="detail-header-img-wrapper img-click-wrapper skeleton">
              <button class="detail-close-btn" onclick="document.getElementById('screen-detail-container').classList.remove('active')">
                  <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
              </button>
-             <img id="detail-img" src="" class="detail-header-img" alt="Preview">
+             <img id="detail-img" src="" class="detail-header-img lazy-img" alt="Preview" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
         </div>
         <div class="detail-content-area">
             <h2 id="detail-title" class="font-bold text-main text-selectable" style="font-size: 20px; margin-bottom: 8px;">Judul</h2>
@@ -153,12 +146,12 @@
         </div>
   </div>
 
-  <!-- DRAWER KIRI (MENU UTAMA) -->
+  <!-- DRAWER KIRI -->
   <div id="drawer-overlay" class="drawer-overlay" onclick="window.closeAllDrawers()"></div>
   <div id="side-drawer" class="side-drawer drawer-left">
     <div style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:10px;">
-      <div class="avatar-container img-click-wrapper" style="width:60px; height:60px; border:2px solid var(--primary); margin:0 auto;" id="sidebar-avatar-wrap">
-          <img id="sidebar-profile-img" src="https://via.placeholder.com/60" alt="Avatar">
+      <div class="avatar-container img-click-wrapper skeleton" style="width:60px; height:60px; border:2px solid var(--primary); margin:0 auto;" id="sidebar-avatar-wrap">
+          <img id="sidebar-profile-img" src="https://via.placeholder.com/60" alt="Avatar" class="lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
       </div>
       <h3 id="sidebar-name" style="margin-top:10px; font-size:16px; cursor:pointer;" id="sidebar-name-wrap">Username</h3>
       <div id="sidebar-role"></div>
@@ -168,9 +161,16 @@
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" fill="currentColor" stroke="none"/></svg>
         <span data-i18n="translate_ui">Translate UI (ID/EN)</span>
       </li>
-      <li onclick="window.toggleAutoTranslate()" id="menu-auto-translate">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12zm10 6c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6z"/></svg>
-        <span data-i18n="auto_translate">Auto-Translate: </span> <span id="auto-translate-status" class="text-danger" style="margin-left:4px;">OFF</span>
+      <!-- TOGGLE AUTO TRANSLATE MCPE -->
+      <li onclick="window.toggleAutoTranslate(event)" id="menu-auto-translate" style="justify-content: space-between;">
+        <div class="flex items-center" style="gap:12px;">
+           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12zm10 6c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6z"/></svg>
+           <span data-i18n="auto_translate">Auto-Translate</span>
+        </div>
+        <label class="mcpe-toggle">
+            <input type="checkbox" id="auto-translate-checkbox" class="mcpe-toggle-checkbox">
+            <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
+        </label>
       </li>
       <li onclick="window.open('https://wa.me/6283151363087', '_blank')">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L2 22l5.71-.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zM12 16h-1v-4h1v4zm0-6h-1V8h1v2z" fill="currentColor" stroke="none"/></svg>
@@ -264,7 +264,6 @@
       </div>
     </div>
 
-    <!-- CHIP KATEGORI UPDATED DENGAN SVG MINECRAFT -->
     <div class="category-container" id="category-filter-container">
       <!-- Diinjeksi JS agar tersinkron -->
     </div>
@@ -293,8 +292,8 @@
     </header>
     <div class="profile-header">
       <input type="file" id="profile-upload" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="window.handleProfileUpload(event)">
-      <div class="avatar-container" style="border:none;">
-        <img id="profile-img" src="https://via.placeholder.com/150" alt="Avatar" class="profile-img" style="border: 2px solid var(--primary);">
+      <div class="avatar-container skeleton" style="border:none;">
+        <img id="profile-img" src="" alt="Avatar" class="profile-img lazy-img" style="border: 2px solid var(--primary);" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
         <div class="camera-btn" onclick="document.getElementById('profile-upload').click()">
             <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
         </div>
@@ -322,7 +321,7 @@
     </nav>
   </div>
 
-  <!-- LAYAR TAMBAH ITEM (Form Dinamis dengan Drag & Drop Area Rapi) -->
+  <!-- LAYAR TAMBAH ITEM -->
   <div id="screen-add" class="app-container screen hidden">
     <header class="flex items-center justify-between" style="padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
       <button class="header-btn" style="padding:5px;" onclick="window.switchScreen('screen-home')" data-i18n="cancel">Batal</button>
@@ -339,16 +338,14 @@
         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
 
-      <div id="form-standard-container">
-        <label class="form-label" data-i18n="title_label">Judul Item*</label>
-        <input type="text" id="add-title" class="input-field text-selectable">
-        <label class="form-label" data-i18n="version_label">Versi MCPE*</label>
-        <input type="text" id="add-version" class="input-field text-selectable">
+      <div id="wrapper-title-standard">
+          <label class="form-label" data-i18n="title_label">Judul Item*</label>
+          <input type="text" id="add-title" class="input-field text-selectable">
       </div>
 
-      <div id="form-server-container" class="hidden">
+      <div id="wrapper-title-server" class="hidden">
         <label class="form-label" data-i18n="server_name_label">Nama Server*</label>
-        <input type="text" id="add-server-name" class="input-field text-selectable">
+        <input type="text" id="add-server-name" class="input-field text-selectable" placeholder="Masukkan nama server...">
         <div class="flex" style="gap:10px;">
           <div style="flex:2;">
             <label class="form-label" data-i18n="server_ip_label">IP Server*</label>
@@ -359,18 +356,18 @@
             <input type="number" id="add-server-port" class="input-field text-selectable" value="19132">
           </div>
         </div>
-        <label class="form-label" data-i18n="supported_version_label">Versi yang Didukung*</label>
-        <div class="input-field flex items-center justify-between" onclick="window.openVersionSheet()" style="cursor:pointer; margin-bottom:15px;">
-          <span id="selected-version-text" style="font-weight:600;">0.15.10</span>
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
+      </div>
+
+      <label class="form-label" data-i18n="supported_version_label">Versi MCPE*</label>
+      <div class="input-field flex items-center justify-between" onclick="window.openVersionSheet()" style="cursor:pointer; margin-bottom:15px;">
+        <span id="selected-version-text" style="font-weight:600;">0.15.10</span>
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
 
       <label class="form-label" data-i18n="desc_label">Deskripsi*</label>
       <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
       
-      <!-- Upload Gambar dengan Split View Jelas -->
-      <label class="form-label"><span data-i18n="img_preview_label">Gambar Preview*</span> (Max 5MB)</label>
+      <label class="form-label"><span data-i18n="img_preview_label">Gambar Preview*</span> (Umum Max 5MB | Server Max 8MB & GIF support, rasio 16:9)</label>
       <div class="upload-card-wrapper">
           <input type="url" id="add-img" class="input-field text-selectable" style="margin-bottom:0;" placeholder="Masukkan URL Gambar...">
           <div class="divider-or">
@@ -384,7 +381,6 @@
           <p id="img-status" style="font-size:11px; color:var(--success); margin-top:5px; text-align:center; font-weight:600;"></p>
       </div>
 
-      <!-- Upload File Download (Hanya muncul jika BUKAN kategori Server) -->
       <div id="form-file-container">
         <label class="form-label" id="label-file-download"><span data-i18n="file_download_label">File Download / Mod*</span> (Max 5MB)</label>
         <div class="upload-card-wrapper">
@@ -417,7 +413,7 @@
     </nav>
   </div>
 
-  <!-- LAYAR ADMIN (SELEKSI) -->
+  <!-- LAYAR ADMIN -->
   <div id="screen-admin" class="app-container screen hidden">
     <header class="flex items-center justify-between" style="padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
       <button class="header-btn" style="padding:5px;" onclick="window.switchScreen('screen-home')">
@@ -436,6 +432,5 @@
   </div>
 
   <script type="module" src="app.js"></script>
-
 </body>
 </html>
