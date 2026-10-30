@@ -34,7 +34,6 @@ input, textarea, p, h2, h3, h4, .text-selectable, .comment-text, .card-desc {
   user-select: text; -webkit-user-select: text;
 }
 
-/* Proteksi Gambar Mencegah Drag/Simpan */
 img, .card-img, .profile-img, .detail-header-img {
   -webkit-user-drag: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; pointer-events: none;
 }
@@ -72,7 +71,7 @@ img, .card-img, .profile-img, .detail-header-img {
 .badge-dev { background: var(--primary); color: #000; }
 .badge-verified { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); font-weight: normal; }
 
-/* DIALOG GLOBAL (Z-INDEX TERTINGGI) */
+/* DIALOG GLOBAL */
 #dialogLayer { position: fixed; inset: 0; z-index: 2147483000; display: flex; justify-content: center; align-items: center; pointer-events: none; }
 #dialogLayer.active { pointer-events: auto; }
 .dialog-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); opacity: 0; transition: opacity 0.3s; }
@@ -80,25 +79,16 @@ img, .card-img, .profile-img, .detail-header-img {
 .dialog-box { position: relative; background: var(--bg-surface); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; width: 90%; max-width: 360px; text-align: center; transform: scale(0.9); opacity: 0; transition: all 0.3s; display: none; flex-direction: column; max-height: 90vh; }
 #dialogLayer.active .dialog-box.active { transform: scale(1); opacity: 1; display: flex; }
 
-/* Modals Biasa */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-.modal-overlay.active { opacity: 1; pointer-events: auto; }
-.modal-box-standard { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; transform: scale(0.9); transition: transform 0.3s; }
-.modal-overlay.active .modal-box-standard { transform: scale(1); }
-
 /* Bottom Sheet */
 .bottom-sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 .bottom-sheet-overlay.active { opacity: 1; pointer-events: auto; }
 .bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: var(--bg-surface); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: 30px; transition: bottom 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); display: flex; flex-direction: column; max-height: 80vh; overflow-y: auto; }
 .bottom-sheet-overlay.active .bottom-sheet { bottom: 0; }
 
-/* Item List Kategori dengan Garis Pemisah */
 .sheet-option { padding: 14px 16px; color: var(--text-main); font-size: 15px; cursor: pointer; display: flex; justify-content: flex-start; align-items: center; gap: 12px; transition: 0.2s; border-bottom: 1px solid var(--border-color); }
 .sheet-option:last-child { border-bottom: none; }
 .sheet-option:active { background: var(--bg-elevated); }
 .sheet-option.selected { color: var(--primary); font-weight: 600; background: rgba(255, 140, 0, 0.05); }
-
-/* Wajib untuk memunculkan Ikon SVG yang tidak terlihat */
 .sheet-option svg { width: 24px; height: 24px; flex-shrink: 0; }
 .sheet-option-check { margin-left: auto; width: 20px; height: 20px; color: var(--primary); stroke-width: 3; }
 
@@ -112,7 +102,29 @@ img, .card-img, .profile-img, .detail-header-img {
 .drawer-right.active { right: 0; }
 .drawer-menu li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
 
-/* Profil & Edit Kamera */
+/* TOGGLE ALA MCPE 0.15.10 */
+.mcpe-toggle { position: relative; display: inline-block; width: 54px; height: 26px; pointer-events: none; }
+.mcpe-toggle-checkbox { display: none; }
+.mcpe-toggle-slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #5d5d5d; border: 2px solid; border-color: #333 #888 #888 #333;
+    border-radius: 2px; transition: .2s;
+}
+.mcpe-toggle-thumb {
+    position: absolute; content: ""; height: 18px; width: 26px; left: 2px; bottom: 2px;
+    background-color: #9e9e9e; border: 2px solid; border-color: #d1d1d1 #555 #555 #d1d1d1;
+    border-radius: 2px; transition: .2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: bold; color: #333;
+}
+.mcpe-toggle-thumb::after { content: 'OFF'; }
+.mcpe-toggle-checkbox:checked + .mcpe-toggle-slider {
+    background-color: #387c2b; border-color: #1b4213 #52a842 #52a842 #1b4213;
+}
+.mcpe-toggle-checkbox:checked + .mcpe-toggle-slider .mcpe-toggle-thumb { transform: translateX(20px); }
+.mcpe-toggle-checkbox:checked + .mcpe-toggle-slider .mcpe-toggle-thumb::after { content: 'ON'; color: #000; }
+
+/* Profil */
 .profile-header { background-color: var(--bg-surface); padding: 30px 20px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; text-align: center; }
 .avatar-container { position: relative; width: 90px; height: 90px; margin: 0 auto 15px; border-radius: 50%; border: 2px solid var(--primary); background: var(--bg-elevated); }
 .avatar-container img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
@@ -121,20 +133,48 @@ img, .card-img, .profile-img, .detail-header-img {
 /* Kategori Chips */
 .category-container { padding: 16px 20px; display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border-color); }
 .category-container::-webkit-scrollbar { display: none; }
-.chip { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 24px; font-size: 14px; white-space: nowrap; color: var(--text-muted); display: flex; align-items: center; gap: 8px; transition: all 0.2s; cursor: pointer;}
-.chip svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+.chip { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 24px; font-size: 14px; white-space: nowrap; color: var(--text-muted); display: flex; align-items: center; gap: 8px; transition: all 0.2s; cursor: pointer;}
+.chip svg { width: 18px; height: 18px; }
 .chip.active { background: rgba(255, 140, 0, 0.15); border-color: var(--primary); color: var(--primary); font-weight: 600; }
 
-/* Cards */
+/* Loading Skeletons */
+.skeleton {
+    background: #2c2c2c;
+    background-image: linear-gradient(90deg, #2c2c2c 0px, #3a3a3a 40px, #2c2c2c 80px);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+}
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+img.lazy-img { opacity: 0; transition: opacity 0.4s ease-in; }
+img.lazy-img.loaded { opacity: 1; }
+
+/* Cards List */
 .content-list { padding: 20px 20px 90px; display: flex; flex-direction: column; gap: 16px; }
-.card-horizontal { background: var(--bg-surface); border-radius: 12px; display: flex; border: 1px solid var(--border-color); overflow: hidden; position: relative; align-items: stretch; cursor: pointer;}
-.card-horizontal .card-img-wrapper { width: 140px; min-width: 140px; background: var(--bg-elevated); position: relative;}
+
+.card-horizontal { background: var(--bg-surface); border-radius: 12px; display: flex; border: 1px solid var(--border-color); overflow: hidden; position: relative; align-items: stretch; cursor: pointer; height: 110px;}
+.card-horizontal .card-img-wrapper { width: 110px; min-width: 110px; background: var(--bg-elevated); position: relative;}
 .card-horizontal .card-img { width: 100%; height: 100%; object-fit: cover; object-position: center; position: absolute; top:0; left:0;}
-.card-horizontal .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.card-horizontal .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+.card-horizontal h3 { font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-horizontal .card-meta { font-size: 10px; padding: 2px 6px; margin-bottom: 4px; }
+.card-horizontal .card-desc { font-size: 11px; -webkit-line-clamp: 2; margin-bottom: 6px; }
+.card-horizontal .btn { padding: 6px; font-size: 11px; }
+
 .card-vertical { background: var(--bg-surface); border-radius: 12px; display: flex; flex-direction: column; border: 1px solid var(--border-color); overflow: hidden; position: relative; cursor: pointer;}
 .card-vertical .card-img-wrapper { width: 100%; height: 200px; background: var(--bg-elevated); position: relative;}
 .card-vertical .card-img { width: 100%; height: 100%; object-fit: cover; object-position: center; position: absolute; top:0; left:0;}
 .card-vertical .card-body { padding: 15px; }
+
+/* Special Server Card */
+.card-server { background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+.server-banner-wrapper { width: 100%; aspect-ratio: 16/9; position: relative; background: var(--bg-elevated); }
+.server-banner { width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0;}
+.server-version-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
+.server-info { padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.server-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.server-status-compact { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.btn-copy-ip { padding: 8px 12px; font-size: 12px; border-color: var(--primary); color: var(--primary); width: auto;}
+
 .card-meta { font-size: 11px; color: var(--primary); background: rgba(255,140,0,0.1); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; font-weight: 600; }
 .card-desc { font-size: 13px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; line-height:1.4;}
 .server-status { font-size: 12px; background: var(--bg-elevated); padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; }
@@ -175,13 +215,11 @@ img, .card-img, .profile-img, .detail-header-img {
 
 .reply-list { margin-left: 20px; margin-top: 10px; border-left: 2px solid var(--primary); padding-left: 15px; }
 .reply-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--bg-elevated); }
-.reply-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .reply-input-area { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; background: var(--bg-surface); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
 .reply-to-text { font-size: 11px; color: var(--primary); font-weight: 600; margin-bottom: 2px;}
 
 .form-label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
 
-/* Form Upload URL or File Wrapper */
 .upload-card-wrapper { background: var(--bg-elevated); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
 .divider-or { display: flex; align-items: center; margin: 15px 0; }
 .divider-or .line { flex: 1; height: 1px; background: var(--border-color); }
@@ -198,4 +236,3 @@ img, .card-img, .profile-img, .detail-header-img {
 .detail-content-area { padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; }
 
 .profile-loading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; border-radius: 50%; z-index: 10; flex-direction: column; gap: 5px;}
-.profile-loading-text { font-size: 9px; font-weight: 600; color: white;}
