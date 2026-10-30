@@ -202,6 +202,45 @@ window.copyText = (text) => {
   navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin IP: ${text}`); });
 };
 
+// ================= DOWNLOAD HANDLER =================
+window.handleDownload = (url) => {
+    if (!url || url === '#') return;
+    let finalUrl = url;
+    let isRedirect = false;
+    let providerName = '';
+
+    const lowerUrl = url.toLowerCase();
+    
+    // Deteksi Hosting Eksternal yang dikunci
+    if (lowerUrl.includes('mediafire.com')) {
+        providerName = 'MediaFire'; isRedirect = true;
+    } else if (lowerUrl.includes('drive.google.com')) {
+        providerName = 'Google Drive'; isRedirect = true;
+    } else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) {
+        providerName = 'Situs Pihak Ketiga'; isRedirect = true;
+    } 
+    // Trik By-pass Direct Link untuk Dropbox
+    else if (lowerUrl.includes('dropbox.com')) {
+        finalUrl = url.replace('?dl=0', '?dl=1');
+        if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
+    }
+
+    if (isRedirect) {
+        window.showModalConfirm(`Tautan ini diamankan oleh ${providerName}. Kamu akan diarahkan ke halaman resmi mereka untuk mengunduh file secara manual. Lanjutkan?`, () => {
+            window.open(finalUrl, '_blank');
+        });
+    } else {
+        // Direct Download
+        const a = document.createElement('a');
+        a.href = finalUrl;
+        a.target = '_blank';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+};
+
 // ================= BOTTOM SHEETS & DRAWERS =================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
@@ -213,7 +252,6 @@ window.openCategorySheet = () => {
    const current = document.getElementById('selected-category-text-wrap').innerText.trim();
    categoryOptions.forEach(cat => {
        const isSel = cat === current;
-       // SVG Checkmark Custom
        const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
        opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')">
            <div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}
@@ -225,6 +263,14 @@ window.openCategorySheet = () => {
 window.selectCategoryForm = (cat) => {
    document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons[cat]} <span>${cat}</span>`;
    window.closeBottomSheet();
+   
+   // Update Label Dinamis 90MB khusus kategori APK
+   const labelFile = document.getElementById('label-file-download');
+   if(labelFile) {
+       const maxText = cat === 'MCPE and Craftman' ? '90MB' : '5MB';
+       labelFile.innerHTML = `<span data-i18n="file_download_label">${t('file_download_label') || 'File Download / Mod*'}</span> (Max ${maxText})`;
+   }
+
    if(cat === 'Server') {
        document.getElementById('form-standard-container').classList.add('hidden');
        document.getElementById('form-file-container').classList.add('hidden');
@@ -326,7 +372,6 @@ function proceedToHome(user, pData) {
      window.switchScreen('screen-home');
      fetchAllItemsAndRender();
      
-     // Set Injeksi awal form tambah
      document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons['Mod']} <span>Mod</span>`;
 }
 
@@ -574,7 +619,8 @@ window.openDetail = async (itemId) => {
         fetchServerStatus('detail-'+item.id, ipTarget);
     } else {
         statusContainer.classList.add('hidden');
-        actionContainer.innerHTML = `<a href="${item.url_file}" target="_blank" class="btn btn-primary" style="text-decoration:none;">${dlIconSVG} Download File</a>`;
+        // UPDATE: Gunakan button memanggil window.handleDownload
+        actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}')">${dlIconSVG} Download File</button>`;
     }
 
     loadComments(itemId);
@@ -611,7 +657,8 @@ function renderItemsToUI() {
         actionBtnHTML = `<button class="btn btn-secondary" style="flex:1; border-color:var(--primary); color:var(--primary);" onclick="event.stopPropagation(); window.copyText('${ipTarget}')">Salin IP</button>`;
         setTimeout(()=>fetchServerStatus(item.id, ipTarget), 100);
       } else {
-        actionBtnHTML = `<a href="${item.url_file}" target="_blank" onclick="event.stopPropagation();" class="btn btn-primary" style="flex:1; text-align:center; padding:10px; text-decoration:none;">${dlIconSVG} Download</a>`;
+        // UPDATE: Gunakan button memanggil window.handleDownload
+        actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}')" style="flex:1;">${dlIconSVG} Download</button>`;
       }
 
       htmlBuf += `
@@ -635,14 +682,21 @@ function renderItemsToUI() {
 // ================= HANDLER UPLOAD FILE LOKAL ITEM =================
 window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { window.showModalAlert("Max 5MB"); e.target.value = ''; return; }
+  // Gambar preview wajib max 5MB
+  if (file.size > 5 * 1024 * 1024) { window.showModalAlert("Ukuran maksimal gambar preview adalah 5MB!"); e.target.value = ''; return; }
   const reader = new FileReader();
   reader.onload = (e) => { localImageBase64 = e.target.result; document.getElementById('img-status').innerText = `✓ Gambar dipilih`; document.getElementById('add-img').value = ""; };
   reader.readAsDataURL(file);
 };
+
 window.handleLocalFile = (e) => {
   const file = e.target.files[0]; if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { window.showModalAlert("Max 5MB"); e.target.value = ''; return; }
+  
+  const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim();
+  const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5;
+
+  if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal file untuk kategori ini adalah ${maxMB}MB!`); e.target.value = ''; return; }
+  
   const reader = new FileReader();
   reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File dipilih`; document.getElementById('add-file').value = ""; };
   reader.readAsDataURL(file);
@@ -695,7 +749,7 @@ function loadPendingItems() {
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         count++; const item = child.val();
-        let testBtnHTML = item.category === 'Server' ? `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` : `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.open('${item.url_file}', '_blank')">Download Test</button>`;
+        let testBtnHTML = item.category === 'Server' ? `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` : `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.handleDownload('${item.url_file}')">Download Test</button>`;
         container.innerHTML += `
           <div class="card-vertical" style="border-color:var(--primary); margin-bottom:20px;">
             <div class="card-body">
