@@ -37,8 +37,11 @@ const catIcons = {
     'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
 
+// SVG Standar Flags
+const flagIcons = { 'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb' };
+
 const dict = {
-  'id': { verifying_session: "Memverifikasi sesi...", login_title: "Masuk ke Akun", login_subtitle: "Belum punya akun?", login_switch: "Daftar di sini", login_btn: "Masuk", or_via: "atau via", login_google: "Masuk dengan Google", create_username_title: "Buat Username", create_username_desc: "Hanya huruf, angka, dan underscore (3-16 karakter).", save_username: "Simpan Username", my_profile: "Profil Saya", change_photo: "UBAH FOTO", logout: "Keluar Akun", submit_new_item: "Kirim Baru", cancel: "Batal", category_label: "Kategori*", title_label: "Judul Item*", version_label: "Versi MCPE*", server_name_label: "Nama Server*", server_ip_label: "IP Server*", server_port_label: "Port*", supported_version_label: "Versi MCPE*", desc_label: "Deskripsi*", img_preview_label: "Gambar Preview*", choose_file: "Upload dari perangkat", file_download_label: "File Download / Mod*", upload_now: "Upload Sekarang", admin_panel: "Panel Admin", queue: "Antrean", no_queue: "Tidak ada antrean.", nav_home: "Beranda", nav_upload: "Upload", nav_profile: "Profil", cat_all: "Semua", translate_ui: "Translate UI (ID/EN)", support: "Layanan / Bantuan", notifications: "Notifikasi", no_notifications: "Belum ada notifikasi.", search_placeholder: "Cari item, mod, atau server...", description: "Deskripsi", translate: "Terjemahkan", show_original: "Lihat asli", comments: "Komentar", post_comment: "Kirim Komentar", login_to_comment: "Silakan masuk untuk memberikan komentar.", loading_comments: "Memuat komentar...", reply: "Balas", delete: "Hapus", post_reply: "Kirim", cancel_reply: "Batal", show_replies: "Lihat {count} balasan", hide_replies: "Sembunyikan balasan", replying_to: "Membalas", info: "Informasi", ok: "Oke", confirm_title: "Konfirmasi", error_file_type: "File yang dipilih bukan gambar!", error_file_size: "Ukuran foto maksimal 5 MB!", error_save: "Gagal menyimpan: ", error_offline: "Periksa koneksi internet.", auto_translate: "Auto-Translate", already_in_lang: "Sudah dalam bahasa ini", edit_bio: "Edit Bio (Maks 80 kar):", save_bio: "Simpan Bio", joined: "Bergabung", items_published: "Item Publik", email_placeholder: "Alamat Email", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Tulis komentar...", error_title: "Terjadi Kesalahan", error_load_account: "Gagal memuat akun, coba lagi.", try_again: "Coba Lagi" },
+  'id': { verifying_session: "Memverifikasi sesi...", login_title: "Masuk ke Akun", login_subtitle: "Belum punya akun?", login_switch: "Daftar di sini", login_btn: "Masuk", or_via: "atau via", login_google: "Masuk dengan Google", create_username_title: "Buat Username", create_username_desc: "Hanya huruf, angka, dan underscore (3-16 karakter).", save_username: "Simpan Username", my_profile: "Profil Saya", change_photo: "UBAH FOTO", logout: "Keluar Akun", submit_new_item: "Kirim Baru", cancel: "Batal", category_label: "Kategori*", title_label: "Judul Item*", version_label: "Versi MCPE*", server_name_label: "Nama Server*", server_ip_label: "IP Server*", server_port_label: "Port*", supported_version_label: "Versi MCPE*", desc_label: "Deskripsi*", img_preview_label: "Gambar Preview*", choose_file: "Upload dari perangkat", file_download_label: "File Download / Mod*", upload_now: "Upload Sekarang", admin_panel: "Admin Panel", queue: "Antrean", no_queue: "Tidak ada antrean.", nav_home: "Beranda", nav_upload: "Upload", nav_profile: "Profil", cat_all: "Semua", translate_ui: "Translate UI (ID/EN)", support: "Layanan / Bantuan", notifications: "Notifikasi", no_notifications: "Belum ada notifikasi.", search_placeholder: "Cari item, mod, atau server...", description: "Deskripsi", translate: "Terjemahkan", show_original: "Lihat asli", comments: "Komentar", post_comment: "Kirim Komentar", login_to_comment: "Silakan masuk untuk memberikan komentar.", loading_comments: "Memuat komentar...", reply: "Balas", delete: "Hapus", post_reply: "Kirim", cancel_reply: "Batal", show_replies: "Lihat {count} balasan", hide_replies: "Sembunyikan balasan", replying_to: "Membalas", info: "Informasi", ok: "Oke", confirm_title: "Konfirmasi", error_file_type: "File yang dipilih bukan gambar!", error_file_size: "Ukuran foto maksimal 5 MB!", error_save: "Gagal menyimpan: ", error_offline: "Periksa koneksi internet.", auto_translate: "Auto-Translate", already_in_lang: "Sudah dalam bahasa ini", edit_bio: "Edit Bio (Maks 80 kar):", save_bio: "Simpan Bio", joined: "Bergabung", items_published: "Item Publik", email_placeholder: "Alamat Email", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Tulis komentar...", error_title: "Terjadi Kesalahan", error_load_account: "Gagal memuat akun, coba lagi.", try_again: "Coba Lagi" },
   'en': { verifying_session: "Verifying session...", login_title: "Sign In", login_subtitle: "Don't have an account?", login_switch: "Sign up here", login_btn: "Sign In", or_via: "or via", login_google: "Sign in with Google", create_username_title: "Create Username", create_username_desc: "Letters, numbers, and underscores only (3-16 chars).", save_username: "Save Username", my_profile: "My Profile", change_photo: "CHANGE PHOTO", logout: "Logout", submit_new_item: "Submit New", cancel: "Cancel", category_label: "Category*", title_label: "Item Title*", version_label: "MCPE Version*", server_name_label: "Server Name*", server_ip_label: "Server IP*", server_port_label: "Port*", supported_version_label: "MCPE Version*", desc_label: "Description*", img_preview_label: "Preview Image*", choose_file: "Upload from device", file_download_label: "Download File / Mod*", upload_now: "Upload Now", admin_panel: "Admin Panel", queue: "Queue", no_queue: "No queue.", nav_home: "Home", nav_upload: "Upload", nav_profile: "Profile", cat_all: "All", translate_ui: "Translate UI (ID/EN)", support: "Support / Help", notifications: "Notifications", no_notifications: "No notifications yet.", search_placeholder: "Search items, mods, or servers...", description: "Description", translate: "Translate", show_original: "Show original", comments: "Comments", post_comment: "Post Comment", login_to_comment: "Please sign in to post a comment.", loading_comments: "Loading comments...", reply: "Reply", delete: "Delete", post_reply: "Send", cancel_reply: "Cancel", show_replies: "View {count} replies", hide_replies: "Hide replies", replying_to: "Replying to", info: "Information", ok: "OK", confirm_title: "Confirm", error_file_type: "Selected file is not an image!", error_file_size: "Photo size max 5 MB!", error_save: "Failed to save: ", error_offline: "Check internet connection.", auto_translate: "Auto-Translate", already_in_lang: "Already in this language", edit_bio: "Edit Bio (Max 80 chars):", save_bio: "Save Bio", joined: "Joined", items_published: "Public Items", email_placeholder: "Email Address", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Write a comment...", error_title: "An Error Occurred", error_load_account: "Failed to load account, please try again.", try_again: "Try Again" }
 };
 
@@ -110,28 +113,49 @@ window.showModalAlert = (msg) => { document.getElementById('dialog-alert-msg').i
 window.showModalConfirm = (msg, onConfirmCallback) => { document.getElementById('dialog-confirm-msg').innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); };
 window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin IP: ${text}`); }); };
 
-// DOWNLOAD HANDLER (DIRECT LINK/REDIRECT)
+// ================= FORCE DOWNLOAD VIA PROXY API =================
 window.handleDownload = (url) => {
     if (!url || url === '#') return;
     let finalUrl = url; let isRedirect = false; let providerName = '';
     const lowerUrl = url.toLowerCase();
     
+    // Deteksi Hosting Eksternal yang dikunci
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
     else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
     else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
     else if (lowerUrl.includes('dropbox.com')) { finalUrl = url.replace('?dl=0', '?dl=1'); if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1'); }
 
-    if (isRedirect) window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Anda akan diarahkan ke halaman resmi penyedia untuk mengunduh. Lanjutkan?`, () => window.open(finalUrl, '_blank'));
-    else { const a = document.createElement('a'); a.href = finalUrl; a.target = '_blank'; a.download = ''; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+    if (isRedirect) {
+        window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Anda akan diarahkan ke halaman resmi penyedia untuk mengunduh. Lanjutkan?`, () => window.open(finalUrl, '_blank'));
+    } else {
+        // PROXY DIRECT DOWNLOAD TANPA BUKA TAB BARU!
+        const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
+        let iframe = document.getElementById('download-iframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'download-iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        iframe.src = proxyUrl;
+    }
 };
 
+// ================= BOTTOM SHEETS (Kategori, Versi, Negara) =================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
+
+// PASTIKAN IKON SVG TETAP PUNYA SIZE KETIKA DIINJEK KE FIELD
+function getSafeIcon(cat) { 
+    if(!catIcons[cat]) return '';
+    return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); 
+}
 
 window.openCategorySheet = () => {
    document.getElementById('sheet-title').innerText = "Pilih Kategori";
    const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
-   const current = document.getElementById('selected-category-text-wrap').innerText.trim();
+   const currentWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+   const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
    categoryOptions.forEach(cat => {
        const isSel = cat === current;
        const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
@@ -143,7 +167,8 @@ window.openCategorySheet = () => {
 };
 
 window.selectCategoryForm = (cat) => {
-   document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons[cat]} <span>${cat}</span>`;
+   // Teks Ikon Terjamin ukurannya dengan getSafeIcon
+   document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
    window.closeBottomSheet();
    
    const labelFile = document.getElementById('label-file-download');
@@ -174,10 +199,32 @@ window.openVersionSheet = () => {
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
 };
-
 window.selectVersionForm = (ver) => { document.getElementById('selected-version-text').innerText = ver; window.closeBottomSheet(); };
-window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay').classList.remove('active'); };
 
+window.openCountrySheet = () => {
+   document.getElementById('sheet-title').innerText = "Pilih Negara Server";
+   const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
+   const currentWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
+   const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
+   
+   Object.keys(flagIcons).forEach(country => {
+       const isSel = country === current;
+       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')">
+           <div class="flex items-center" style="gap:10px;">
+               <img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;">
+               <span>${country}</span>
+           </div> ${checkSVG}
+       </div>`;
+   });
+   document.getElementById('bottom-sheet-overlay').classList.add('active');
+};
+window.selectCountryForm = (country) => {
+   document.getElementById('selected-country-text-wrap').innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`;
+   window.closeBottomSheet();
+};
+
+window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay').classList.remove('active'); };
 window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0, 0); };
 window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert(t('login_to_comment')); window.switchScreen('screen-login'); } };
 window.toggleDrawer = (id) => { const isAct = document.getElementById(id).classList.contains('active'); window.closeAllDrawers(); if(!isAct) { document.getElementById(id).classList.add('active'); document.getElementById('drawer-overlay').classList.add('active'); } };
@@ -197,7 +244,6 @@ function generateDefaultAvatar(name) {
 }
 
 window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; window.applyLanguage(); document.getElementById('login-error').innerText = ''; };
-
 window.processEmailAuth = async () => {
   const email = document.getElementById('auth-email').value.trim(); const password = document.getElementById('auth-password').value;
   if (!email || !password) { document.getElementById('login-error').innerText = 'Isi form dengan lengkap.'; return; }
@@ -218,7 +264,8 @@ function updateHeaderAuthUI() {
         document.getElementById('btn-notif-header').classList.remove('hidden'); document.getElementById('btn-login-header').classList.add('hidden');
         document.getElementById('sidebar-auth-section').innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">${t('logout')}</button>`;
     } else {
-        document.getElementById('btn-notif-header').classList.add('hidden'); document.getElementById('btn-login-header').classList.remove('hidden'); document.getElementById('btn-open-admin').classList.add('hidden');
+        document.getElementById('btn-notif-header').classList.add('hidden'); document.getElementById('btn-login-header').classList.remove('hidden'); 
+        document.getElementById('drawer-menu-admin').classList.add('hidden'); // Sembunyikan Admin Sidebar
         document.getElementById('sidebar-profile-img').src = "https://via.placeholder.com/60"; document.getElementById('sidebar-name').innerText = "Tamu"; document.getElementById('sidebar-role').innerHTML = "";
         document.getElementById('sidebar-auth-section').innerHTML = `<button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;">${t('login_btn')}</button>`;
     }
@@ -231,10 +278,12 @@ function proceedToHome(user, pData) {
      document.getElementById('profile-img').src = dp; document.getElementById('sidebar-profile-img').src = dp;
      const rBadge = getRoleBadge(pData.role);
      document.getElementById('profile-role-badge').innerHTML = rBadge; document.getElementById('sidebar-role').innerHTML = rBadge;
-     if(isAdmin) document.getElementById('btn-open-admin').classList.remove('hidden'); else document.getElementById('btn-open-admin').classList.add('hidden');
+     
+     // Update Panel Sidebar Khusus Admin
+     if(isAdmin) document.getElementById('drawer-menu-admin').classList.remove('hidden'); else document.getElementById('drawer-menu-admin').classList.add('hidden');
      
      if(isAdmin) loadPendingItems(); listenNotifications(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-     document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons['Mod']} <span>Mod</span>`;
+     document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
 }
 
 setPersistence(auth, browserLocalPersistence).then(() => {
@@ -255,7 +304,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
       } catch (err) { document.getElementById('screen-error-msg').innerText = "Gagal memuat akun: " + err.message; window.switchScreen('screen-error'); }
     } else {
       currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-      document.getElementById('selected-category-text-wrap').innerHTML = `${catIcons['Mod']} <span>Mod</span>`;
+      document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
     }
     window.applyLanguage();
   });
@@ -346,29 +395,58 @@ window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = c
 function fetchAllItemsAndRender() {
   onValue(ref(db, 'items_public'), (snapshot) => {
     let dynamicItems = [];
-    if (snapshot.exists()) { snapshot.forEach(child => { dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() }); }); dynamicItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); }
-    globalAllItems = [...staticItems, ...dynamicItems]; renderItemsToUI(); 
+    if (snapshot.exists()) { snapshot.forEach(child => { dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() }); }); }
+    // Sort logic
+    globalAllItems = [...staticItems, ...dynamicItems]; 
+    renderItemsToUI(); 
   });
 }
 
 function fetchServerStatus(id, target) {
-  const el = document.getElementById(`status-${id}`); if (!el) return;
+  const statusEl = document.getElementById(`status-${id}`);
+  const playersEl = document.getElementById(`players-${id}`);
+  if (!statusEl) return;
   const [host, portRaw] = target.split(':'); const port = portRaw || '19132';
   fetch(`/api/server?host=${host}&port=${port}`).then(res => res.json()).then(data => {
-      if (data.online) { el.innerHTML = `<span class="status-indicator status-online"></span> <span class="text-success" style="margin-right:5px; font-weight:bold;">Online</span> <span style="color:var(--text-muted);">|</span> <b style="margin-left:5px; color:var(--text-main);">${data.players.online}/${data.players.max}</b>`; } 
-      else {
-         if (data.error === 'Timeout') el.innerHTML = `<span class="status-indicator" style="background:#555;"></span> <span style="color:#aaa; margin-right:5px; font-weight:bold;">Timeout</span> <span style="color:#777; font-weight:normal; font-size:11px;">(Sedang RTO)</span>`;
-         else el.innerHTML = `<span class="status-indicator status-offline"></span> <span class="text-danger" style="margin-right:5px; font-weight:bold;">Offline</span>`;
+      if (data.online) { 
+          statusEl.className = 'badge-status online'; statusEl.innerText = 'Online';
+          if(playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`;
+      } else {
+          statusEl.className = 'badge-status offline'; statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline';
       }
-    }).catch(() => { el.innerHTML = `<span class="status-indicator status-offline"></span> <span class="text-danger" style="margin-right:5px; font-weight:bold;">Error API</span>`; });
+    }).catch(() => { statusEl.className = 'badge-status offline'; statusEl.innerText = 'Error'; });
 }
 setInterval(() => {
   if (!document.getElementById('screen-home').classList.contains('hidden')) {
       if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') {
-          document.querySelectorAll('.server-status-compact, .server-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); });
+          document.querySelectorAll('.badge-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); });
       }
   }
 }, 30000);
+
+// ================= SISTEM VOTE BINTANG =================
+window.toggleVote = async (itemId) => {
+    if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
+    const item = globalAllItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Cek apakah user pernah vote
+    const isVoted = item.votes && item.votes[currentUser.uid];
+    let currentStars = item.stars || 0;
+
+    const updates = {};
+    if (isVoted) {
+        updates[`items_public/${itemId}/votes/${currentUser.uid}`] = null;
+        updates[`items_public/${itemId}/stars`] = Math.max(0, currentStars - 1);
+    } else {
+        updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
+        updates[`items_public/${itemId}/stars`] = currentStars + 1;
+    }
+    
+    try {
+        await update(ref(db), updates);
+    } catch(e) { window.showModalAlert("Gagal mengirim vote."); }
+}
 
 window.openDetail = async (itemId) => {
     const item = globalAllItems.find(i => i.id === itemId); if(!item) return;
@@ -393,7 +471,7 @@ window.openDetail = async (itemId) => {
     if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version;
         statusContainer.classList.remove('hidden');
-        statusContainer.innerHTML = `<div id="status-detail-${item.id}" class="server-status" data-target="${ipTarget}" style="display:inline-flex;"><span class="loader-inline"></span><span style="color:var(--text-muted); margin-left:8px; font-weight:normal;">Mengecek...</span></div>`;
+        statusContainer.innerHTML = `<div class="server-badges-row"><div class="badge-status" id="status-detail-${item.id}" data-target="${ipTarget}">Mengecek...</div></div>`;
         actionContainer.innerHTML = `<button class="btn btn-secondary" style="border-color:var(--primary); color:var(--primary);" onclick="window.copyText('${ipTarget}')">Salin IP Server</button>`;
         fetchServerStatus('detail-'+item.id, ipTarget);
     } else {
@@ -414,6 +492,11 @@ function renderItemsToUI() {
   let displayItems = globalAllItems;
   if (currentCategoryFilter !== 'Semua') displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
   if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery) || item.category.toLowerCase().includes(currentSearchQuery) || (item.desc_id && item.desc_id.toLowerCase().includes(currentSearchQuery)));
+  
+  // Sorting: Jika Server terpilih, urutkan berdasarkan Bintang Terbanyak. Kalau tidak, berdasarkan terbaru
+  if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0));
+  else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  
   if (displayItems.length === 0) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; return; }
 
   const isSpecific = currentCategoryFilter !== 'Semua'; 
@@ -428,25 +511,44 @@ function renderItemsToUI() {
 
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
-        let serverStatusHTML = `<div id="status-${item.id}" class="server-status-compact" data-target="${ipTarget}"><span class="loader-inline" style="width:10px;height:10px;border-width:2px;"></span> <span style="font-size:11px;">Mengecek...</span></div>`;
-        let actionBtnHTML = `<button class="btn btn-secondary btn-copy-ip" onclick="event.stopPropagation(); window.copyText('${ipTarget}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Salin IP</button>`;
+        const countryFlag = item.country ? `<div class="server-flag-badge"><img src="https://flagcdn.com/${flagIcons[item.country] || 'id'}.svg" style="width:16px; object-fit:contain; border-radius:2px;"></div>` : '';
+        const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
+        const starClass = isVoted ? 'badge-star voted' : 'badge-star';
+        
         setTimeout(()=>fetchServerStatus(item.id, ipTarget), 100);
 
         htmlBuf += `
         <div class="card-server" onclick="window.openDetail('${item.id}')">
             <div class="server-banner-wrapper skeleton">
-                <img src="${item.url_img}" class="server-banner lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/600x300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
+                <img src="${item.url_img}" class="server-banner-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
+                ${countryFlag}
                 <div class="server-version-badge">${item.version}</div>
             </div>
-            <div class="server-info">
-                <div style="flex:1;">
-                    <h3 class="server-title">${item.title}</h3>
-                    <div style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; margin-bottom:5px;" onclick="event.stopPropagation(); window.openUserProfile('${item.uid}')">
-                       Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> ${userRoleBadge}
+            <div class="server-body">
+                <div class="server-top-row">
+                    <div class="flex items-center" style="gap:8px;">
+                        <span class="server-ip">${ipTarget}</span>
                     </div>
-                    ${serverStatusHTML}
+                    <button class="btn-copy-ip" onclick="event.stopPropagation(); window.copyText('${ipTarget}')">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
                 </div>
-                <div>${actionBtnHTML}</div>
+                <h3 class="server-title">${item.title}</h3>
+                <div class="server-desc">Oleh: ${item.username || 'System'} ${userRoleBadge}</div>
+                
+                <div class="server-badges-row">
+                    <div class="badge-status" id="status-${item.id}" data-target="${ipTarget}">Mengecek...</div>
+                    
+                    <div class="${starClass}" onclick="window.toggleVote('${item.id}'); event.stopPropagation();">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="${isVoted ? '#fbc02d' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <span>${item.stars || 0}</span>
+                    </div>
+                    
+                    <div class="badge-players">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span id="players-${item.id}">0 / 0</span>
+                    </div>
+                </div>
             </div>
             ${btnAdmin ? `<div style="padding:0 12px 12px;">${btnAdmin}</div>` : ''}
         </div>`;
@@ -473,6 +575,9 @@ function renderItemsToUI() {
   container.innerHTML = htmlBuf;
 }
 
+// ================= CROPPER JS INTERACTIVE (BANNER SERVER 468x60) =================
+let cropperInstance = null;
+
 window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
   const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim();
@@ -482,13 +587,40 @@ window.handleLocalImage = (e) => {
   if (file.size > maxSizeMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal gambar preview adalah ${maxSizeMB}MB!`); e.target.value = ''; return; }
 
   const reader = new FileReader();
-  reader.onload = (e) => { 
-      localImageBase64 = e.target.result; 
-      document.getElementById('img-status').innerText = file.type === 'image/gif' ? `✓ GIF dipilih` : `✓ Gambar dipilih`; 
-      document.getElementById('add-img').value = ""; 
+  reader.onload = (ev) => { 
+      // Jika Kategori Server (Bukan GIF) => Buka Cropper 468x60
+      if (isServer && file.type !== 'image/gif') {
+          document.getElementById('cropper-image').src = ev.target.result;
+          window.openDialog('dialog-cropper');
+          if (cropperInstance) cropperInstance.destroy();
+          cropperInstance = new Cropper(document.getElementById('cropper-image'), {
+              aspectRatio: 468 / 60,
+              viewMode: 1,
+              background: false,
+              zoomable: true
+          });
+      } else {
+          localImageBase64 = ev.target.result; 
+          document.getElementById('img-status').innerText = file.type === 'image/gif' ? `✓ GIF dipilih` : `✓ Gambar dipilih`; 
+          document.getElementById('add-img').value = ""; 
+      }
   };
   reader.readAsDataURL(file);
 };
+
+window.confirmCrop = () => {
+    if(!cropperInstance) return;
+    const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 });
+    localImageBase64 = canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('img-status').innerText = '✓ Banner di-crop (468x60)';
+    window.closeDialog('dialog-cropper');
+}
+
+window.cancelCrop = () => {
+    window.closeDialog('dialog-cropper');
+    document.getElementById('add-img').value = '';
+    document.getElementById('file-img').value = '';
+}
 
 window.handleLocalFile = (e) => {
   const file = e.target.files[0]; if (!file) return;
@@ -506,6 +638,11 @@ window.submitItem = async () => {
   const desc_id = document.getElementById('add-desc').value.trim();
   const finalImg = localImageBase64 || document.getElementById('add-img').value.trim();
   const version = document.getElementById('selected-version-text').innerText;
+  
+  // Baca Bendera Terpilih
+  const countryWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
+  const country = countryWrap ? countryWrap.innerText.trim() : 'Indonesia';
+  
   let title, finalFile, serverIp, serverPort;
 
   if (cat === 'Server') {
@@ -517,8 +654,8 @@ window.submitItem = async () => {
   }
 
   document.getElementById('btn-submit-item').disabled = true;
-  const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp() };
-  if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; }
+  const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0 };
+  if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
 
   try {
     if (isAdmin) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
