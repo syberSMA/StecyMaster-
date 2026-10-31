@@ -23,16 +23,18 @@ let globalAllItems = []; let currentCategoryFilter = 'Semua'; let currentSearchQ
 let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem = null;
 let currentDetailItemId = null; let lastCommentTime = 0; 
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
+let adminQueueMemory = {}; // State memory untuk test file admin
 
+// FIX IKON KATEGORI
 const catIcons = {
-    'Semua': '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
-    'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
-    'Texture': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
-    'Map': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
-    'Launcher': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
-    'Plugin Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
-    'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
-    'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
+    'Semua': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    'Mod': '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    'Texture': '<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    'Map': '<svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+    'Launcher': '<svg viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    'Plugin Server': '<svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
+    'MCPE and Craftman': '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
+    'Server': '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
 const flagIcons = { 'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb' };
 
@@ -78,7 +80,7 @@ window.handleDownload = async (url, itemId) => {
 
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
-function getSafeIcon(cat) { if(!catIcons[cat]) return ''; return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); }
+function getSafeIcon(cat) { return catIcons[cat] || ''; }
 
 window.openCategorySheet = () => {
    const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Pilih Kategori";
@@ -179,7 +181,6 @@ function updateHeaderAuthUI() {
     }
 }
 
-// TIMEOUT SAFEGUARD! MENCEGAH STUCK DI SPLASH SCREEN
 let splashTimeout = setTimeout(() => {
     try { window.switchScreen('screen-home'); fetchAllItemsAndRender(); } catch(e){}
 }, 5000); 
@@ -207,7 +208,6 @@ async function proceedToHome(user, pData) {
          if(profRoleBadge) profRoleBadge.innerHTML = roleB; 
          if(sideRoleBadge) sideRoleBadge.innerHTML = roleB;
          
-         // Setup Profil Text (Tanpa Point System Dulu)
          const statUpEl = document.getElementById('stat-upload');
          const iUserEl = document.getElementById('input-self-username');
          const adminMenu = document.getElementById('drawer-menu-admin');
@@ -403,6 +403,7 @@ window.openDetail = async (itemId) => {
 }
 window.closeDetailAndLogin = () => { const dContainer = document.getElementById('screen-detail-container'); if(dContainer) dContainer.classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
 
+// FIX RENDER ITEMS: "Oleh: System" dan "Badge Dev" DIHAPUS DARI BERANDA
 function renderItemsToUI() {
   const container = document.getElementById('public-items-container'); if(!container) return; container.innerHTML = '';
   const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
@@ -422,15 +423,11 @@ function renderItemsToUI() {
   let htmlBuf = ''; let myContentBuf = '';
   
   displayItems.forEach(item => {
-      const userRoleBadge = item.source === 'github' ? getRoleBadge('dev') : `<span id="badge-${item.id}">${getRoleBadge('member')}</span>`;
-      if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const p=s.val(); const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(p.role); } }); }
-
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
         const countryFlag = item.country ? `<div class="server-flag-badge"><img src="https://flagcdn.com/${flagIcons[item.country] || 'id'}.svg" style="width:16px; object-fit:contain; border-radius:2px;"></div>` : '';
         const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
         const starClass = isVoted ? 'badge-star voted' : 'badge-star';
-        
         const isVideo = item.url_img && (item.url_img.includes('data:video') || item.url_img.endsWith('.mp4'));
         const mediaHTML = isVideo ? `<video src="${item.url_img}" class="server-banner-media" autoplay loop muted playsinline></video>` : `<img src="${item.url_img}" class="server-banner-media lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">`;
         
@@ -446,7 +443,6 @@ function renderItemsToUI() {
                 <div class="server-header-row">
                     <div class="server-title-row">
                         <span class="server-title-text">${item.title}</span>
-                        ${userRoleBadge}
                     </div>
                     <button class="icon-btn btn-copy-ip" onclick="window.copyText('${ipTarget}')" style="padding:4px; border:none; background:none;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -475,10 +471,7 @@ function renderItemsToUI() {
           <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
           <div class="card-body">
             <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
-            <div style="font-size:11px; margin-bottom:8px; color:var(--text-muted); display:flex; align-items:center;" onclick="event.stopPropagation(); window.openUserProfile('${item.uid}')">
-               Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> ${userRoleBadge}
-            </div>
-            <div>
+            <div style="margin-bottom:8px;">
                <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
             </div>
             <p class="card-desc">${item.desc_id || item.desc || ''}</p>
@@ -507,7 +500,6 @@ function renderItemsToUI() {
   else if(myContentContainer) myContentContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada konten publik.</p>`;
 }
 
-// ================= CROPPER JS & BYPASS GIF/VIDEO =================
 let cropperInstance = null;
 window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
@@ -582,38 +574,67 @@ window.submitItem = async () => {
   if(btnSubmit) btnSubmit.disabled = false;
 };
 
-// ================= ADMIN REVIEW =================
+// FIX PANEL ADMIN: LAYOUT & TEST PREVIEW (Cegah Base64 Error HTML)
 function loadPendingItems() {
   if(!isAdmin) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
     const container = document.getElementById('pending-items-container'); if(!container) return; container.innerHTML = ''; let count = 0;
+    adminQueueMemory = {}; // reset memori antrean
+    
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         count++; const item = child.val();
-        let testBtnHTML = item.category === 'Server' ? `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` : `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.handleDownload('${item.url_file}')">Test File</button>`;
+        adminQueueMemory[child.key] = item; // Simpan item ke memori RAM
+        
+        let testBtnHTML = item.category === 'Server' 
+           ? `<button class="btn btn-secondary" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` 
+           : `<button class="btn btn-secondary" onclick="window.testAdminFile('${child.key}')">
+                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Test File
+              </button>`;
+              
         container.innerHTML += `
           <div class="admin-queue-card">
               <div class="admin-queue-header">
-                  <div>
-                      <h4 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h4>
-                      <span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:10px;height:10px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${item.username}</span>
+                  <div style="flex:1;">
+                      <h4 class="font-bold text-main" style="margin-bottom:4px; font-size:16px;">${item.title}</h4>
+                      <span class="card-meta" style="margin:0;">${item.category}</span>
                   </div>
-                  <span class="card-meta" style="margin:0;">${item.category}</span>
-              </div>
-              <div class="flex" style="gap:10px;">
-                <button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.open('${item.url_img}', '_blank')">Lihat Banner</button>
-                ${testBtnHTML}
+                  <div style="text-align:right; font-size:11px; color:var(--text-muted);">
+                      Pengirim:<br><span class="text-main font-bold">${item.username}</span>
+                  </div>
               </div>
               <div class="admin-queue-actions">
-                <button class="btn btn-danger" style="flex:1;" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
-                <button class="btn btn-success" style="flex:1;" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima</button>
+                <button class="btn btn-secondary" onclick="window.testAdminImage('${child.key}')">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Preview
+                </button>
+                ${testBtnHTML}
+              </div>
+              <div class="admin-queue-actions" style="margin-top:12px; border-top:1px dashed var(--border-color); padding-top:12px;">
+                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
+                <button class="btn btn-success" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima & Publikasi</button>
               </div>
           </div>`;
       });
-    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Tidak ada antrean.</p>`; }
+    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Tidak ada antrean saat ini.</p>`; }
     const badgeCount = document.getElementById('pending-count'); if(badgeCount) badgeCount.innerText = count;
   });
 }
+
+// Fungsi Test Akses untuk Admin (Bisa langsung panggil tanpa merusak atribut HTML dengan string kepanjangan)
+window.testAdminFile = (key) => {
+    const item = adminQueueMemory[key];
+    if(item && item.url_file) { window.handleDownload(item.url_file, key); }
+};
+window.testAdminImage = (key) => {
+    const item = adminQueueMemory[key];
+    if(item && item.url_img) {
+        if (item.url_img.startsWith('data:')) {
+            const newTab = window.open();
+            newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`;
+        } else { window.open(item.url_img, '_blank'); }
+    }
+};
+
 window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
 window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
@@ -622,6 +643,7 @@ window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus perman
 window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
 const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
+let globalProfilesCache = {};
 function loadComments(itemId) {
     const commentsList = document.getElementById('comments-list'); if(!commentsList) return; commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>`;
     onValue(ref(db, `comments/${itemId}`), async (snapshot) => {
@@ -638,11 +660,11 @@ function loadComments(itemId) {
             commentsList.innerHTML += `
             <div class="comment-item">
                 <div class="comment-header">
-                    <div class="comment-author-info"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author">${comment.username}</span> ${roleBadge}</div>
-                    <span class="comment-date">${formatDate(comment.createdAt)}</span>
+                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
+                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
                 </div>
                 <p class="comment-text">${escapeHtml(comment.text)}</p>
-                ${isOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
+                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
             </div>`;
         }
     });
