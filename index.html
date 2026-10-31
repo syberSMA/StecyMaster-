@@ -33,7 +33,6 @@
       </div>
     </div>
 
-    <!-- CROPPER MODAL -->
     <div id="dialog-cropper" class="dialog-box" style="width:95%; max-width: 600px; padding:15px;">
        <h3 class="font-bold text-main" style="margin-bottom:10px;">Crop Banner Server</h3>
        <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">Sesuaikan area terang (Rasio 468x60).</p>
@@ -46,7 +45,6 @@
        </div>
     </div>
     
-    <!-- ADMIN REJECT MODAL -->
     <div id="dialog-reject-admin" class="dialog-box">
       <h3 class="text-danger font-bold" style="margin-bottom: 10px;">Tolak Item</h3>
       <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Alasan penolakan (dikirim ke user).</p>
@@ -57,7 +55,6 @@
       </div>
     </div>
 
-    <!-- ADMIN EDIT MODAL -->
     <div id="dialog-edit-admin" class="dialog-box">
       <h3 class="text-primary font-bold" style="margin-bottom: 15px;">Edit Item</h3>
       <input type="hidden" id="edit-item-id">
@@ -91,7 +88,6 @@
       </div>
   </div>
 
-  <!-- CUSTOM BOTTOM SHEET -->
   <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="window.closeBottomSheet()">
     <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
       <div style="width:40px; height:5px; background:var(--border-color); border-radius:3px; margin:0 auto 20px;"></div>
@@ -100,13 +96,13 @@
     </div>
   </div>
 
-  <!-- MODAL DETAIL ITEM (Hanya untuk Kategori Spesifik) -->
+  <!-- MODAL DETAIL ITEM -->
   <div id="screen-detail-container">
-        <div class="detail-header-img-wrapper img-click-wrapper skeleton">
+        <div class="detail-header-img-wrapper skeleton">
              <button class="detail-close-btn" onclick="document.getElementById('screen-detail-container').classList.remove('active')">
                  <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
              </button>
-             <img id="detail-img" src="" class="detail-header-img lazy-img" alt="Preview" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
+             <img id="detail-img" src="" class="lazy-img" alt="Preview" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
         </div>
         <div class="detail-content-area">
             <h2 id="detail-title" class="font-bold text-main text-selectable" style="font-size: 20px; margin-bottom: 8px;">Judul</h2>
@@ -122,7 +118,7 @@
             
             <h4 class="font-bold text-main" style="margin-bottom: 8px; font-size:14px;">Deskripsi</h4>
             <div style="position: relative;">
-                <p id="detail-desc" class="text-selectable" style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; word-break: break-word;"></p>
+                <p id="detail-desc" class="text-selectable" style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; word-break: break-word; user-select:text;"></p>
                 <button id="btn-translate-desc" class="comment-action-btn" style="position: absolute; top: -30px; right: 0; background:var(--bg-elevated); padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);" onclick="window.translateDesc()">
                     <svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="text-translate-desc">Translate</span>
                 </button>
@@ -166,6 +162,19 @@
         <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--danger)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span class="text-danger font-bold">Admin Panel</span>
       </li>
+      
+      <!-- TOGGLE KHUSUS ADMIN (Mode Penyamaran) -->
+      <li id="drawer-menu-admin-toggle" class="hidden" onclick="window.toggleAdminMode()" style="justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+        <div class="flex items-center" style="gap:12px;">
+           <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--primary)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+           <span style="color:var(--primary);">Mode Admin</span>
+        </div>
+        <label class="mcpe-toggle" style="pointer-events:none;">
+            <input type="checkbox" id="admin-mode-checkbox" class="mcpe-toggle-checkbox" checked>
+            <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
+        </label>
+      </li>
+
       <li onclick="window.switchLanguage()">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" fill="currentColor" stroke="none"/></svg>
         <span>Translate UI (ID/EN)</span>
@@ -175,7 +184,7 @@
            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12zm10 6c3.31 0 6-2.69 6-6s-2.69-6-6-6-6 2.69-6 6 2.69 6 6 6z"/></svg>
            <span>Auto-Translate</span>
         </div>
-        <label class="mcpe-toggle">
+        <label class="mcpe-toggle" style="pointer-events:none;">
             <input type="checkbox" id="auto-translate-checkbox" class="mcpe-toggle-checkbox">
             <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
         </label>
@@ -279,7 +288,7 @@
       </div>
     </div>
     
-    <!-- STATISTIK GRID (Upload & Download Icon) -->
+    <!-- STATISTIK GRID -->
     <div class="profile-stats-grid">
        <div class="stat-box">
            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -330,7 +339,7 @@
         </div>
     </div>
 
-    <!-- SUB-TAB PENGATURAN (Bio, Ganti Username, Ganti Password) -->
+    <!-- SUB-TAB PENGATURAN -->
     <div id="tab-settings" class="profile-content-section hidden">
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Edit Profil</h3>
         <label class="form-label" style="text-align:left; font-size:11px;">Edit Bio (Maks 80 kar):</label>
@@ -412,9 +421,10 @@
       <label class="form-label">Deskripsi*</label>
       <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
       
+      <!-- FIX: UPLOAD PREVIEW DINAMIS (GIF/Video cuma di Server) -->
       <label class="form-label" id="label-img-preview">Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span></label>
       <div class="input-field text-selectable" style="padding:0; overflow:hidden; display:flex; margin-bottom:20px;">
-          <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" placeholder="URL Gambar / GIF...">
+          <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" placeholder="URL Gambar...">
           <label style="background:var(--primary); color:#000; padding:14px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
               <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#000"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               File
