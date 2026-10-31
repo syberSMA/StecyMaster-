@@ -25,7 +25,7 @@ let currentDetailItemId = null; let lastCommentTime = 0;
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
 let currentLang = localStorage.getItem('lang') || 'id';
 
-// ================= ICONS SVG MAPPING (DIPERBAIKI) =================
+// ================= ICONS SVG MAPPING =================
 const catIcons = {
     'Semua': '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
@@ -36,90 +36,61 @@ const catIcons = {
     'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
     'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
-
-// SVG Standar Flags
 const flagIcons = { 'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb' };
 
-const dict = {
-  'id': { verifying_session: "Memverifikasi sesi...", login_title: "Masuk ke Akun", login_subtitle: "Belum punya akun?", login_switch: "Daftar di sini", login_btn: "Masuk", or_via: "atau via", login_google: "Masuk dengan Google", create_username_title: "Buat Username", create_username_desc: "Hanya huruf, angka, dan underscore (3-16 karakter).", save_username: "Simpan Username", my_profile: "Profil Saya", change_photo: "UBAH FOTO", logout: "Keluar Akun", submit_new_item: "Kirim Baru", cancel: "Batal", category_label: "Kategori*", title_label: "Judul Item*", version_label: "Versi MCPE*", server_name_label: "Nama Server*", server_ip_label: "IP Server*", server_port_label: "Port*", supported_version_label: "Versi MCPE*", desc_label: "Deskripsi*", img_preview_label: "Gambar Preview*", choose_file: "Upload dari perangkat", file_download_label: "File Download / Mod*", upload_now: "Upload Sekarang", admin_panel: "Admin Panel", queue: "Antrean", no_queue: "Tidak ada antrean.", nav_home: "Beranda", nav_upload: "Upload", nav_profile: "Profil", cat_all: "Semua", translate_ui: "Translate UI (ID/EN)", support: "Layanan / Bantuan", notifications: "Notifikasi", no_notifications: "Belum ada notifikasi.", search_placeholder: "Cari item, mod, atau server...", description: "Deskripsi", translate: "Terjemahkan", show_original: "Lihat asli", comments: "Komentar", post_comment: "Kirim Komentar", login_to_comment: "Silakan masuk untuk memberikan komentar.", loading_comments: "Memuat komentar...", reply: "Balas", delete: "Hapus", post_reply: "Kirim", cancel_reply: "Batal", show_replies: "Lihat {count} balasan", hide_replies: "Sembunyikan balasan", replying_to: "Membalas", info: "Informasi", ok: "Oke", confirm_title: "Konfirmasi", error_file_type: "File yang dipilih bukan gambar!", error_file_size: "Ukuran foto maksimal 5 MB!", error_save: "Gagal menyimpan: ", error_offline: "Periksa koneksi internet.", auto_translate: "Auto-Translate", already_in_lang: "Sudah dalam bahasa ini", edit_bio: "Edit Bio (Maks 80 kar):", save_bio: "Simpan Bio", joined: "Bergabung", items_published: "Item Publik", email_placeholder: "Alamat Email", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Tulis komentar...", error_title: "Terjadi Kesalahan", error_load_account: "Gagal memuat akun, coba lagi.", try_again: "Coba Lagi" },
-  'en': { verifying_session: "Verifying session...", login_title: "Sign In", login_subtitle: "Don't have an account?", login_switch: "Sign up here", login_btn: "Sign In", or_via: "or via", login_google: "Sign in with Google", create_username_title: "Create Username", create_username_desc: "Letters, numbers, and underscores only (3-16 chars).", save_username: "Save Username", my_profile: "My Profile", change_photo: "CHANGE PHOTO", logout: "Logout", submit_new_item: "Submit New", cancel: "Cancel", category_label: "Category*", title_label: "Item Title*", version_label: "MCPE Version*", server_name_label: "Server Name*", server_ip_label: "Server IP*", server_port_label: "Port*", supported_version_label: "MCPE Version*", desc_label: "Description*", img_preview_label: "Preview Image*", choose_file: "Upload from device", file_download_label: "Download File / Mod*", upload_now: "Upload Now", admin_panel: "Admin Panel", queue: "Queue", no_queue: "No queue.", nav_home: "Home", nav_upload: "Upload", nav_profile: "Profile", cat_all: "All", translate_ui: "Translate UI (ID/EN)", support: "Support / Help", notifications: "Notifications", no_notifications: "No notifications yet.", search_placeholder: "Search items, mods, or servers...", description: "Description", translate: "Translate", show_original: "Show original", comments: "Comments", post_comment: "Post Comment", login_to_comment: "Please sign in to post a comment.", loading_comments: "Loading comments...", reply: "Reply", delete: "Delete", post_reply: "Send", cancel_reply: "Cancel", show_replies: "View {count} replies", hide_replies: "Hide replies", replying_to: "Replying to", info: "Information", ok: "OK", confirm_title: "Confirm", error_file_type: "Selected file is not an image!", error_file_size: "Photo size max 5 MB!", error_save: "Failed to save: ", error_offline: "Check internet connection.", auto_translate: "Auto-Translate", already_in_lang: "Already in this language", edit_bio: "Edit Bio (Max 80 chars):", save_bio: "Save Bio", joined: "Joined", items_published: "Public Items", email_placeholder: "Email Address", password_placeholder: "Password (Min 6)", write_comment_placeholder: "Write a comment...", error_title: "An Error Occurred", error_load_account: "Failed to load account, please try again.", try_again: "Try Again" }
-};
-
-function t(key, params = {}) {
-    let text = dict[currentLang][key] || key;
-    for (let p in params) text = text.replace(`{${p}}`, params[p]);
-    return text;
-}
-function formatDate(timestamp) {
-    if(!timestamp) return '';
-    return new Intl.DateTimeFormat(currentLang === 'id' ? 'id-ID' : 'en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp));
-}
+function formatDate(timestamp) { if(!timestamp) return ''; return new Intl.DateTimeFormat('id-ID', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp)); }
 
 function renderCategoryChips() {
-    const cont = document.getElementById('category-filter-container');
-    if(!cont) return; cont.innerHTML = '';
+    const cont = document.getElementById('category-filter-container'); if(!cont) return; cont.innerHTML = '';
     Object.keys(catIcons).forEach(cat => {
         const isActive = cat === currentCategoryFilter;
-        cont.innerHTML += `<button class="chip ${isActive?'active':''}" onclick="window.setCategoryFilter('${cat}', this)">
-            ${catIcons[cat]} <span data-i18n="${cat === 'Semua' ? 'cat_all' : ''}">${cat === 'Semua' ? t('cat_all') : cat}</span>
-        </button>`;
+        cont.innerHTML += `<button class="chip ${isActive?'active':''}" onclick="window.setCategoryFilter('${cat}', this)">${catIcons[cat]} <span>${cat}</span></button>`;
     });
 }
 document.addEventListener('DOMContentLoaded', renderCategoryChips);
 
-window.applyLanguage = () => {
-  document.querySelectorAll('[data-i18n]').forEach(el => { const txt = t(el.getAttribute('data-i18n')); if(txt) el.innerText = txt; });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-placeholder')); });
-  
-  const cb = document.getElementById('auto-translate-checkbox');
-  if(cb) cb.checked = autoTranslateEnabled;
-
-  if(isSignUpMode) {
-      document.getElementById('auth-title-text').innerText = currentLang === 'en' ? "Sign Up" : "Daftar Akun Baru";
-      document.getElementById('auth-subtitle-text').innerText = currentLang === 'en' ? "Already have an account?" : "Sudah punya akun?";
-      document.getElementById('auth-switch-text').innerText = currentLang === 'en' ? "Sign in here" : "Masuk di sini";
-      document.getElementById('auth-submit-btn').innerText = currentLang === 'en' ? "Sign Up" : "Daftar Sekarang";
-  }
-};
-window.switchLanguage = () => { currentLang = currentLang === 'id' ? 'en' : 'id'; localStorage.setItem('lang', currentLang); window.applyLanguage(); renderCategoryChips(); window.closeAllDrawers(); };
-
-window.toggleAutoTranslate = (e) => {
-    if(e) e.preventDefault();
-    autoTranslateEnabled = !autoTranslateEnabled;
-    localStorage.setItem('autoTranslate', autoTranslateEnabled);
-    const cb = document.getElementById('auto-translate-checkbox');
-    if(cb) cb.checked = autoTranslateEnabled;
-    window.applyLanguage();
-    if(currentDetailItemId) loadComments(currentDetailItemId);
-};
-
-const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
-async function translateText(text, targetLang) {
-    if(!text || text.trim() === '') return text;
-    const safeText = text.length > 490 ? text.substring(0, 490) + "..." : text;
-    const cacheKey = `trans_${hashCode(safeText)}_${targetLang}`;
-    const cached = localStorage.getItem(cacheKey); if (cached) return cached;
-    try { const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(safeText)}&langpair=Autodetect|${targetLang}`; const response = await fetch(url); const data = await response.json(); if (data.responseData && data.responseData.translatedText) { if(data.responseData.translatedText === safeText) return "ALREADY_SAME"; if(!data.responseData.translatedText.includes('MYMEMORY WARNING')){ localStorage.setItem(cacheKey, data.responseData.translatedText); return data.responseData.translatedText; } } } catch (e) {}
-    try { const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(safeText)}`; const response = await fetch(url); const data = await response.json(); if(data && data[0] && data[0][0]){ const translated = data[0].map(item => item[0]).join(''); if(translated === safeText) return "ALREADY_SAME"; localStorage.setItem(cacheKey, translated); return translated; } } catch (e) {} throw new Error("Translation failed");
-}
+window.toggleAutoTranslate = (e) => { if(e) e.preventDefault(); autoTranslateEnabled = !autoTranslateEnabled; localStorage.setItem('autoTranslate', autoTranslateEnabled); const cb = document.getElementById('auto-translate-checkbox'); if(cb) cb.checked = autoTranslateEnabled; };
 
 let activeDialogs = [];
 window.openDialog = (id) => { document.getElementById('dialogLayer').classList.remove('hidden'); document.getElementById('dialogLayer').classList.add('active'); document.getElementById(id).classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
 window.closeDialog = (id) => { document.getElementById(id).classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer').classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer').classList.add('hidden'), 300); document.body.style.overflow = ''; } };
 window.closeTopDialog = () => { if(activeDialogs.length > 0) window.closeDialog(activeDialogs[activeDialogs.length - 1]); };
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape') window.closeTopDialog(); });
-
 window.showModalAlert = (msg) => { document.getElementById('dialog-alert-msg').innerText = msg; window.openDialog('dialog-alert'); };
 window.showModalConfirm = (msg, onConfirmCallback) => { document.getElementById('dialog-confirm-msg').innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); };
-window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin IP: ${text}`); }); };
+window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin: ${text}`); }); };
 
-// ================= FORCE DOWNLOAD VIA PROXY API =================
-window.handleDownload = (url) => {
+// ================= FORCE DOWNLOAD VIA PROXY API & ANCHOR DOWNLOAD =================
+window.downloadBase64File = (dataUrl, filename) => {
+    const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+};
+
+window.handleDownload = async (url, itemId) => {
     if (!url || url === '#') return;
+    
+    // Logic Poin Download: User mendownload file, poin dikalkulasi
+    if (currentUser && itemId) {
+        try {
+            const snapItem = await get(ref(db, `items_public/${itemId}/downloadsData/${currentUser.uid}`));
+            if(!snapItem.exists()) {
+                await update(ref(db), { [`items_public/${itemId}/downloadsData/${currentUser.uid}`]: true });
+                // Simulate points (Ideally Cloud Functions) - simplified check
+                const snapDls = await get(ref(db, `items_public/${itemId}/downloadsData`));
+                const totalDls = snapDls.exists() ? Object.keys(snapDls.val()).length : 1;
+                const uploaderId = (await get(ref(db, `items_public/${itemId}/uid`))).val();
+                if(uploaderId && uploaderId !== currentUser.uid && totalDls % 5 === 0 && totalDls <= 150) {
+                    const snapPts = await get(ref(db, `profiles/${uploaderId}/points`));
+                    await update(ref(db, `profiles/${uploaderId}`), {points: (snapPts.val() || 0) + 1});
+                }
+            }
+        } catch(e) {}
+    }
+
+    if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
+
     let finalUrl = url; let isRedirect = false; let providerName = '';
     const lowerUrl = url.toLowerCase();
     
-    // Deteksi Hosting Eksternal yang dikunci
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
     else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
     else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
@@ -128,28 +99,17 @@ window.handleDownload = (url) => {
     if (isRedirect) {
         window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Anda akan diarahkan ke halaman resmi penyedia untuk mengunduh. Lanjutkan?`, () => window.open(finalUrl, '_blank'));
     } else {
-        // PROXY DIRECT DOWNLOAD TANPA BUKA TAB BARU!
         const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
         let iframe = document.getElementById('download-iframe');
-        if (!iframe) {
-            iframe = document.createElement('iframe');
-            iframe.id = 'download-iframe';
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-        }
+        if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
         iframe.src = proxyUrl;
     }
 };
 
-// ================= BOTTOM SHEETS (Kategori, Versi, Negara) =================
+// ================= BOTTOM SHEETS =================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
-
-// PASTIKAN IKON SVG TETAP PUNYA SIZE KETIKA DIINJEK KE FIELD
-function getSafeIcon(cat) { 
-    if(!catIcons[cat]) return '';
-    return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); 
-}
+function getSafeIcon(cat) { if(!catIcons[cat]) return ''; return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); }
 
 window.openCategorySheet = () => {
    document.getElementById('sheet-title').innerText = "Pilih Kategori";
@@ -157,35 +117,17 @@ window.openCategorySheet = () => {
    const currentWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
    categoryOptions.forEach(cat => {
-       const isSel = cat === current;
-       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')">
-           <div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}
-       </div>`;
+       const isSel = cat === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
 };
-
 window.selectCategoryForm = (cat) => {
-   // Teks Ikon Terjamin ukurannya dengan getSafeIcon
    document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
    window.closeBottomSheet();
-   
    const labelFile = document.getElementById('label-file-download');
-   if(labelFile) {
-       const maxText = cat === 'MCPE and Craftman' ? '90MB' : '5MB';
-       labelFile.innerHTML = `<span data-i18n="file_download_label">${t('file_download_label') || 'File Download / Mod*'}</span> (Max ${maxText})`;
-   }
-
-   if(cat === 'Server') {
-       document.getElementById('wrapper-title-standard').classList.add('hidden');
-       document.getElementById('wrapper-title-server').classList.remove('hidden');
-       document.getElementById('form-file-container').classList.add('hidden');
-   } else {
-       document.getElementById('wrapper-title-standard').classList.remove('hidden');
-       document.getElementById('wrapper-title-server').classList.add('hidden');
-       document.getElementById('form-file-container').classList.remove('hidden');
-   }
+   if(labelFile) { const maxText = cat === 'MCPE and Craftman' ? '90MB' : '5MB'; labelFile.innerHTML = `File Download / Mod* <span style="font-weight:normal; font-size:10px; display:block;">(Max ${maxText})</span>`; }
+   if(cat === 'Server') { document.getElementById('wrapper-title-standard').classList.add('hidden'); document.getElementById('wrapper-title-server').classList.remove('hidden'); document.getElementById('form-file-container').classList.add('hidden'); } else { document.getElementById('wrapper-title-standard').classList.remove('hidden'); document.getElementById('wrapper-title-server').classList.add('hidden'); document.getElementById('form-file-container').classList.remove('hidden'); }
 };
 
 window.openVersionSheet = () => {
@@ -193,8 +135,7 @@ window.openVersionSheet = () => {
    const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
    const current = document.getElementById('selected-version-text').innerText;
    versionOptions.forEach(ver => {
-       const isSel = ver === current;
-       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       const isSel = ver === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
        opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
@@ -206,83 +147,76 @@ window.openCountrySheet = () => {
    const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
    const currentWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
-   
    Object.keys(flagIcons).forEach(country => {
-       const isSel = country === current;
-       const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')">
-           <div class="flex items-center" style="gap:10px;">
-               <img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;">
-               <span>${country}</span>
-           </div> ${checkSVG}
-       </div>`;
+       const isSel = country === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
    });
    document.getElementById('bottom-sheet-overlay').classList.add('active');
 };
-window.selectCountryForm = (country) => {
-   document.getElementById('selected-country-text-wrap').innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`;
-   window.closeBottomSheet();
-};
+window.selectCountryForm = (country) => { document.getElementById('selected-country-text-wrap').innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
 
 window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay').classList.remove('active'); };
 window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0, 0); };
-window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert(t('login_to_comment')); window.switchScreen('screen-login'); } };
+window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert("Silakan masuk untuk mengakses halaman ini."); window.switchScreen('screen-login'); } };
 window.toggleDrawer = (id) => { const isAct = document.getElementById(id).classList.contains('active'); window.closeAllDrawers(); if(!isAct) { document.getElementById(id).classList.add('active'); document.getElementById('drawer-overlay').classList.add('active'); } };
 window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay').classList.remove('active'); };
 
 function getRoleBadge(role) {
     if (role === 'admin' || role === 'dev') return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
-    if (role === 'user' || role === 'member') return `<span class="badge-role badge-verified">Member</span>`;
-    return '';
+    return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
 }
-
 function generateDefaultAvatar(name) {
     const c = document.createElement('canvas'); c.width = 100; c.height = 100; const ctx = c.getContext('2d');
-    ctx.fillStyle = '#ff8c00'; ctx.fillRect(0,0,100,100); ctx.fillStyle = '#000000'; ctx.font = 'bold 50px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50);
-    return c.toDataURL('image/jpeg', 0.8);
+    ctx.fillStyle = '#ff8c00'; ctx.fillRect(0,0,100,100); ctx.fillStyle = '#000000'; ctx.font = 'bold 50px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50); return c.toDataURL('image/jpeg', 0.8);
 }
 
-window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; window.applyLanguage(); document.getElementById('login-error').innerText = ''; };
+window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; document.getElementById('login-error').innerText = ''; };
 window.processEmailAuth = async () => {
   const email = document.getElementById('auth-email').value.trim(); const password = document.getElementById('auth-password').value;
   if (!email || !password) { document.getElementById('login-error').innerText = 'Isi form dengan lengkap.'; return; }
   document.getElementById('auth-submit-btn').disabled = true;
-  try {
-    if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, password);
-    else await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    document.getElementById('login-error').innerText = err.message;
-    document.getElementById('auth-submit-btn').disabled = false;
-  }
+  try { if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, password); else await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) { document.getElementById('login-error').innerText = err.message; document.getElementById('auth-submit-btn').disabled = false; }
 };
-window.loginGoogle = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e){} };
-window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm(t('logout'), () => { signOut(auth).then(() => { isAdmin = false; currentUser = null; currentUsername = null; window.switchScreen('screen-login'); updateHeaderAuthUI();}); }); };
+window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm("Keluar dari Akun?", () => { signOut(auth).then(() => { isAdmin = false; currentUser = null; currentUsername = null; window.switchScreen('screen-login'); updateHeaderAuthUI();}); }); };
 
 function updateHeaderAuthUI() {
     if(currentUser) {
-        document.getElementById('btn-notif-header').classList.remove('hidden'); document.getElementById('btn-login-header').classList.add('hidden');
-        document.getElementById('sidebar-auth-section').innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">${t('logout')}</button>`;
+        document.getElementById('btn-login-header').classList.add('hidden');
     } else {
-        document.getElementById('btn-notif-header').classList.add('hidden'); document.getElementById('btn-login-header').classList.remove('hidden'); 
-        document.getElementById('drawer-menu-admin').classList.add('hidden'); // Sembunyikan Admin Sidebar
+        document.getElementById('btn-login-header').classList.remove('hidden'); document.getElementById('drawer-menu-admin').classList.add('hidden');
         document.getElementById('sidebar-profile-img').src = "https://via.placeholder.com/60"; document.getElementById('sidebar-name').innerText = "Tamu"; document.getElementById('sidebar-role').innerHTML = "";
-        document.getElementById('sidebar-auth-section').innerHTML = `<button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;">${t('login_btn')}</button>`;
     }
 }
 
-function proceedToHome(user, pData) {
+async function proceedToHome(user, pData) {
      currentUsername = pData.username; isAdmin = pData.role === 'admin' || pData.role === 'dev';
-     document.getElementById('profile-name').innerText = currentUsername; document.getElementById('sidebar-name').innerText = currentUsername;
+     document.getElementById('profile-name').innerHTML = `${currentUsername} ${pData.points >= 150 ? '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>' : ''}`;
+     document.getElementById('sidebar-name').innerText = currentUsername;
      const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
      document.getElementById('profile-img').src = dp; document.getElementById('sidebar-profile-img').src = dp;
-     const rBadge = getRoleBadge(pData.role);
-     document.getElementById('profile-role-badge').innerHTML = rBadge; document.getElementById('sidebar-role').innerHTML = rBadge;
+     document.getElementById('profile-role-badge').innerHTML = getRoleBadge(pData.role); document.getElementById('sidebar-role').innerHTML = getRoleBadge(pData.role);
      
-     // Update Panel Sidebar Khusus Admin
+     // Update Points UI
+     let pts = pData.points || 0;
+     let level = pts >= 150 ? (pts >= 400 ? (pts >= 800 ? 3 : 2) : 1) : 0;
+     let nextTgt = level === 0 ? 150 : (level === 1 ? 400 : (level === 2 ? 800 : 9999));
+     document.getElementById('profile-level-info').innerText = `Level ${level} (${pts} Poin)`;
+     document.getElementById('profile-next-target').innerText = `${pts} / ${nextTgt} Poin menuju Level ${level+1}`;
+     document.getElementById('profile-progress-bar').style.width = `${Math.min((pts/nextTgt)*100, 100)}%`;
+     
+     document.getElementById('stat-upload').innerText = pData.itemCount || 0;
+     document.getElementById('stat-points').innerText = pts;
+     
      if(isAdmin) document.getElementById('drawer-menu-admin').classList.remove('hidden'); else document.getElementById('drawer-menu-admin').classList.add('hidden');
      
-     if(isAdmin) loadPendingItems(); listenNotifications(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
+     // Daily Login Points Logic
+     const today = new Date().toISOString().split('T')[0];
+     if(pData.lastDailyLogin !== today) {
+         await update(ref(db, `profiles/${user.uid}`), { lastDailyLogin: today, points: pts + 2 });
+     }
+     
+     if(isAdmin) loadPendingItems(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
      document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
 }
 
@@ -297,7 +231,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
              const uSnap = await get(ref(db, `users/${user.uid}/username`));
              if (uSnap.exists() && uSnap.val()) {
                  const oldUsername = uSnap.val(); const oldUserLower = oldUsername.toLowerCase(); const isAdm = (await get(ref(db, `admins/${user.uid}`))).val() === true;
-                 const updates = {}; updates[`profiles/${user.uid}`] = { username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0 }; updates[`usernames/${oldUserLower}`] = user.uid;
+                 const updates = {}; updates[`profiles/${user.uid}`] = { username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0, points: 0 }; updates[`usernames/${oldUserLower}`] = user.uid;
                  await update(ref(db), updates); proceedToHome(user, updates[`profiles/${user.uid}`]);
              } else { window.switchScreen('screen-username'); }
           }
@@ -306,30 +240,26 @@ setPersistence(auth, browserLocalPersistence).then(() => {
       currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
       document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
     }
-    window.applyLanguage();
   });
 }).catch(() => { window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
 
 window.saveUsername = async () => {
   const username = document.getElementById('input-username').value.trim(); const usernameLower = username.toLowerCase();
   const errEl = document.getElementById('username-error'); const btn = document.getElementById('btn-save-username');
-  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) { errEl.innerText = t('create_username_desc'); return; }
+  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) { errEl.innerText = "Tidak valid."; return; }
   btn.disabled = true; btn.innerText = "Menyimpan..."; errEl.innerText = "";
   try {
     const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { errEl.innerText = "Username terpakai!"; btn.disabled = false; btn.innerText = t('save_username'); return; }
+    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { errEl.innerText = "Username terpakai!"; btn.disabled = false; btn.innerText = "Simpan"; return; }
     const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true; const dp = currentUser.photoURL || generateDefaultAvatar(username);
-    const updates = {}; updates[`usernames/${usernameLower}`] = currentUser.uid; updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0 };
+    const updates = {}; updates[`usernames/${usernameLower}`] = currentUser.uid; updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0, points: 0 };
     await update(ref(db), updates); proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
-  } catch (e) { errEl.innerText = "Akses ditolak. " + e.message; btn.disabled = false; btn.innerText = t('save_username'); }
+  } catch (e) { errEl.innerText = "Akses ditolak. " + e.message; btn.disabled = false; btn.innerText = "Simpan"; }
 };
 
 window.handleProfileUpload = async (event) => {
   const file = event.target.files[0]; if (!file) return;
-  if (!file.type.startsWith('image/')) { window.showModalAlert(t('error_file_type')); event.target.value = ''; return; }
-  if (file.size > 5 * 1024 * 1024) { window.showModalAlert(t('error_file_size')); event.target.value = ''; return; }
-
-  document.getElementById('profile-upload-loading').classList.remove('hidden');
+  if (!file.type.startsWith('image/')) return;
   try {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -338,56 +268,38 @@ window.handleProfileUpload = async (event) => {
           try {
               const canvas = document.createElement('canvas'); const size = Math.min(img.width, img.height); const targetSize = 256; canvas.width = targetSize; canvas.height = targetSize; const ctx = canvas.getContext('2d');
               const offsetX = (img.width - size) / 2; const offsetY = (img.height - size) / 2; ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, targetSize, targetSize);
-              let quality = 0.8; let base64Image = canvas.toDataURL('image/jpeg', quality); 
-              while (base64Image.length > 40000 && quality > 0.4) { quality -= 0.1; base64Image = canvas.toDataURL('image/jpeg', quality); }
-              if (base64Image.length > 40000) { canvas.width = 192; canvas.height = 192; ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, 192, 192); base64Image = canvas.toDataURL('image/jpeg', 0.6); if (base64Image.length > 40000) throw new Error("Gambar terlalu kompleks."); }
+              let base64Image = canvas.toDataURL('image/jpeg', 0.8); 
               await update(ref(db, `profiles/${currentUser.uid}`), { avatar: base64Image });
-              document.getElementById('profile-img').src = base64Image; document.getElementById('sidebar-profile-img').src = base64Image; document.getElementById('profile-upload-loading').classList.add('hidden');
-          } catch(err) { document.getElementById('profile-upload-loading').classList.add('hidden'); window.showModalAlert(t('error_save') + err.message); }
+              document.getElementById('profile-img').src = base64Image; document.getElementById('sidebar-profile-img').src = base64Image;
+          } catch(err) { window.showModalAlert("Error upload."); }
         };
-        img.onerror = () => { document.getElementById('profile-upload-loading').classList.add('hidden'); window.showModalAlert("File gambar korup."); }
         img.src = e.target.result;
       };
-      reader.onerror = () => { document.getElementById('profile-upload-loading').classList.add('hidden'); window.showModalAlert("Gagal membaca file."); }
       reader.readAsDataURL(file);
-  } catch (error) { document.getElementById('profile-upload-loading').classList.add('hidden'); window.showModalAlert(t('error_save') + error.message); }
+  } catch (error) {}
 };
 
 window.openUserProfile = async (uid) => {
-    if(!currentUser) { window.showModalAlert(t('login_to_comment')); return; }
+    if(!currentUser) { window.showModalAlert("Silakan masuk/login untuk melihat profil."); return; }
     try {
         const pSnap = await get(ref(db, `profiles/${uid}`)); if(!pSnap.exists()) return; const p = pSnap.val();
         document.getElementById('pub-profile-img').src = p.avatar || generateDefaultAvatar(p.username);
-        document.getElementById('pub-profile-name').innerText = p.username; document.getElementById('pub-profile-role').innerHTML = getRoleBadge(p.role);
+        const isVer = p.points >= 150 ? '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>' : '';
+        document.getElementById('pub-profile-name').innerHTML = `${p.username} ${isVer}`; 
+        document.getElementById('pub-profile-role').innerHTML = getRoleBadge(p.role);
         document.getElementById('pub-profile-bio').innerText = p.bio || (uid === currentUser.uid ? 'Belum ada bio.' : '');
         document.getElementById('pub-profile-joined').innerText = formatDate(p.joinedAt); document.getElementById('pub-profile-items').innerText = p.itemCount || 0;
         if(uid === currentUser.uid) { document.getElementById('pub-profile-edit-section').classList.remove('hidden'); document.getElementById('input-pub-bio').value = p.bio || ''; } else { document.getElementById('pub-profile-edit-section').classList.add('hidden'); }
         window.openDialog('dialog-user-profile');
     } catch(e) { window.showModalAlert("Gagal memuat profil."); }
 };
-window.saveBio = async () => { const bio = document.getElementById('input-pub-bio').value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); document.getElementById('pub-profile-bio').innerText = bio; window.showModalAlert("Bio disimpan."); } catch(e) { window.showModalAlert(t('error_save')); } };
+window.saveBio = async () => { const bio = document.getElementById('input-pub-bio').value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); document.getElementById('pub-profile-bio').innerText = bio; window.showModalAlert("Bio disimpan."); } catch(e) { window.showModalAlert("Error."); } };
+window.saveBioSelf = async () => { const bio = document.getElementById('input-self-bio').value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
 
-function listenNotifications() {
-  if(!currentUser) return;
-  onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
-    const notifContainer = document.getElementById('notif-container'); const badge = document.getElementById('notif-badge');
-    notifContainer.innerHTML = ''; let unreadCount = 0;
-    if (!snapshot.exists()) { notifContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">${t('no_notifications')}</p>`; badge.classList.add('hidden'); return; }
-    const notifs = []; snapshot.forEach(child => { notifs.push({ id: child.key, ...child.val() }); }); notifs.sort((a, b) => (b.time || 0) - (a.time || 0));
-    notifs.forEach(notif => {
-      if (!notif.read) unreadCount++;
-      const color = notif.type === 'accepted' ? 'var(--success)' : 'var(--danger)'; const statusText = notif.type === 'accepted' ? 'Diterima & Dipublikasikan' : 'Ditolak';
-      notifContainer.innerHTML += `
-        <div class="notif-card ${!notif.read ? 'unread' : ''}" onclick="window.markNotifRead('${notif.id}')">
-          <div class="font-bold" style="color:${color}; margin-bottom:5px;">Item ${statusText}</div>
-          <p style="color:var(--text-main); margin-bottom:5px;">"${notif.title}"</p>
-          ${notif.reason ? `<p style="color:var(--text-muted); font-size:11px;">Alasan: ${notif.reason}</p>` : ''}
-        </div>`;
-    });
-    if (unreadCount > 0) { badge.innerText = unreadCount; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
-  });
-}
-window.markNotifRead = async (notifId) => { if(!currentUser) return; await update(ref(db, `notifications/${currentUser.uid}/${notifId}`), {read: true}); };
+window.switchProfileTab = (tab) => {
+    document.querySelectorAll('.profile-content-section').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+};
 
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
 window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; renderCategoryChips(); renderItemsToUI(); };
@@ -396,44 +308,35 @@ function fetchAllItemsAndRender() {
   onValue(ref(db, 'items_public'), (snapshot) => {
     let dynamicItems = [];
     if (snapshot.exists()) { snapshot.forEach(child => { dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() }); }); }
-    // Sort logic
     globalAllItems = [...staticItems, ...dynamicItems]; 
     renderItemsToUI(); 
   });
 }
 
 function fetchServerStatus(id, target) {
-  const statusEl = document.getElementById(`status-${id}`);
-  const playersEl = document.getElementById(`players-${id}`);
+  const statusEl = document.getElementById(`status-${id}`); const playersEl = document.getElementById(`players-${id}`);
   if (!statusEl) return;
   const [host, portRaw] = target.split(':'); const port = portRaw || '19132';
   fetch(`/api/server?host=${host}&port=${port}`).then(res => res.json()).then(data => {
-      if (data.online) { 
-          statusEl.className = 'badge-status online'; statusEl.innerText = 'Online';
-          if(playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`;
-      } else {
-          statusEl.className = 'badge-status offline'; statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline';
-      }
+      if (data.online) { statusEl.className = 'badge-status online'; statusEl.innerText = 'Online'; if(playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`; } 
+      else { statusEl.className = 'badge-status offline'; statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline'; }
     }).catch(() => { statusEl.className = 'badge-status offline'; statusEl.innerText = 'Error'; });
 }
 setInterval(() => {
   if (!document.getElementById('screen-home').classList.contains('hidden')) {
-      if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') {
-          document.querySelectorAll('.badge-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); });
-      }
+      if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') { document.querySelectorAll('.badge-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); }); }
   }
 }, 30000);
 
-// ================= SISTEM VOTE BINTANG =================
+// ================= SISTEM VOTE BINTANG REAL-TIME & ANTI-ABUSE =================
 window.toggleVote = async (itemId) => {
     if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
-    const item = globalAllItems.find(i => i.id === itemId);
-    if (!item) return;
+    const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
 
-    // Cek apakah user pernah vote
+    if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert("Kamu tidak bisa vote server milikmu sendiri."); return; }
+
     const isVoted = item.votes && item.votes[currentUser.uid];
     let currentStars = item.stars || 0;
-
     const updates = {};
     if (isVoted) {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = null;
@@ -441,43 +344,38 @@ window.toggleVote = async (itemId) => {
     } else {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
         updates[`items_public/${itemId}/stars`] = currentStars + 1;
+        // Poin untuk uploader
+        if (item.uid && item.uid !== currentUser.uid && currentStars < 40) {
+            get(ref(db, `profiles/${item.uid}/points`)).then(s => {
+                update(ref(db, `profiles/${item.uid}`), { points: (s.val() || 0) + 2 });
+            });
+        }
     }
-    
-    try {
-        await update(ref(db), updates);
-    } catch(e) { window.showModalAlert("Gagal mengirim vote."); }
+    try { await update(ref(db), updates); } catch(e) { window.showModalAlert("Gagal mengirim vote."); }
 }
 
 window.openDetail = async (itemId) => {
     const item = globalAllItems.find(i => i.id === itemId); if(!item) return;
     currentDetailItemId = itemId;
-    document.getElementById('detail-img').src = item.url_img;
-    document.getElementById('detail-title').innerText = item.title;
-    document.getElementById('detail-uploader-name').innerText = item.username || 'System';
     
-    let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username);
+    // SERVER DILARANG BUKA DETAIL
+    if (item.category.toLowerCase() === 'server') return;
+
+    document.getElementById('detail-img').src = item.url_img; document.getElementById('detail-title').innerText = item.title; document.getElementById('detail-uploader-name').innerText = item.username || 'System';
+    
+    let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username); let isVer = '';
     if(item.uid) {
-         try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); } } catch(e){}
+         try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); if(p.points >= 150) isVer = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } catch(e){}
     } else if (item.source === 'github') uploaderRole = 'dev';
     
     document.getElementById('detail-uploader-badge').innerHTML = getRoleBadge(uploaderRole); document.getElementById('detail-uploader-avatar').src = avatarUrl;
+    document.getElementById('detail-uploader-name').innerHTML = `${item.username || 'System'} ${isVer}`;
     document.getElementById('detail-uploader-avatar').onclick = () => { if(item.uid) window.openUserProfile(item.uid); }; document.getElementById('detail-uploader-name').onclick = () => { if(item.uid) window.openUserProfile(item.uid); };
     document.getElementById('detail-category').innerText = item.category; document.getElementById('detail-version').innerText = item.version || 'All Vers.'; document.getElementById('detail-desc').innerText = item.desc_id || item.desc || '-';
-    document.getElementById('text-translate-desc').innerText = t('translate'); document.getElementById('detail-desc').dataset.originalText = item.desc_id || item.desc || ''; document.getElementById('detail-desc').dataset.translated = "false"; document.getElementById('btn-translate-desc').disabled = false;
-
-    const actionContainer = document.getElementById('detail-action-container'); const statusContainer = document.getElementById('detail-server-status-container');
+    
+    const actionContainer = document.getElementById('detail-action-container');
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-
-    if (item.category.toLowerCase() === 'server') {
-        const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version;
-        statusContainer.classList.remove('hidden');
-        statusContainer.innerHTML = `<div class="server-badges-row"><div class="badge-status" id="status-detail-${item.id}" data-target="${ipTarget}">Mengecek...</div></div>`;
-        actionContainer.innerHTML = `<button class="btn btn-secondary" style="border-color:var(--primary); color:var(--primary);" onclick="window.copyText('${ipTarget}')">Salin IP Server</button>`;
-        fetchServerStatus('detail-'+item.id, ipTarget);
-    } else {
-        statusContainer.classList.add('hidden');
-        actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}')">${dlIconSVG} Download File</button>`;
-    }
+    actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}')">${dlIconSVG} Download File</button>`;
 
     loadComments(itemId);
     if(currentUser){ document.getElementById('comment-form-container').classList.remove('hidden'); document.getElementById('comment-login-prompt').classList.add('hidden'); } 
@@ -489,15 +387,21 @@ window.closeDetailAndLogin = () => { document.getElementById('screen-detail-cont
 let globalProfilesCache = {};
 function renderItemsToUI() {
   const container = document.getElementById('public-items-container'); container.innerHTML = '';
+  const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
+
   let displayItems = globalAllItems;
-  if (currentCategoryFilter !== 'Semua') displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
-  if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery) || item.category.toLowerCase().includes(currentSearchQuery) || (item.desc_id && item.desc_id.toLowerCase().includes(currentSearchQuery)));
   
-  // Sorting: Jika Server terpilih, urutkan berdasarkan Bintang Terbanyak. Kalau tidak, berdasarkan terbaru
-  if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0));
-  else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  // EXCLUDE SERVER FROM "SEMUA"
+  if (currentCategoryFilter === 'Semua') {
+      displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server');
+  } else {
+      displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
+  }
+
+  if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
+  if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0)); else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
   
-  if (displayItems.length === 0) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; return; }
+  if (displayItems.length === 0) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; }
 
   const isSpecific = currentCategoryFilter !== 'Semua'; 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
@@ -505,9 +409,9 @@ function renderItemsToUI() {
   let htmlBuf = '';
   displayItems.forEach(item => {
       const isUploaderAdmin = item.source === 'github'; 
-      const userRoleBadge = item.source === 'github' ? getRoleBadge('dev') : `<span id="badge-${item.id}"></span>`;
-      if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(s.val().role); } }); }
-      let btnAdmin = (isAdmin && item.source === 'firebase') ? `<button class="btn btn-secondary" style="border:1px solid red; color:red; flex:none; padding:8px;" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : '';
+      const userRoleBadge = item.source === 'github' ? getRoleBadge('dev') : `<span id="badge-${item.id}">${getRoleBadge('member')}</span>`;
+      let isVer = '';
+      if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const p=s.val(); const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(p.role); if(p.points >= 150){ const vEl=document.getElementById(`ver-${item.id}`); if(vEl) vEl.innerHTML = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } }); }
 
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
@@ -515,136 +419,127 @@ function renderItemsToUI() {
         const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
         const starClass = isVoted ? 'badge-star voted' : 'badge-star';
         
+        // Cek video/gif atau img
+        const isVideo = item.url_img && (item.url_img.includes('data:video') || item.url_img.endsWith('.mp4'));
+        const mediaHTML = isVideo ? `<video src="${item.url_img}" class="server-banner-media" autoplay loop muted playsinline></video>` : `<img src="${item.url_img}" class="server-banner-media lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">`;
+        
         setTimeout(()=>fetchServerStatus(item.id, ipTarget), 100);
 
         htmlBuf += `
-        <div class="card-server" onclick="window.openDetail('${item.id}')">
+        <div class="card-server-compact">
             <div class="server-banner-wrapper skeleton">
-                <img src="${item.url_img}" class="server-banner-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
+                ${mediaHTML}
                 ${countryFlag}
-                <div class="server-version-badge">${item.version}</div>
             </div>
-            <div class="server-body">
-                <div class="server-top-row">
-                    <div class="flex items-center" style="gap:8px;">
-                        <span class="server-ip">${ipTarget}</span>
+            <div class="server-body-compact">
+                <div class="server-header-row">
+                    <div class="server-title-row">
+                        <span class="server-title-text">${item.title}</span>
+                        <span id="ver-${item.id}"></span>
+                        ${userRoleBadge}
                     </div>
-                    <button class="btn-copy-ip" onclick="event.stopPropagation(); window.copyText('${ipTarget}')">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <button class="icon-btn btn-copy-ip" onclick="window.copyText('${ipTarget}')" style="padding:4px; border:none; background:none;">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     </button>
                 </div>
-                <h3 class="server-title">${item.title}</h3>
-                <div class="server-desc">Oleh: ${item.username || 'System'} ${userRoleBadge}</div>
+                <div class="server-ip-text"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path><circle cx="12" cy="9" r="2.5"></circle></svg> ${ipTarget}</div>
                 
                 <div class="server-badges-row">
                     <div class="badge-status" id="status-${item.id}" data-target="${ipTarget}">Mengecek...</div>
-                    
-                    <div class="${starClass}" onclick="window.toggleVote('${item.id}'); event.stopPropagation();">
-                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="${isVoted ? '#fbc02d' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <div class="${starClass}" onclick="window.toggleVote('${item.id}')">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="${isVoted ? '#fbc02d' : 'none'}" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                         <span>${item.stars || 0}</span>
                     </div>
-                    
                     <div class="badge-players">
-                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span id="players-${item.id}">0 / 0</span>
                     </div>
                 </div>
             </div>
-            ${btnAdmin ? `<div style="padding:0 12px 12px;">${btnAdmin}</div>` : ''}
         </div>`;
       } else {
         const cardClass = isSpecific ? 'card-vertical' : 'card-horizontal';
-        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}')" style="flex:1;">${dlIconSVG} Download</button>`;
+        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}')" style="flex:1;">${dlIconSVG} Download</button>`;
         htmlBuf += `
         <div class="${cardClass}" onclick="window.openDetail('${item.id}')">
           <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
           <div class="card-body">
             <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
             <div style="font-size:11px; margin-bottom:8px; color:var(--text-muted); display:flex; align-items:center;" onclick="event.stopPropagation(); window.openUserProfile('${item.uid}')">
-               Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> ${userRoleBadge}
+               Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> <span id="ver-${item.id}"></span> ${userRoleBadge}
             </div>
             <div>
                <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
             </div>
             <p class="card-desc">${item.desc_id || item.desc || ''}</p>
-            <div class="flex" style="gap:10px;">${actionBtnHTML} ${btnAdmin}</div>
+            <div class="flex" style="gap:10px;">${actionBtnHTML}</div>
           </div>
         </div>`;
+      }
+      
+      // Render to Profile My Content if owned
+      if (currentUser && item.uid === currentUser.uid && myContentContainer) {
+          myContentContainer.innerHTML += `
+            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center;">
+                <div class="card-img-wrapper" style="width:80px; min-width:80px;"><img src="${item.url_img}" class="card-img"></div>
+                <div class="card-body" style="padding:8px;">
+                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
+                    <div style="font-size:10px; color:var(--success); font-weight:bold; margin-bottom:4px;"><svg class="icon icon-sm" style="width:10px;height:10px;vertical-align:middle;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Approved</div>
+                    <div style="font-size:10px; color:var(--text-muted);"><svg class="icon icon-sm" style="width:10px;height:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${item.downloadsData ? Object.keys(item.downloadsData).length : 0} Dls</div>
+                </div>
+                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px;" onclick="window.deletePublicItem('${item.id}', '${item.title}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>
+          `;
       }
   });
   container.innerHTML = htmlBuf;
 }
 
-// ================= CROPPER JS INTERACTIVE (BANNER SERVER 468x60) =================
+// ================= CROPPER JS & BYPASS GIF/VIDEO =================
 let cropperInstance = null;
-
 window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
   const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim();
   const isServer = currentCat === 'Server';
   const maxSizeMB = isServer ? 8 : 5;
-
-  if (file.size > maxSizeMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal gambar preview adalah ${maxSizeMB}MB!`); e.target.value = ''; return; }
+  if (file.size > maxSizeMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal gambar/video preview adalah ${maxSizeMB}MB!`); e.target.value = ''; return; }
 
   const reader = new FileReader();
   reader.onload = (ev) => { 
-      // Jika Kategori Server (Bukan GIF) => Buka Cropper 468x60
-      if (isServer && file.type !== 'image/gif') {
+      // Bypass Cropper jika GIF atau Video
+      if (isServer && (file.type === 'image/gif' || file.type.startsWith('video/'))) {
+          localImageBase64 = ev.target.result; 
+          document.getElementById('img-status').innerText = file.type.startsWith('video') ? `✓ Video/GIF Terpilih` : `✓ GIF dipilih`; 
+          document.getElementById('add-img').value = ""; 
+      } 
+      else if (isServer) {
           document.getElementById('cropper-image').src = ev.target.result;
           window.openDialog('dialog-cropper');
           if (cropperInstance) cropperInstance.destroy();
-          cropperInstance = new Cropper(document.getElementById('cropper-image'), {
-              aspectRatio: 468 / 60,
-              viewMode: 1,
-              background: false,
-              zoomable: true
-          });
+          cropperInstance = new Cropper(document.getElementById('cropper-image'), { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
       } else {
           localImageBase64 = ev.target.result; 
-          document.getElementById('img-status').innerText = file.type === 'image/gif' ? `✓ GIF dipilih` : `✓ Gambar dipilih`; 
+          document.getElementById('img-status').innerText = `✓ Gambar dipilih`; 
           document.getElementById('add-img').value = ""; 
       }
   };
   reader.readAsDataURL(file);
 };
-
-window.confirmCrop = () => {
-    if(!cropperInstance) return;
-    const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 });
-    localImageBase64 = canvas.toDataURL('image/jpeg', 0.9);
-    document.getElementById('img-status').innerText = '✓ Banner di-crop (468x60)';
-    window.closeDialog('dialog-cropper');
-}
-
-window.cancelCrop = () => {
-    window.closeDialog('dialog-cropper');
-    document.getElementById('add-img').value = '';
-    document.getElementById('file-img').value = '';
-}
-
-window.handleLocalFile = (e) => {
-  const file = e.target.files[0]; if (!file) return;
-  const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim();
-  const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5;
-  if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal file untuk kategori ini adalah ${maxMB}MB!`); e.target.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File dipilih`; document.getElementById('add-file').value = ""; };
-  reader.readAsDataURL(file);
-};
+window.confirmCrop = () => { if(!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); document.getElementById('img-status').innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); }
+window.cancelCrop = () => { window.closeDialog('dialog-cropper'); document.getElementById('add-img').value = ''; document.getElementById('file-img').value = ''; }
+window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim(); const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File dipilih`; document.getElementById('add-file').value = ""; }; reader.readAsDataURL(file); };
 
 window.submitItem = async () => {
   if (!currentUser) return;
-  const cat = document.getElementById('selected-category-text-wrap').innerText.trim();
+  const catWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+  const cat = catWrap ? catWrap.innerText.trim() : 'Mod';
   const desc_id = document.getElementById('add-desc').value.trim();
   const finalImg = localImageBase64 || document.getElementById('add-img').value.trim();
   const version = document.getElementById('selected-version-text').innerText;
-  
-  // Baca Bendera Terpilih
   const countryWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
   const country = countryWrap ? countryWrap.innerText.trim() : 'Indonesia';
   
   let title, finalFile, serverIp, serverPort;
-
   if (cat === 'Server') {
     title = document.getElementById('add-server-name').value.trim(); serverIp = document.getElementById('add-server-ip').value.trim(); serverPort = document.getElementById('add-server-port').value.trim() || "19132"; finalFile = '#'; 
     if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert("Form tidak lengkap!"); return; }
@@ -652,7 +547,6 @@ window.submitItem = async () => {
     title = document.getElementById('add-title').value.trim(); finalFile = localFileBase64 || document.getElementById('add-file').value.trim();
     if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert("Form tidak lengkap!"); return; }
   }
-
   document.getElementById('btn-submit-item').disabled = true;
   const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0 };
   if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
@@ -660,143 +554,78 @@ window.submitItem = async () => {
   try {
     if (isAdmin) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
     else { await push(ref(db, 'items_pending'), data); window.showModalAlert("Terkirim ke antrean!"); }
-    get(ref(db, `profiles/${currentUser.uid}/itemCount`)).then(s=>{ update(ref(db, `profiles/${currentUser.uid}`), {itemCount: (s.val()||0)+1}); });
     window.switchScreen('screen-home');
     document.getElementById('add-title').value = ''; document.getElementById('add-server-name').value = ''; document.getElementById('add-server-ip').value = ''; document.getElementById('add-desc').value = ''; document.getElementById('add-img').value = ''; document.getElementById('add-file').value = ''; document.getElementById('img-status').innerText = ''; document.getElementById('file-status').innerText = ''; localImageBase64 = null; localFileBase64 = null;
-  } catch (e) { window.showModalAlert(t('error_save')); }
+  } catch (e) { window.showModalAlert("Error."); }
   document.getElementById('btn-submit-item').disabled = false;
 };
 
+// ================= ADMIN REVIEW =================
 function loadPendingItems() {
   if(!isAdmin) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
-    const container = document.getElementById('pending-items-container'); const badgeCount = document.getElementById('pending-count');
-    container.innerHTML = ''; let count = 0;
+    const container = document.getElementById('pending-items-container'); container.innerHTML = ''; let count = 0;
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         count++; const item = child.val();
-        let testBtnHTML = item.category === 'Server' ? `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` : `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.handleDownload('${item.url_file}')">Download Test</button>`;
+        let testBtnHTML = item.category === 'Server' ? `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` : `<button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.handleDownload('${item.url_file}')">Test File</button>`;
         container.innerHTML += `
-          <div class="card-vertical" style="border-color:var(--primary); margin-bottom:20px;">
-            <div class="card-body">
-              <h4 class="font-bold text-main" style="margin-bottom:5px;">${item.title}</h4>
-              <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Pengirim: ${item.username} | Kat: ${item.category}</p>
-              <div class="flex" style="gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
-                <button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.open('${item.url_img}', '_blank')">Lihat Gambar</button>
-                ${testBtnHTML}
+          <div class="admin-queue-card">
+              <div class="admin-queue-header">
+                  <div>
+                      <h4 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h4>
+                      <span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:10px;height:10px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${item.username}</span>
+                  </div>
+                  <span class="card-meta" style="margin:0;">${item.category}</span>
               </div>
               <div class="flex" style="gap:10px;">
-                <button class="btn btn-success" style="flex:1;" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima</button>
-                <button class="btn btn-danger" style="flex:1;" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
+                <button class="btn btn-secondary" style="flex:1; padding:8px; font-size:12px;" onclick="window.open('${item.url_img}', '_blank')">Lihat Banner</button>
+                ${testBtnHTML}
               </div>
-            </div>
+              <div class="admin-queue-actions">
+                <button class="btn btn-danger" style="flex:1;" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
+                <button class="btn btn-success" style="flex:1;" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima (+15 Poin)</button>
+              </div>
           </div>`;
       });
-    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">${t('no_queue')}</p>`; }
-    if(badgeCount) badgeCount.innerText = count;
+    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Tidak ada antrean.</p>`; }
   });
 }
-
-window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); window.showModalAlert("Disetujui!"); } } catch(e) { window.showModalAlert("Gagal memproses approval."); } };
+window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {points: (pSnap.val().points||0) + 15, itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; document.getElementById('reject-reason').value = ''; window.openDialog('dialog-reject-admin'); };
-window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: document.getElementById('reject-reason').value.trim() || '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) { window.showModalAlert("Gagal menolak."); } };
-window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { try { await remove(ref(db, `items_public/${id}`)); } catch(e){ window.showModalAlert("Gagal."); } }); };
+window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: document.getElementById('reject-reason').value.trim() || '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
+window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { try { await remove(ref(db, `items_public/${id}`)); } catch(e){} }); };
 
 window.updateCommentCounter = (inputId, counterId) => { document.getElementById(counterId).innerText = `${document.getElementById(inputId).value.length}/200`; };
 const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
 function loadComments(itemId) {
-    const commentsList = document.getElementById('comments-list');
-    commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">${t('loading_comments')}</p>`;
-    
+    const commentsList = document.getElementById('comments-list'); commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>`;
     onValue(ref(db, `comments/${itemId}`), async (snapshot) => {
-        commentsList.innerHTML = '';
-        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
-        
+        commentsList.innerHTML = ''; if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
         const allComments = []; snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
         const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         const replies = allComments.filter(c => c.parentId);
-
-        if (mainComments.length === 0) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
+        if (mainComments.length === 0) return;
 
         for (const comment of mainComments) {
             let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
             if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
             else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
-            
-            const commentReplies = replies.filter(r => r.parentId === comment.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-            let repliesHTML = '';
-            if (commentReplies.length > 0) {
-                const replyItemsHTML = await Promise.all(commentReplies.map(async (reply) => {
-                    let rAvatar = generateDefaultAvatar(reply.username); let rBadge = getRoleBadge('member');
-                    if(globalProfilesCache[reply.uid]) { rAvatar=globalProfilesCache[reply.uid].avatar || rAvatar; rBadge=getRoleBadge(globalProfilesCache[reply.uid].role); }
-                    else { try { const pSnap = await get(ref(db, `profiles/${reply.uid}`)); if(pSnap.exists()){ globalProfilesCache[reply.uid]=pSnap.val(); rAvatar=pSnap.val().avatar||rAvatar; rBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
-                    const isReplyOwner = currentUser && (currentUser.uid === reply.uid || isAdmin);
-                    return `
-                    <div class="reply-item">
-                        <div class="comment-header" style="margin-bottom:2px;">
-                            <div class="comment-author-info" onclick="window.openUserProfile('${reply.uid}')">
-                                <img src="${rAvatar}" class="comment-avatar" style="width:24px; height:24px;">
-                                <span class="comment-author" style="font-size:12px;">${reply.username}</span> ${rBadge}
-                            </div>
-                            <span class="comment-date" style="font-size:10px;">${formatDate(reply.createdAt)}</span>
-                        </div>
-                        <div class="reply-to-text">${t('replying_to')} @${reply.replyToUsername}</div>
-                        <p class="comment-text text-selectable" id="text-${reply.id}" data-translated="false" data-original="${escapeHtml(reply.text)}" style="font-size:12px; margin-bottom:4px;">${escapeHtml(reply.text)}</p>
-                        <div class="comment-actions" style="gap:10px;">
-                            <button class="comment-action-btn" onclick="window.translateComment('${reply.id}')"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="btn-text-${reply.id}">${t('translate')}</span></button>
-                            <button class="comment-action-btn" onclick="window.showReplyBox('${comment.id}', '${reply.username}')"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg> ${t('reply')}</button>
-                            ${isReplyOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${reply.id}')">${trashIconSVG} ${t('delete')}</button>` : ''}
-                        </div>
-                    </div>`;
-                }));
-                repliesHTML = `
-                <div style="margin-top:8px;">
-                    <button class="comment-action-btn" onclick="document.getElementById('replies-${comment.id}').classList.toggle('hidden'); const isHid = document.getElementById('replies-${comment.id}').classList.contains('hidden'); this.innerHTML = isHid ? '<svg class=\\'icon\\' style=\\'width:12px; height:12px;\\' viewBox=\\'0 0 24 24\\'><polyline points=\\'6 9 12 15 18 9\\'/></svg> ${t('show_replies',{count:commentReplies.length})}' : '<svg class=\\'icon\\' style=\\'width:12px; height:12px;\\' viewBox=\\'0 0 24 24\\'><polyline points=\\'18 15 12 9 6 15\\'/></svg> ${t('hide_replies')}';" style="font-weight:bold; color:var(--primary);">
-                        <svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> ${t('show_replies',{count:commentReplies.length})}
-                    </button>
-                    <div id="replies-${comment.id}" class="reply-list hidden">${replyItemsHTML.join('')}</div>
-                </div>`;
-            }
-
             const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
             commentsList.innerHTML += `
             <div class="comment-item">
                 <div class="comment-header">
-                    <div class="comment-author-info" onclick="window.openUserProfile('${comment.uid}')">
-                        <img src="${avatarUrl}" class="comment-avatar">
-                        <span class="comment-author">${comment.username}</span> ${roleBadge}
-                    </div>
+                    <div class="comment-author-info"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author">${comment.username}</span> ${roleBadge}</div>
                     <span class="comment-date">${formatDate(comment.createdAt)}</span>
                 </div>
-                <p class="comment-text text-selectable" id="text-${comment.id}" data-translated="false" data-original="${escapeHtml(comment.text)}">${escapeHtml(comment.text)}</p>
-                <div class="comment-actions">
-                    <button class="comment-action-btn" onclick="window.translateComment('${comment.id}')"><svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="btn-text-${comment.id}">${t('translate')}</span></button>
-                    <button class="comment-action-btn" onclick="window.showReplyBox('${comment.id}', '${comment.username}')"><svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg> ${t('reply')}</button>
-                    ${isOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} ${t('delete')}</button>` : ''}
-                </div>
-                <div id="reply-box-${comment.id}" class="reply-input-area hidden">
-                    <div class="reply-to-text">${t('replying_to')} @<span id="reply-target-${comment.id}">${comment.username}</span></div>
-                    <textarea id="reply-text-${comment.id}" class="comment-textarea text-selectable" style="min-height:40px;" maxlength="200" oninput="window.updateCommentCounter('reply-text-${comment.id}', 'reply-counter-${comment.id}')"></textarea>
-                    <div class="flex justify-between items-center">
-                        <span id="reply-counter-${comment.id}" class="char-counter">0/200</span>
-                        <div class="flex" style="gap:5px;">
-                            <button class="btn btn-secondary" style="padding:4px 10px; font-size:11px;" onclick="document.getElementById('reply-box-${comment.id}').classList.add('hidden')">${t('cancel_reply')}</button>
-                            <button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="window.postReply('${itemId}', '${comment.id}')">${t('post_reply')}</button>
-                        </div>
-                    </div>
-                </div>
-                ${repliesHTML}
+                <p class="comment-text">${escapeHtml(comment.text)}</p>
+                ${isOwner ? `<button class="comment-action-btn danger" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
             </div>`;
         }
-        if(autoTranslateEnabled) allComments.forEach(c => { const el = document.getElementById(`text-${c.id}`); if(el && el.dataset.translated === "false") window.translateComment(c.id, true); });
     });
 }
-
-window.showReplyBox = (mainId, user) => { if(!currentUser) { window.closeDetailAndLogin(); return; } const b = document.getElementById(`reply-box-${mainId}`); if(b){ b.classList.remove('hidden'); document.getElementById(`reply-target-${mainId}`).innerText = user; document.getElementById(`reply-text-${mainId}`).focus(); } }
-window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu ${Math.ceil((30000 - (now - lastCommentTime)) / 1000)} detik.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) { window.showModalAlert("Error: "+e.message); } }
-window.postReply = async (itemId, mainId) => { if(!currentUser) return; const tEl = document.getElementById(`reply-text-${mainId}`); const txt = tEl.value.trim(); const tgt = document.getElementById(`reply-target-${mainId}`).innerText; if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu ${Math.ceil((30000 - (now - lastCommentTime)) / 1000)} detik.`); return; } try { const refR = push(ref(db, `comments/${itemId}`)); const updates = {}; updates[`comments/${itemId}/${refR.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: mainId, replyToUsername: tgt }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; document.getElementById(`reply-box-${mainId}`).classList.add('hidden'); } catch(e) { window.showModalAlert("Error: "+e.message); } }
-window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini beserta balasannya?", async () => { try { const snap = await get(ref(db, `comments/${itemId}`)); const updates = {}; updates[`comments/${itemId}/${commentId}`] = null; if(snap.exists()) { snap.forEach(c => { if(c.val().parentId === commentId) updates[`comments/${itemId}/${c.key}`] = null; }); } await update(ref(db), updates); } catch(e) { window.showModalAlert("Gagal."); } }); }
+window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
+window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
 function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else { bEl.innerText = "..."; document.getElementById('btn-translate-desc').disabled = true; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res === "ALREADY_SAME"){ window.showModalAlert(t('already_in_lang')); bEl.innerText = t('translate'); } else { el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } } catch(e) { window.showModalAlert("Gagal"); bEl.innerText = t('translate'); } setTimeout(() => { document.getElementById('btn-translate-desc').disabled = false; }, 2000); } }
-window.translateComment = async (id, isAuto = false) => { const el = document.getElementById(`text-${id}`); const bEl = document.getElementById(`btn-text-${id}`); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.original; if(isT && !isAuto) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else if(!isT) { if(!isAuto) bEl.innerText = "..."; try { const res = await translateText(orig, currentLang === 'id' ? 'id' : 'en'); if(res === "ALREADY_SAME"){ if(!isAuto){ window.showModalAlert(t('already_in_lang')); bEl.innerText = t('translate'); } } else { el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } } catch(e) { if(!isAuto) bEl.innerText = t('translate'); } } }
+window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } else {bEl.innerText = t('translate');} } catch(e) {bEl.innerText = t('translate');} } }
