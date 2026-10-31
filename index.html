@@ -12,7 +12,6 @@
 </head>
 <body>
 
-  <!-- HIDDEN IFRAME FORCE DOWNLOAD -->
   <iframe id="download-iframe" style="display:none;"></iframe>
 
   <div id="dialogLayer">
@@ -261,7 +260,6 @@
       <div class="logo font-bold">Profil Saya</div>
     </header>
     
-    <!-- 1. EDIT PROFIL & INFO DASAR -->
     <div class="profile-header-new">
       <input type="file" id="profile-upload" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="window.handleProfileUpload(event)">
       <div class="avatar-container skeleton" style="border:none;">
@@ -278,27 +276,19 @@
       </div>
     </div>
     
-    <!-- 3. STATISTIK GRID -->
+    <!-- STATISTIK GRID -->
     <div class="profile-stats-grid">
        <div class="stat-box">
            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-           <div class="val" id="stat-upload">0</div><div class="lbl">Upload</div>
+           <div class="val" id="stat-upload">0</div><div class="lbl">Total Upload</div>
        </div>
        <div class="stat-box">
            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-           <div class="val" id="stat-download">0</div><div class="lbl">Download</div>
-       </div>
-       <div class="stat-box">
-           <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-           <div class="val" id="stat-like">0</div><div class="lbl">Suka</div>
-       </div>
-       <div class="stat-box">
-           <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-           <div class="val">N/A</div><div class="lbl">Poin</div>
+           <div class="val" id="stat-download">0</div><div class="lbl">Total Download</div>
        </div>
     </div>
 
-    <!-- 4. PENGATURAN AKUN (MENU LIST) -->
+    <!-- PENGATURAN AKUN MENU LIST -->
     <div class="profile-menu-list">
        <div class="profile-menu-item" onclick="window.switchProfileTab('content')">
            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -314,7 +304,6 @@
        </div>
     </div>
     
-    <!-- 2. SUB-TAB KONTEN SAYA -->
     <div id="tab-content" class="profile-content-section">
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Daftar Konten Saya</h3>
         <div id="my-content-list" class="content-list" style="padding:0; gap:10px;">
@@ -322,18 +311,28 @@
         </div>
     </div>
 
-    <!-- SUB-TAB PENGATURAN (Bio dll) -->
+    <!-- SUB-TAB PENGATURAN (Bio, Ganti Username, Ganti Password) -->
     <div id="tab-settings" class="profile-content-section hidden">
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Edit & Pengaturan</h3>
-        <label class="form-label" style="text-align:left; font-size:11px;">Username (Batas ganti 1x sebulan):</label>
-        <div class="flex" style="gap:10px; margin-bottom:15px;">
-           <input type="text" id="input-self-username" class="input-field text-selectable" style="padding:10px; font-size:12px; margin:0;" disabled>
-           <button class="btn btn-secondary" style="padding:10px; font-size:12px; width:auto;" onclick="window.showModalAlert('Penggantian username saat ini sedang dikunci.')">Ubah</button>
-        </div>
+        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Edit Profil</h3>
         
         <label class="form-label" style="text-align:left; font-size:11px;">Edit Bio (Maks 80 kar):</label>
-        <input type="text" id="input-self-bio" class="input-field text-selectable" maxlength="80" style="padding:10px; margin-bottom:15px; font-size:12px;">
-        <button class="btn btn-primary" style="padding:10px; font-size:12px; margin-bottom:20px;" onclick="window.saveBioSelf()">Simpan Bio</button>
+        <input type="text" id="input-self-bio" class="input-field text-selectable" maxlength="80" style="padding:10px; margin-bottom:10px; font-size:12px;">
+        <button class="btn btn-primary" style="padding:10px; font-size:12px; margin-bottom:25px;" onclick="window.saveBioSelf()">Simpan Bio</button>
+
+        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Pengaturan Akun</h3>
+
+        <label class="form-label" style="text-align:left; font-size:11px;">Ganti Username (Batas 1x / 30 Hari):</label>
+        <div class="flex" style="gap:10px; margin-bottom:5px;">
+           <input type="text" id="input-self-username" class="input-field text-selectable" style="padding:10px; font-size:12px; margin:0;">
+           <button class="btn btn-secondary" style="padding:10px; font-size:12px; width:auto;" onclick="window.changeUsernameSettings()">Ubah</button>
+        </div>
+        <p id="username-cooldown-text" style="font-size:11px; color:var(--danger); margin-bottom:20px;"></p>
+        
+        <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:5px;">Ganti Password (Hanya via Email):</label>
+        <input type="password" id="input-old-password" class="input-field text-selectable" placeholder="Password Lama" style="padding:10px; font-size:12px; margin-bottom:10px;">
+        <input type="password" id="input-new-password" class="input-field text-selectable" placeholder="Password Baru (Min 6)" style="padding:10px; font-size:12px; margin-bottom:10px;">
+        <input type="password" id="input-confirm-password" class="input-field text-selectable" placeholder="Konfirmasi Password Baru" style="padding:10px; font-size:12px; margin-bottom:10px;">
+        <button class="btn btn-secondary" style="padding:10px; font-size:12px; margin-bottom:20px; border-color:var(--danger); color:var(--danger);" onclick="window.changeUserPassword()">Update Password</button>
     </div>
     
     <nav class="bottom-nav">
