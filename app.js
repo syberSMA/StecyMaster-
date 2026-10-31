@@ -52,29 +52,23 @@ document.addEventListener('DOMContentLoaded', renderCategoryChips);
 window.toggleAutoTranslate = (e) => { if(e) e.preventDefault(); autoTranslateEnabled = !autoTranslateEnabled; localStorage.setItem('autoTranslate', autoTranslateEnabled); const cb = document.getElementById('auto-translate-checkbox'); if(cb) cb.checked = autoTranslateEnabled; };
 
 let activeDialogs = [];
-window.openDialog = (id) => { document.getElementById('dialogLayer').classList.remove('hidden'); document.getElementById('dialogLayer').classList.add('active'); document.getElementById(id).classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
-window.closeDialog = (id) => { document.getElementById(id).classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer').classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer').classList.add('hidden'), 300); document.body.style.overflow = ''; } };
+window.openDialog = (id) => { const el = document.getElementById(id); if(!el) return; document.getElementById('dialogLayer')?.classList.remove('hidden'); document.getElementById('dialogLayer')?.classList.add('active'); el.classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
+window.closeDialog = (id) => { const el = document.getElementById(id); if(!el) return; el.classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer')?.classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300); document.body.style.overflow = ''; } };
 window.closeTopDialog = () => { if(activeDialogs.length > 0) window.closeDialog(activeDialogs[activeDialogs.length - 1]); };
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape') window.closeTopDialog(); });
-window.showModalAlert = (msg) => { document.getElementById('dialog-alert-msg').innerText = msg; window.openDialog('dialog-alert'); };
-window.showModalConfirm = (msg, onConfirmCallback) => { document.getElementById('dialog-confirm-msg').innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); };
+window.showModalAlert = (msg) => { const el = document.getElementById('dialog-alert-msg'); if(el) { el.innerText = msg; window.openDialog('dialog-alert'); } };
+window.showModalConfirm = (msg, onConfirmCallback) => { const el = document.getElementById('dialog-confirm-msg'); if(el) { el.innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); } };
 window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin: ${text}`); }); };
 
-// ================= FORCE DOWNLOAD VIA PROXY API & ANCHOR DOWNLOAD =================
-window.downloadBase64File = (dataUrl, filename) => {
-    const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-};
-
+// ================= FORCE DOWNLOAD VIA PROXY API =================
+window.downloadBase64File = (dataUrl, filename) => { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 window.handleDownload = async (url, itemId) => {
     if (!url || url === '#') return;
-    
-    // Logic Poin Download: User mendownload file, poin dikalkulasi
     if (currentUser && itemId) {
         try {
             const snapItem = await get(ref(db, `items_public/${itemId}/downloadsData/${currentUser.uid}`));
             if(!snapItem.exists()) {
                 await update(ref(db), { [`items_public/${itemId}/downloadsData/${currentUser.uid}`]: true });
-                // Simulate points (Ideally Cloud Functions) - simplified check
                 const snapDls = await get(ref(db, `items_public/${itemId}/downloadsData`));
                 const totalDls = snapDls.exists() ? Object.keys(snapDls.val()).length : 1;
                 const uploaderId = (await get(ref(db, `items_public/${itemId}/uid`))).val();
@@ -85,20 +79,15 @@ window.handleDownload = async (url, itemId) => {
             }
         } catch(e) {}
     }
-
     if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
-
-    let finalUrl = url; let isRedirect = false; let providerName = '';
-    const lowerUrl = url.toLowerCase();
-    
+    let finalUrl = url; let isRedirect = false; let providerName = ''; const lowerUrl = url.toLowerCase();
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
     else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
     else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
     else if (lowerUrl.includes('dropbox.com')) { finalUrl = url.replace('?dl=0', '?dl=1'); if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1'); }
 
-    if (isRedirect) {
-        window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Anda akan diarahkan ke halaman resmi penyedia untuk mengunduh. Lanjutkan?`, () => window.open(finalUrl, '_blank'));
-    } else {
+    if (isRedirect) { window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?`, () => window.open(finalUrl, '_blank')); } 
+    else {
         const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
         let iframe = document.getElementById('download-iframe');
         if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
@@ -112,54 +101,64 @@ const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
 function getSafeIcon(cat) { if(!catIcons[cat]) return ''; return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); }
 
 window.openCategorySheet = () => {
-   document.getElementById('sheet-title').innerText = "Pilih Kategori";
-   const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
-   const currentWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Pilih Kategori";
+   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
+   const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
-   categoryOptions.forEach(cat => {
-       const isSel = cat === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
-   });
-   document.getElementById('bottom-sheet-overlay').classList.add('active');
+   if(opts){
+       categoryOptions.forEach(cat => {
+           const isSel = cat === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
+       });
+   }
+   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
 window.selectCategoryForm = (cat) => {
-   document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
+   const wrap = document.getElementById('selected-category-text-wrap');
+   if(wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
    window.closeBottomSheet();
    const labelFile = document.getElementById('label-file-download');
    if(labelFile) { const maxText = cat === 'MCPE and Craftman' ? '90MB' : '5MB'; labelFile.innerHTML = `File Download / Mod* <span style="font-weight:normal; font-size:10px; display:block;">(Max ${maxText})</span>`; }
-   if(cat === 'Server') { document.getElementById('wrapper-title-standard').classList.add('hidden'); document.getElementById('wrapper-title-server').classList.remove('hidden'); document.getElementById('form-file-container').classList.add('hidden'); } else { document.getElementById('wrapper-title-standard').classList.remove('hidden'); document.getElementById('wrapper-title-server').classList.add('hidden'); document.getElementById('form-file-container').classList.remove('hidden'); }
+   
+   const ws = document.getElementById('wrapper-title-standard'); const wsrv = document.getElementById('wrapper-title-server'); const wf = document.getElementById('form-file-container');
+   if(cat === 'Server') { if(ws) ws.classList.add('hidden'); if(wsrv) wsrv.classList.remove('hidden'); if(wf) wf.classList.add('hidden'); } 
+   else { if(ws) ws.classList.remove('hidden'); if(wsrv) wsrv.classList.add('hidden'); if(wf) wf.classList.remove('hidden'); }
 };
 
 window.openVersionSheet = () => {
-   document.getElementById('sheet-title').innerText = "Versi MCPE";
-   const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
-   const current = document.getElementById('selected-version-text').innerText;
-   versionOptions.forEach(ver => {
-       const isSel = ver === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
-   });
-   document.getElementById('bottom-sheet-overlay').classList.add('active');
+   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Versi MCPE";
+   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
+   const current = document.getElementById('selected-version-text')?.innerText || '0.15.10';
+   if(opts){
+       versionOptions.forEach(ver => {
+           const isSel = ver === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
+       });
+   }
+   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
-window.selectVersionForm = (ver) => { document.getElementById('selected-version-text').innerText = ver; window.closeBottomSheet(); };
+window.selectVersionForm = (ver) => { const el = document.getElementById('selected-version-text'); if(el) el.innerText = ver; window.closeBottomSheet(); };
 
 window.openCountrySheet = () => {
-   document.getElementById('sheet-title').innerText = "Pilih Negara Server";
-   const opts = document.getElementById('sheet-options'); opts.innerHTML = '';
-   const currentWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
+   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Pilih Negara Server";
+   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
+   const currentWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
-   Object.keys(flagIcons).forEach(country => {
-       const isSel = country === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-       opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
-   });
-   document.getElementById('bottom-sheet-overlay').classList.add('active');
+   if(opts) {
+       Object.keys(flagIcons).forEach(country => {
+           const isSel = country === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
+       });
+   }
+   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
-window.selectCountryForm = (country) => { document.getElementById('selected-country-text-wrap').innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
+window.selectCountryForm = (country) => { const el = document.getElementById('selected-country-text-wrap'); if(el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
 
-window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay').classList.remove('active'); };
-window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0, 0); };
+window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay')?.classList.remove('active'); };
+window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); const el = document.getElementById(id); if(el) { el.classList.remove('hidden'); window.scrollTo(0, 0); } };
 window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert("Silakan masuk untuk mengakses halaman ini."); window.switchScreen('screen-login'); } };
-window.toggleDrawer = (id) => { const isAct = document.getElementById(id).classList.contains('active'); window.closeAllDrawers(); if(!isAct) { document.getElementById(id).classList.add('active'); document.getElementById('drawer-overlay').classList.add('active'); } };
-window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay').classList.remove('active'); };
+window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) return; const isAct = el.classList.contains('active'); window.closeAllDrawers(); if(!isAct) { el.classList.add('active'); document.getElementById('drawer-overlay')?.classList.add('active'); } };
+window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
 
 function getRoleBadge(role) {
     if (role === 'admin' || role === 'dev') return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
@@ -170,58 +169,101 @@ function generateDefaultAvatar(name) {
     ctx.fillStyle = '#ff8c00'; ctx.fillRect(0,0,100,100); ctx.fillStyle = '#000000'; ctx.font = 'bold 50px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50); return c.toDataURL('image/jpeg', 0.8);
 }
 
-window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; document.getElementById('login-error').innerText = ''; };
+window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; const errEl = document.getElementById('login-error'); if(errEl) errEl.innerText = ''; };
 window.processEmailAuth = async () => {
-  const email = document.getElementById('auth-email').value.trim(); const password = document.getElementById('auth-password').value;
-  if (!email || !password) { document.getElementById('login-error').innerText = 'Isi form dengan lengkap.'; return; }
-  document.getElementById('auth-submit-btn').disabled = true;
+  const email = document.getElementById('auth-email')?.value.trim(); const password = document.getElementById('auth-password')?.value;
+  if (!email || !password) { window.showModalAlert('Isi form dengan lengkap.'); return; }
+  const btn = document.getElementById('auth-submit-btn'); if(btn) btn.disabled = true;
   try { if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, password); else await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) { document.getElementById('login-error').innerText = err.message; document.getElementById('auth-submit-btn').disabled = false; }
+  } catch (err) { const errEl = document.getElementById('login-error'); if(errEl) errEl.innerText = err.message; if(btn) btn.disabled = false; }
 };
 window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm("Keluar dari Akun?", () => { signOut(auth).then(() => { isAdmin = false; currentUser = null; currentUsername = null; window.switchScreen('screen-login'); updateHeaderAuthUI();}); }); };
 
 function updateHeaderAuthUI() {
+    const loginBtn = document.getElementById('btn-login-header');
+    const notifBtn = document.getElementById('btn-notif-header');
+    const adminMenu = document.getElementById('drawer-menu-admin');
+    const profImg = document.getElementById('sidebar-profile-img');
+    const profName = document.getElementById('sidebar-name');
+    const profRole = document.getElementById('sidebar-role');
+    const authSec = document.getElementById('sidebar-auth-section');
+
     if(currentUser) {
-        document.getElementById('btn-login-header').classList.add('hidden');
+        if(loginBtn) loginBtn.classList.add('hidden');
+        if(notifBtn) notifBtn.classList.remove('hidden');
     } else {
-        document.getElementById('btn-login-header').classList.remove('hidden'); document.getElementById('drawer-menu-admin').classList.add('hidden');
-        document.getElementById('sidebar-profile-img').src = "https://via.placeholder.com/60"; document.getElementById('sidebar-name').innerText = "Tamu"; document.getElementById('sidebar-role').innerHTML = "";
+        if(loginBtn) loginBtn.classList.remove('hidden'); 
+        if(notifBtn) notifBtn.classList.add('hidden');
+        if(adminMenu) adminMenu.classList.add('hidden');
+        if(profImg) profImg.src = "https://via.placeholder.com/60"; 
+        if(profName) profName.innerText = "Tamu"; 
+        if(profRole) profRole.innerHTML = "";
+        if(authSec) authSec.innerHTML = `<button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;">Masuk</button>`;
     }
 }
 
+// Timeout Safeguard (Fallback biar gak stuck)
+let splashTimeout = setTimeout(() => {
+    window.switchScreen('screen-home');
+    fetchAllItemsAndRender();
+}, 8000); // Max 8 sec waiting for Firebase Auth
+
 async function proceedToHome(user, pData) {
      currentUsername = pData.username; isAdmin = pData.role === 'admin' || pData.role === 'dev';
-     document.getElementById('profile-name').innerHTML = `${currentUsername} ${pData.points >= 150 ? '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>' : ''}`;
-     document.getElementById('sidebar-name').innerText = currentUsername;
-     const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
-     document.getElementById('profile-img').src = dp; document.getElementById('sidebar-profile-img').src = dp;
-     document.getElementById('profile-role-badge').innerHTML = getRoleBadge(pData.role); document.getElementById('sidebar-role').innerHTML = getRoleBadge(pData.role);
      
-     // Update Points UI
+     const profNameEl = document.getElementById('profile-name');
+     const profImgEl = document.getElementById('profile-img');
+     const sideImgEl = document.getElementById('sidebar-profile-img');
+     const sideNameEl = document.getElementById('sidebar-name');
+     const profVerBadge = document.getElementById('profile-verified-badge');
+     const profRoleBadge = document.getElementById('profile-role-badge');
+     const sideRoleBadge = document.getElementById('sidebar-role');
+     
+     if(profNameEl) profNameEl.innerText = currentUsername; 
+     if(sideNameEl) sideNameEl.innerText = currentUsername;
+     const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
+     if(profImgEl) profImgEl.src = dp; 
+     if(sideImgEl) sideImgEl.src = dp;
+     
+     if(profVerBadge) profVerBadge.innerHTML = pData.points >= 150 ? '<svg class="verified-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' : '';
+     if(profRoleBadge) profRoleBadge.innerHTML = getRoleBadge(pData.role); 
+     if(sideRoleBadge) sideRoleBadge.innerHTML = getRoleBadge(pData.role);
+     
      let pts = pData.points || 0;
      let level = pts >= 150 ? (pts >= 400 ? (pts >= 800 ? 3 : 2) : 1) : 0;
      let nextTgt = level === 0 ? 150 : (level === 1 ? 400 : (level === 2 ? 800 : 9999));
-     document.getElementById('profile-level-info').innerText = `Level ${level} (${pts} Poin)`;
-     document.getElementById('profile-next-target').innerText = `${pts} / ${nextTgt} Poin menuju Level ${level+1}`;
-     document.getElementById('profile-progress-bar').style.width = `${Math.min((pts/nextTgt)*100, 100)}%`;
      
-     document.getElementById('stat-upload').innerText = pData.itemCount || 0;
-     document.getElementById('stat-points').innerText = pts;
+     const lvlInfoEl = document.getElementById('profile-level-info');
+     const nxtTgtEl = document.getElementById('profile-next-target');
+     const progBarEl = document.getElementById('profile-progress-bar');
+     const statUpEl = document.getElementById('stat-upload');
+     const statPtEl = document.getElementById('stat-points');
+     const adminMenu = document.getElementById('drawer-menu-admin');
+     const authSec = document.getElementById('sidebar-auth-section');
+
+     if(lvlInfoEl) lvlInfoEl.innerText = `Level ${level} (${pts} Poin)`;
+     if(nxtTgtEl) nxtTgtEl.innerText = `${pts} / ${nextTgt} Poin menuju Level ${level+1}`;
+     if(progBarEl) progBarEl.style.width = `${Math.min((pts/nextTgt)*100, 100)}%`;
+     if(statUpEl) statUpEl.innerText = pData.itemCount || 0;
+     if(statPtEl) statPtEl.innerText = pts;
      
-     if(isAdmin) document.getElementById('drawer-menu-admin').classList.remove('hidden'); else document.getElementById('drawer-menu-admin').classList.add('hidden');
+     if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
+     else if(adminMenu) adminMenu.classList.add('hidden');
      
-     // Daily Login Points Logic
+     if(authSec) authSec.innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">Keluar Akun</button>`;
+
      const today = new Date().toISOString().split('T')[0];
-     if(pData.lastDailyLogin !== today) {
-         await update(ref(db, `profiles/${user.uid}`), { lastDailyLogin: today, points: pts + 2 });
-     }
+     if(pData.lastDailyLogin !== today) { await update(ref(db, `profiles/${user.uid}`), { lastDailyLogin: today, points: pts + 2 }); }
      
      if(isAdmin) loadPendingItems(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-     document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
+     
+     const selCat = document.getElementById('selected-category-text-wrap');
+     if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
 }
 
 setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, async (user) => {
+    clearTimeout(splashTimeout); // Hentikan timer fallback
     if (user) {
       currentUser = user; updateHeaderAuthUI();
       try {
@@ -235,26 +277,27 @@ setPersistence(auth, browserLocalPersistence).then(() => {
                  await update(ref(db), updates); proceedToHome(user, updates[`profiles/${user.uid}`]);
              } else { window.switchScreen('screen-username'); }
           }
-      } catch (err) { document.getElementById('screen-error-msg').innerText = "Gagal memuat akun: " + err.message; window.switchScreen('screen-error'); }
+      } catch (err) { const errEl = document.getElementById('screen-error-msg'); if(errEl) errEl.innerText = "Gagal memuat akun: " + err.message; window.switchScreen('screen-error'); }
     } else {
       currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-      document.getElementById('selected-category-text-wrap').innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
+      const selCat = document.getElementById('selected-category-text-wrap');
+      if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
     }
   });
-}).catch(() => { window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
+}).catch(() => { clearTimeout(splashTimeout); window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
 
 window.saveUsername = async () => {
   const username = document.getElementById('input-username').value.trim(); const usernameLower = username.toLowerCase();
   const errEl = document.getElementById('username-error'); const btn = document.getElementById('btn-save-username');
-  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) { errEl.innerText = "Tidak valid."; return; }
-  btn.disabled = true; btn.innerText = "Menyimpan..."; errEl.innerText = "";
+  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) { if(errEl) errEl.innerText = "Tidak valid."; return; }
+  if(btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; } if(errEl) errEl.innerText = "";
   try {
     const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { errEl.innerText = "Username terpakai!"; btn.disabled = false; btn.innerText = "Simpan"; return; }
+    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { if(errEl) errEl.innerText = "Username terpakai!"; if(btn) { btn.disabled = false; btn.innerText = "Simpan"; } return; }
     const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true; const dp = currentUser.photoURL || generateDefaultAvatar(username);
     const updates = {}; updates[`usernames/${usernameLower}`] = currentUser.uid; updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0, points: 0 };
     await update(ref(db), updates); proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
-  } catch (e) { errEl.innerText = "Akses ditolak. " + e.message; btn.disabled = false; btn.innerText = "Simpan"; }
+  } catch (e) { if(errEl) errEl.innerText = "Akses ditolak. " + e.message; if(btn) { btn.disabled = false; btn.innerText = "Simpan"; } }
 };
 
 window.handleProfileUpload = async (event) => {
@@ -270,7 +313,8 @@ window.handleProfileUpload = async (event) => {
               const offsetX = (img.width - size) / 2; const offsetY = (img.height - size) / 2; ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, targetSize, targetSize);
               let base64Image = canvas.toDataURL('image/jpeg', 0.8); 
               await update(ref(db, `profiles/${currentUser.uid}`), { avatar: base64Image });
-              document.getElementById('profile-img').src = base64Image; document.getElementById('sidebar-profile-img').src = base64Image;
+              const imgEl1 = document.getElementById('profile-img'); const imgEl2 = document.getElementById('sidebar-profile-img');
+              if(imgEl1) imgEl1.src = base64Image; if(imgEl2) imgEl2.src = base64Image;
           } catch(err) { window.showModalAlert("Error upload."); }
         };
         img.src = e.target.result;
@@ -283,22 +327,27 @@ window.openUserProfile = async (uid) => {
     if(!currentUser) { window.showModalAlert("Silakan masuk/login untuk melihat profil."); return; }
     try {
         const pSnap = await get(ref(db, `profiles/${uid}`)); if(!pSnap.exists()) return; const p = pSnap.val();
-        document.getElementById('pub-profile-img').src = p.avatar || generateDefaultAvatar(p.username);
-        const isVer = p.points >= 150 ? '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>' : '';
-        document.getElementById('pub-profile-name').innerHTML = `${p.username} ${isVer}`; 
-        document.getElementById('pub-profile-role').innerHTML = getRoleBadge(p.role);
-        document.getElementById('pub-profile-bio').innerText = p.bio || (uid === currentUser.uid ? 'Belum ada bio.' : '');
-        document.getElementById('pub-profile-joined').innerText = formatDate(p.joinedAt); document.getElementById('pub-profile-items').innerText = p.itemCount || 0;
-        if(uid === currentUser.uid) { document.getElementById('pub-profile-edit-section').classList.remove('hidden'); document.getElementById('input-pub-bio').value = p.bio || ''; } else { document.getElementById('pub-profile-edit-section').classList.add('hidden'); }
+        const imgEl = document.getElementById('pub-profile-img'); if(imgEl) imgEl.src = p.avatar || generateDefaultAvatar(p.username);
+        const isVer = p.points >= 150 ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--info);" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' : '';
+        const nameEl = document.getElementById('pub-profile-name'); if(nameEl) nameEl.innerHTML = p.username;
+        const verEl = document.getElementById('pub-profile-verified'); if(verEl) verEl.innerHTML = isVer; 
+        const roleEl = document.getElementById('pub-profile-role'); if(roleEl) roleEl.innerHTML = getRoleBadge(p.role);
+        const bioEl = document.getElementById('pub-profile-bio'); if(bioEl) bioEl.innerText = p.bio || (uid === currentUser.uid ? 'Belum ada bio.' : '');
+        const joinedEl = document.getElementById('pub-profile-joined'); if(joinedEl) joinedEl.innerText = formatDate(p.joinedAt); 
+        const itemsEl = document.getElementById('pub-profile-items'); if(itemsEl) itemsEl.innerText = p.itemCount || 0;
+        
+        const editSec = document.getElementById('pub-profile-edit-section');
+        if(uid === currentUser.uid) { if(editSec) editSec.classList.remove('hidden'); const iBio = document.getElementById('input-pub-bio'); if(iBio) iBio.value = p.bio || ''; } else { if(editSec) editSec.classList.add('hidden'); }
         window.openDialog('dialog-user-profile');
     } catch(e) { window.showModalAlert("Gagal memuat profil."); }
 };
-window.saveBio = async () => { const bio = document.getElementById('input-pub-bio').value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); document.getElementById('pub-profile-bio').innerText = bio; window.showModalAlert("Bio disimpan."); } catch(e) { window.showModalAlert("Error."); } };
-window.saveBioSelf = async () => { const bio = document.getElementById('input-self-bio').value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
+window.saveBio = async () => { const el = document.getElementById('input-pub-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); const bioEl = document.getElementById('pub-profile-bio'); if(bioEl) bioEl.innerText = bio; window.showModalAlert("Bio disimpan."); } catch(e) { window.showModalAlert("Error."); } };
+window.saveBioSelf = async () => { const el = document.getElementById('input-self-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
 
 window.switchProfileTab = (tab) => {
     document.querySelectorAll('.profile-content-section').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    const target = document.getElementById(`tab-${tab}`);
+    if(target) target.classList.remove('hidden');
 };
 
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
@@ -323,7 +372,8 @@ function fetchServerStatus(id, target) {
     }).catch(() => { statusEl.className = 'badge-status offline'; statusEl.innerText = 'Error'; });
 }
 setInterval(() => {
-  if (!document.getElementById('screen-home').classList.contains('hidden')) {
+  const homeEl = document.getElementById('screen-home');
+  if (homeEl && !homeEl.classList.contains('hidden')) {
       if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') { document.querySelectorAll('.badge-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); }); }
   }
 }, 30000);
@@ -332,7 +382,6 @@ setInterval(() => {
 window.toggleVote = async (itemId) => {
     if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
     const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
-
     if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert("Kamu tidak bisa vote server milikmu sendiri."); return; }
 
     const isVoted = item.votes && item.votes[currentUser.uid];
@@ -344,7 +393,6 @@ window.toggleVote = async (itemId) => {
     } else {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
         updates[`items_public/${itemId}/stars`] = currentStars + 1;
-        // Poin untuk uploader
         if (item.uid && item.uid !== currentUser.uid && currentStars < 40) {
             get(ref(db, `profiles/${item.uid}/points`)).then(s => {
                 update(ref(db, `profiles/${item.uid}`), { points: (s.val() || 0) + 2 });
@@ -357,60 +405,63 @@ window.toggleVote = async (itemId) => {
 window.openDetail = async (itemId) => {
     const item = globalAllItems.find(i => i.id === itemId); if(!item) return;
     currentDetailItemId = itemId;
-    
-    // SERVER DILARANG BUKA DETAIL
     if (item.category.toLowerCase() === 'server') return;
 
-    document.getElementById('detail-img').src = item.url_img; document.getElementById('detail-title').innerText = item.title; document.getElementById('detail-uploader-name').innerText = item.username || 'System';
+    const imgEl = document.getElementById('detail-img'); if(imgEl) imgEl.src = item.url_img; 
+    const titleEl = document.getElementById('detail-title'); if(titleEl) titleEl.innerText = item.title; 
+    const nameEl = document.getElementById('detail-uploader-name'); if(nameEl) nameEl.innerText = item.username || 'System';
     
     let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username); let isVer = '';
     if(item.uid) {
          try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); if(p.points >= 150) isVer = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } catch(e){}
     } else if (item.source === 'github') uploaderRole = 'dev';
     
-    document.getElementById('detail-uploader-badge').innerHTML = getRoleBadge(uploaderRole); document.getElementById('detail-uploader-avatar').src = avatarUrl;
-    document.getElementById('detail-uploader-name').innerHTML = `${item.username || 'System'} ${isVer}`;
-    document.getElementById('detail-uploader-avatar').onclick = () => { if(item.uid) window.openUserProfile(item.uid); }; document.getElementById('detail-uploader-name').onclick = () => { if(item.uid) window.openUserProfile(item.uid); };
-    document.getElementById('detail-category').innerText = item.category; document.getElementById('detail-version').innerText = item.version || 'All Vers.'; document.getElementById('detail-desc').innerText = item.desc_id || item.desc || '-';
+    const badgeEl = document.getElementById('detail-uploader-badge'); if(badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
+    const avatarEl = document.getElementById('detail-uploader-avatar'); if(avatarEl) avatarEl.src = avatarUrl;
+    if(nameEl) nameEl.innerHTML = `${item.username || 'System'} ${isVer}`;
+    if(avatarEl) avatarEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); }; 
+    if(nameEl) nameEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); };
     
-    const actionContainer = document.getElementById('detail-action-container');
+    const catEl = document.getElementById('detail-category'); if(catEl) catEl.innerText = item.category; 
+    const verEl = document.getElementById('detail-version'); if(verEl) verEl.innerText = item.version || 'All Vers.'; 
+    const descEl = document.getElementById('detail-desc'); if(descEl) { descEl.innerText = item.desc_id || item.desc || '-'; descEl.dataset.originalText = item.desc_id || item.desc || ''; descEl.dataset.translated = "false"; }
+    const transText = document.getElementById('text-translate-desc'); if(transText) transText.innerText = 'Translate'; 
+    const transBtn = document.getElementById('btn-translate-desc'); if(transBtn) transBtn.disabled = false;
+
+    const actionContainer = document.getElementById('detail-action-container'); const statusContainer = document.getElementById('detail-server-status-container');
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-    actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}')">${dlIconSVG} Download File</button>`;
+
+    if(statusContainer) statusContainer.classList.add('hidden');
+    if(actionContainer) actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}')">${dlIconSVG} Download File</button>`;
 
     loadComments(itemId);
-    if(currentUser){ document.getElementById('comment-form-container').classList.remove('hidden'); document.getElementById('comment-login-prompt').classList.add('hidden'); } 
-    else { document.getElementById('comment-form-container').classList.add('hidden'); document.getElementById('comment-login-prompt').classList.remove('hidden'); }
-    document.getElementById('screen-detail-container').classList.add('active'); document.body.style.overflow = 'hidden';
+    const cfContainer = document.getElementById('comment-form-container'); const cpPrompt = document.getElementById('comment-login-prompt');
+    if(currentUser){ if(cfContainer) cfContainer.classList.remove('hidden'); if(cpPrompt) cpPrompt.classList.add('hidden'); } 
+    else { if(cfContainer) cfContainer.classList.add('hidden'); if(cpPrompt) cpPrompt.classList.remove('hidden'); }
+    
+    const dContainer = document.getElementById('screen-detail-container'); if(dContainer) { dContainer.classList.add('active'); document.body.style.overflow = 'hidden'; }
 }
-window.closeDetailAndLogin = () => { document.getElementById('screen-detail-container').classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
+window.closeDetailAndLogin = () => { const dContainer = document.getElementById('screen-detail-container'); if(dContainer) dContainer.classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
 
-let globalProfilesCache = {};
 function renderItemsToUI() {
-  const container = document.getElementById('public-items-container'); container.innerHTML = '';
+  const container = document.getElementById('public-items-container'); if(container) container.innerHTML = '';
   const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
 
   let displayItems = globalAllItems;
-  
-  // EXCLUDE SERVER FROM "SEMUA"
-  if (currentCategoryFilter === 'Semua') {
-      displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server');
-  } else {
-      displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
-  }
+  if (currentCategoryFilter === 'Semua') { displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server'); } 
+  else { displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase()); }
 
   if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
   if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0)); else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
   
-  if (displayItems.length === 0) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; }
+  if (displayItems.length === 0 && container) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; }
 
   const isSpecific = currentCategoryFilter !== 'Semua'; 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
   let htmlBuf = '';
   displayItems.forEach(item => {
-      const isUploaderAdmin = item.source === 'github'; 
       const userRoleBadge = item.source === 'github' ? getRoleBadge('dev') : `<span id="badge-${item.id}">${getRoleBadge('member')}</span>`;
-      let isVer = '';
       if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const p=s.val(); const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(p.role); if(p.points >= 150){ const vEl=document.getElementById(`ver-${item.id}`); if(vEl) vEl.innerHTML = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } }); }
 
       if (item.category.toLowerCase() === 'server') {
@@ -419,7 +470,6 @@ function renderItemsToUI() {
         const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
         const starClass = isVoted ? 'badge-star voted' : 'badge-star';
         
-        // Cek video/gif atau img
         const isVideo = item.url_img && (item.url_img.includes('data:video') || item.url_img.endsWith('.mp4'));
         const mediaHTML = isVideo ? `<video src="${item.url_img}" class="server-banner-media" autoplay loop muted playsinline></video>` : `<img src="${item.url_img}" class="server-banner-media lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">`;
         
@@ -477,7 +527,7 @@ function renderItemsToUI() {
         </div>`;
       }
       
-      // Render to Profile My Content if owned
+      // Render My Content
       if (currentUser && item.uid === currentUser.uid && myContentContainer) {
           myContentContainer.innerHTML += `
             <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center;">
@@ -492,62 +542,64 @@ function renderItemsToUI() {
           `;
       }
   });
-  container.innerHTML = htmlBuf;
+  if(container) container.innerHTML = htmlBuf;
 }
 
 // ================= CROPPER JS & BYPASS GIF/VIDEO =================
 let cropperInstance = null;
 window.handleLocalImage = (e) => {
   const file = e.target.files[0]; if (!file) return;
-  const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim();
+  const currentCatWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+  const currentCat = currentCatWrap ? currentCatWrap.innerText.trim() : 'Mod';
   const isServer = currentCat === 'Server';
   const maxSizeMB = isServer ? 8 : 5;
   if (file.size > maxSizeMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal gambar/video preview adalah ${maxSizeMB}MB!`); e.target.value = ''; return; }
 
   const reader = new FileReader();
   reader.onload = (ev) => { 
-      // Bypass Cropper jika GIF atau Video
       if (isServer && (file.type === 'image/gif' || file.type.startsWith('video/'))) {
           localImageBase64 = ev.target.result; 
-          document.getElementById('img-status').innerText = file.type.startsWith('video') ? `✓ Video/GIF Terpilih` : `✓ GIF dipilih`; 
-          document.getElementById('add-img').value = ""; 
+          const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = file.type.startsWith('video') ? `✓ Video Terpilih` : `✓ GIF dipilih`; 
+          const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ""; 
       } 
       else if (isServer) {
-          document.getElementById('cropper-image').src = ev.target.result;
+          const cImg = document.getElementById('cropper-image'); if(cImg) cImg.src = ev.target.result;
           window.openDialog('dialog-cropper');
           if (cropperInstance) cropperInstance.destroy();
-          cropperInstance = new Cropper(document.getElementById('cropper-image'), { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
+          const cImg2 = document.getElementById('cropper-image');
+          if(cImg2) cropperInstance = new Cropper(cImg2, { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
       } else {
           localImageBase64 = ev.target.result; 
-          document.getElementById('img-status').innerText = `✓ Gambar dipilih`; 
-          document.getElementById('add-img').value = ""; 
+          const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = `✓ Gambar dipilih`; 
+          const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ""; 
       }
   };
   reader.readAsDataURL(file);
 };
-window.confirmCrop = () => { if(!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); document.getElementById('img-status').innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); }
-window.cancelCrop = () => { window.closeDialog('dialog-cropper'); document.getElementById('add-img').value = ''; document.getElementById('file-img').value = ''; }
-window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const currentCat = document.getElementById('selected-category-text-wrap').innerText.trim(); const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; document.getElementById('file-status').innerText = `✓ File dipilih`; document.getElementById('add-file').value = ""; }; reader.readAsDataURL(file); };
+window.confirmCrop = () => { if(!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); }
+window.cancelCrop = () => { window.closeDialog('dialog-cropper'); const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ''; const fileEl = document.getElementById('file-img'); if(fileEl) fileEl.value = ''; }
+window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const cw = document.getElementById('selected-category-text-wrap').querySelector('span'); const currentCat = cw ? cw.innerText.trim() : 'Mod'; const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; const statEl = document.getElementById('file-status'); if(statEl) statEl.innerText = `✓ File dipilih`; const addEl = document.getElementById('add-file'); if(addEl) addEl.value = ""; }; reader.readAsDataURL(file); };
 
 window.submitItem = async () => {
   if (!currentUser) return;
   const catWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
   const cat = catWrap ? catWrap.innerText.trim() : 'Mod';
-  const desc_id = document.getElementById('add-desc').value.trim();
-  const finalImg = localImageBase64 || document.getElementById('add-img').value.trim();
-  const version = document.getElementById('selected-version-text').innerText;
-  const countryWrap = document.getElementById('selected-country-text-wrap').querySelector('span');
+  const desc_id = document.getElementById('add-desc')?.value.trim();
+  const finalImg = localImageBase64 || document.getElementById('add-img')?.value.trim();
+  const version = document.getElementById('selected-version-text')?.innerText;
+  const countryWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
   const country = countryWrap ? countryWrap.innerText.trim() : 'Indonesia';
   
   let title, finalFile, serverIp, serverPort;
   if (cat === 'Server') {
-    title = document.getElementById('add-server-name').value.trim(); serverIp = document.getElementById('add-server-ip').value.trim(); serverPort = document.getElementById('add-server-port').value.trim() || "19132"; finalFile = '#'; 
+    title = document.getElementById('add-server-name')?.value.trim(); serverIp = document.getElementById('add-server-ip')?.value.trim(); serverPort = document.getElementById('add-server-port')?.value.trim() || "19132"; finalFile = '#'; 
     if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert("Form tidak lengkap!"); return; }
   } else {
-    title = document.getElementById('add-title').value.trim(); finalFile = localFileBase64 || document.getElementById('add-file').value.trim();
+    title = document.getElementById('add-title')?.value.trim(); finalFile = localFileBase64 || document.getElementById('add-file')?.value.trim();
     if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert("Form tidak lengkap!"); return; }
   }
-  document.getElementById('btn-submit-item').disabled = true;
+  const btnSubmit = document.getElementById('btn-submit-item');
+  if(btnSubmit) btnSubmit.disabled = true;
   const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0 };
   if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
 
@@ -555,16 +607,24 @@ window.submitItem = async () => {
     if (isAdmin) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
     else { await push(ref(db, 'items_pending'), data); window.showModalAlert("Terkirim ke antrean!"); }
     window.switchScreen('screen-home');
-    document.getElementById('add-title').value = ''; document.getElementById('add-server-name').value = ''; document.getElementById('add-server-ip').value = ''; document.getElementById('add-desc').value = ''; document.getElementById('add-img').value = ''; document.getElementById('add-file').value = ''; document.getElementById('img-status').innerText = ''; document.getElementById('file-status').innerText = ''; localImageBase64 = null; localFileBase64 = null;
+    const fTitle = document.getElementById('add-title'); if(fTitle) fTitle.value = ''; 
+    const fsrvn = document.getElementById('add-server-name'); if(fsrvn) fsrvn.value = '';
+    const fsrvip = document.getElementById('add-server-ip'); if(fsrvip) fsrvip.value = '';
+    const fdesc = document.getElementById('add-desc'); if(fdesc) fdesc.value = '';
+    const fimg = document.getElementById('add-img'); if(fimg) fimg.value = '';
+    const ffile = document.getElementById('add-file'); if(ffile) ffile.value = '';
+    const fimgstat = document.getElementById('img-status'); if(fimgstat) fimgstat.innerText = '';
+    const ffilestat = document.getElementById('file-status'); if(ffilestat) ffilestat.innerText = '';
+    localImageBase64 = null; localFileBase64 = null;
   } catch (e) { window.showModalAlert("Error."); }
-  document.getElementById('btn-submit-item').disabled = false;
+  if(btnSubmit) btnSubmit.disabled = false;
 };
 
 // ================= ADMIN REVIEW =================
 function loadPendingItems() {
   if(!isAdmin) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
-    const container = document.getElementById('pending-items-container'); container.innerHTML = ''; let count = 0;
+    const container = document.getElementById('pending-items-container'); if(!container) return; container.innerHTML = ''; let count = 0;
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         count++; const item = child.val();
@@ -592,15 +652,15 @@ function loadPendingItems() {
   });
 }
 window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {points: (pSnap.val().points||0) + 15, itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
-window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; document.getElementById('reject-reason').value = ''; window.openDialog('dialog-reject-admin'); };
-window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: document.getElementById('reject-reason').value.trim() || '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
+window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
+window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
 window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { try { await remove(ref(db, `items_public/${id}`)); } catch(e){} }); };
 
-window.updateCommentCounter = (inputId, counterId) => { document.getElementById(counterId).innerText = `${document.getElementById(inputId).value.length}/200`; };
+window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
 const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
 function loadComments(itemId) {
-    const commentsList = document.getElementById('comments-list'); commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>`;
+    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>`;
     onValue(ref(db, `comments/${itemId}`), async (snapshot) => {
         commentsList.innerHTML = ''; if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
         const allComments = []; snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
@@ -625,7 +685,7 @@ function loadComments(itemId) {
         }
     });
 }
-window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
+window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
 window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
 function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } else {bEl.innerText = t('translate');} } catch(e) {bEl.innerText = t('translate');} } }
+window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } else {bEl.innerText = t('translate');} } catch(e) {bEl.innerText = t('translate');} } }
