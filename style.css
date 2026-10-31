@@ -46,7 +46,6 @@ img, .card-img, .profile-img, .detail-header-img, .server-banner-img { -webkit-u
 .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 900; opacity: 0; pointer-events: none; transition: 0.3s; } .drawer-overlay.active { opacity: 1; pointer-events: auto; }
 .side-drawer { position: fixed; top: 0; width: 280px; max-width: 80%; height: 100vh; background: var(--bg-surface); z-index: 901; transition: 0.3s ease; padding: 20px; display: flex; flex-direction: column; overflow-y: auto;}
 .drawer-left { left: -300px; border-right: 1px solid var(--border-color); } .drawer-left.active { left: 0; }
-.drawer-right { right: -300px; border-left: 1px solid var(--border-color); } .drawer-right.active { right: 0; }
 .drawer-menu li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
 
 .mcpe-toggle { position: relative; display: inline-block; width: 54px; height: 26px; pointer-events: none; } .mcpe-toggle-checkbox { display: none; }
@@ -76,13 +75,16 @@ img, .card-img, .profile-img, .detail-header-img, .server-banner-img { -webkit-u
 .profile-menu-list { display: flex; flex-direction: column; }
 .profile-menu-item { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; background: var(--bg-surface); cursor: pointer; font-size: 14px; font-weight: 500; transition: 0.2s; color: var(--text-main); position: relative;}
 .profile-menu-item:active { background: var(--bg-elevated); }
-.profile-menu-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--text-muted); transition: 0.2s; }
+.profile-menu-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--text-muted); transition: 0.2s; flex-shrink:0;}
 .profile-menu-item:hover svg, .profile-menu-item.active svg { color: var(--primary); }
 .profile-menu-item.danger-menu svg { color: var(--danger) !important; }
 .profile-menu-item.danger-menu { color: var(--danger); }
 
-.profile-content-section { display: none; } .profile-content-section.active { display: block; padding: 20px; }
-.profile-content-section.hidden { display: none !important; }
+/* PASTIKAN IKON KATEGORI FORM MENAMPILKAN SVG */
+#selected-category-text-wrap svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; flex-shrink:0; }
+
+.profile-content-section { padding: 20px; display: none; } 
+.profile-content-section.active { display: block; }
 
 .category-container { padding: 15px 20px; display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border-color); }
 .category-container::-webkit-scrollbar { display: none; }
@@ -161,8 +163,6 @@ img.lazy-img, video.lazy-img { opacity: 0; transition: opacity 0.4s ease-in; } .
 
 #screen-detail-container { position: fixed; inset:0; background: var(--bg-dark); z-index: 500; overflow-y: auto; display: none; flex-direction: column; }
 #screen-detail-container.active { display: flex; }
-
-/* FIX LAYOUT GAMBAR vs TEKS DETAIL AGAR TIDAK OVERLAP */
 .detail-header-img-wrapper { width: 100%; max-height: 350px; position: relative; background: var(--bg-elevated); overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
 .detail-header-img-wrapper img { width:100%; height:auto; max-height:100%; object-fit:contain; }
 .detail-close-btn { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;}
