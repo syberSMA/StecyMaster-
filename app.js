@@ -59,21 +59,57 @@ window.showModalConfirm = (msg, onConfirmCallback) => { const el = document.getE
 window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin: ${text}`); }); };
 
 window.downloadBase64File = (dataUrl, filename) => { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
-window.handleDownload = async (url, itemId) => {
+
+// FIX: Metode Blob (Bypass popup "Download Lagi?" dari browser)
+window.handleDownload = async (url, itemId, event) => {
     if (!url || url === '#') return;
     if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
     let finalUrl = url; let isRedirect = false; let providerName = ''; const lowerUrl = url.toLowerCase();
+    
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
     else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
     else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
     else if (lowerUrl.includes('dropbox.com')) { finalUrl = url.replace('?dl=0', '?dl=1'); if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1'); }
 
-    if (isRedirect) { window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?`, () => window.open(finalUrl, '_blank')); } 
-    else {
-        const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
-        let iframe = document.getElementById('download-iframe');
-        if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
-        iframe.src = proxyUrl;
+    if (isRedirect) { 
+        window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?`, () => window.open(finalUrl, '_blank')); 
+    } else {
+        const btn = event?.currentTarget;
+        const origHTML = btn ? btn.innerHTML : '';
+        if(btn) btn.innerHTML = '<div class="loader-inline"></div> Menyumbangkan...';
+        
+        try {
+            const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
+            const response = await fetch(proxyUrl);
+            if(!response.ok) throw new Error("Gagal Unduh");
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            
+            const uniqueId = Math.floor(Math.random() * 100000);
+            let filename = url.split('/').pop().split('?')[0] || 'file.zip';
+            if (!filename.includes('.')) filename += '.zip';
+            a.download = `stecy_${uniqueId}_${filename}`;
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                if(btn) btn.innerHTML = origHTML;
+            }, 1000);
+        } catch(e) {
+            // Fallback iframe jika fetch error (misal krn adblock dsb)
+            let iframe = document.getElementById('download-iframe');
+            if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
+            iframe.src = '/api/download?url=' + encodeURIComponent(finalUrl) + '&t=' + Date.now();
+            if(btn) btn.innerHTML = origHTML;
+        }
     }
 };
 
@@ -94,16 +130,31 @@ window.openCategorySheet = () => {
    }
    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
+
 window.selectCategoryForm = (cat) => {
    const wrap = document.getElementById('selected-category-text-wrap');
    if(wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
    window.closeBottomSheet();
-   const labelFile = document.getElementById('label-file-download');
-   if(labelFile) { const maxText = cat === 'MCPE and Craftman' ? '90MB' : '5MB'; labelFile.innerHTML = `File Download / Mod* <span style="font-weight:normal; font-size:10px; display:block;">(Max ${maxText})</span>`; }
    
-   const ws = document.getElementById('wrapper-title-standard'); const wsrv = document.getElementById('wrapper-title-server'); const wf = document.getElementById('form-file-container');
-   if(cat === 'Server') { if(ws) ws.classList.add('hidden'); if(wsrv) wsrv.classList.remove('hidden'); if(wf) wf.classList.add('hidden'); } 
-   else { if(ws) ws.classList.remove('hidden'); if(wsrv) wsrv.classList.add('hidden'); if(wf) wf.classList.remove('hidden'); }
+   const ws = document.getElementById('wrapper-title-standard'); 
+   const wsrv = document.getElementById('wrapper-title-server'); 
+   const wf = document.getElementById('form-file-container');
+   const fileImg = document.getElementById('file-img');
+   const labelImg = document.getElementById('label-img-preview');
+   
+   if(cat === 'Server') { 
+       if(ws) ws.classList.add('hidden'); 
+       if(wsrv) wsrv.classList.remove('hidden'); 
+       if(wf) wf.classList.add('hidden'); 
+       if(fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
+       if(labelImg) labelImg.innerHTML = `Gambar / Banner Server* <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
+   } else { 
+       if(ws) ws.classList.remove('hidden'); 
+       if(wsrv) wsrv.classList.add('hidden'); 
+       if(wf) wf.classList.remove('hidden'); 
+       if(fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
+       if(labelImg) labelImg.innerHTML = `Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
+   }
 };
 
 window.openVersionSheet = () => {
@@ -166,7 +217,6 @@ function updateHeaderAuthUI() {
     const profImg = document.getElementById('sidebar-profile-img');
     const profName = document.getElementById('sidebar-name');
     const profRole = document.getElementById('sidebar-role');
-    const authSec = document.getElementById('sidebar-auth-section');
 
     if(currentUser) {
         if(loginBtn) loginBtn.classList.add('hidden');
@@ -176,9 +226,47 @@ function updateHeaderAuthUI() {
         if(profImg) profImg.src = "https://via.placeholder.com/60"; 
         if(profName) profName.innerText = "Tamu"; 
         if(profRole) profRole.innerHTML = "";
-        if(authSec) authSec.innerHTML = `<button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;">Masuk</button>`;
     }
 }
+
+// FIX: PENGAMBILAN NOTIFIKASI
+function loadNotifications() {
+    if(!currentUser) return;
+    onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
+        const cont = document.getElementById('notif-list-profile');
+        const badge = document.getElementById('notif-badge-profile');
+        if(!cont) return;
+        if(!snapshot.exists()) {
+            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>';
+            if(badge) badge.style.display = 'none';
+            return;
+        }
+        let html = ''; let unreadCount = 0;
+        const notifs = [];
+        snapshot.forEach(c => notifs.push({id: c.key, ...c.val()}));
+        notifs.sort((a,b) => (b.time||0) - (a.time||0));
+        
+        notifs.forEach(n => {
+            if(!n.read) unreadCount++;
+            const color = n.type === 'accepted' ? 'var(--success)' : 'var(--danger)';
+            const icon = n.type === 'accepted' ? '✓' : '✗';
+            html += `
+            <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
+                <div style="font-weight:bold; color:${color}; margin-bottom:4px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
+                <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
+                ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
+            </div>`;
+        });
+        cont.innerHTML = html;
+        if(badge) {
+            badge.innerText = unreadCount;
+            badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+    });
+}
+window.markNotifRead = async (id) => {
+    try { await update(ref(db, `notifications/${currentUser.uid}/${id}`), {read: true}); } catch(e){}
+};
 
 let splashTimeout = setTimeout(() => {
     try { window.switchScreen('screen-home'); fetchAllItemsAndRender(); } catch(e){}
@@ -209,15 +297,13 @@ async function proceedToHome(user, pData) {
          
          const iUserEl = document.getElementById('input-self-username');
          const adminMenu = document.getElementById('drawer-menu-admin');
-         const authSec = document.getElementById('sidebar-auth-section');
     
          if(iUserEl) iUserEl.value = currentUsername;
          if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
          else if(adminMenu) adminMenu.classList.add('hidden');
          
-         if(authSec) authSec.innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">Keluar Akun</button>`;
-    
          if(isAdmin) loadPendingItems(); 
+         loadNotifications();
          
          window.switchScreen('screen-home'); 
          fetchAllItemsAndRender();
@@ -314,6 +400,11 @@ window.switchProfileTab = (tab) => {
     document.querySelectorAll('.profile-content-section').forEach(el => el.classList.add('hidden'));
     const target = document.getElementById(`tab-${tab}`);
     if(target) target.classList.remove('hidden');
+    if(tab === 'content') window.loadMyContent();
+    if(tab === 'notif') {
+        const badge = document.getElementById('notif-badge-profile');
+        if(badge) badge.style.display = 'none';
+    }
 };
 
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
@@ -389,7 +480,7 @@ window.openDetail = async (itemId) => {
     const actionContainer = document.getElementById('detail-action-container'); 
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
-    if(actionContainer) actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}')">${dlIconSVG} Download File</button>`;
+    if(actionContainer) actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)">${dlIconSVG} Download File</button>`;
 
     loadComments(itemId);
     const cfContainer = document.getElementById('comment-form-container'); const cpPrompt = document.getElementById('comment-login-prompt');
@@ -402,10 +493,11 @@ window.closeDetailAndLogin = () => { const dContainer = document.getElementById(
 
 function renderItemsToUI() {
   const container = document.getElementById('public-items-container'); if(!container) return; container.innerHTML = '';
-  const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
 
   let displayItems = globalAllItems;
-  if (currentCategoryFilter === 'Semua') { displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server'); } 
+  const isSemua = currentCategoryFilter === 'Semua';
+  
+  if (isSemua) { displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server'); } 
   else { displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase()); }
 
   if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
@@ -413,12 +505,13 @@ function renderItemsToUI() {
   
   if (displayItems.length === 0 && container) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; }
 
-  const isSpecific = currentCategoryFilter !== 'Semua'; 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-
-  let htmlBuf = ''; let myContentBuf = '';
+  let htmlBuf = '';
   
   displayItems.forEach(item => {
+      // Tombol Edit untuk Admin
+      const adminEditBtn = isAdmin ? `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>` : '';
+
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
         const countryFlag = item.country ? `<div class="server-flag-badge"><img src="https://flagcdn.com/${flagIcons[item.country] || 'id'}.svg" style="width:16px; object-fit:contain; border-radius:2px;"></div>` : '';
@@ -456,38 +549,43 @@ function renderItemsToUI() {
                         <svg style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span id="players-${item.id}">0 / 0</span>
                     </div>
+                    ${adminEditBtn}
                 </div>
             </div>
         </div>`;
-      } else {
-        const cardClass = isSpecific ? 'card-vertical' : 'card-horizontal';
-        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}')" style="flex:1;">${dlIconSVG} Download</button>`;
+      } else if (isSemua) {
+        // TAMPILAN SEMUA (COMPACT, Tanpa Open Detail)
         htmlBuf += `
-        <div class="${cardClass}" onclick="window.openDetail('${item.id}')">
+        <div class="card-compact-all">
+            <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+            <div class="card-body">
+                <h3 class="text-main">${item.title}</h3>
+                <div style="display:flex; gap:6px; margin-bottom:4px; align-items:center;">
+                    <span class="card-meta">${item.category}</span>
+                    ${item.version ? `<span class="card-meta" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+                </div>
+            </div>
+            ${adminEditBtn}
+            <button class="btn-download-compact" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)">
+                <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+        </div>`;
+      } else {
+        // TAMPILAN KATEGORI SPESIFIK (LEBAR, Bisa Open Detail)
+        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} Download</button>`;
+        htmlBuf += `
+        <div class="card-vertical" onclick="window.openDetail('${item.id}')">
           <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
           <div class="card-body">
             <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
-            <div style="margin-bottom:8px;">
-               <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+            <div style="margin-bottom:8px; display:flex; align-items:center;">
+               <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="margin-left:6px; background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+               ${adminEditBtn}
             </div>
             <p class="card-desc">${item.desc_id || item.desc || ''}</p>
             <div class="flex" style="gap:10px;">${actionBtnHTML}</div>
           </div>
         </div>`;
-      }
-      
-      if (currentUser && item.uid === currentUser.uid) {
-          myContentBuf += `
-            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center;">
-                <div class="card-img-wrapper" style="width:80px; min-width:80px;"><img src="${item.url_img}" class="card-img"></div>
-                <div class="card-body" style="padding:8px;">
-                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
-                    <div style="font-size:10px; color:var(--success); font-weight:bold; margin-bottom:4px;"><span class="item-status-badge status-approved">Approved</span></div>
-                    <div style="font-size:10px; color:var(--text-muted);"><svg class="icon icon-sm" style="width:10px;height:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${item.downloadsData ? Object.keys(item.downloadsData).length : 0} Dls</div>
-                </div>
-                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px;" onclick="window.deletePublicItem('${item.id}', '${item.title}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-            </div>
-          `;
       }
   });
 
@@ -505,9 +603,49 @@ function renderItemsToUI() {
   }
   
   if(container) container.innerHTML = htmlBuf;
-  if(myContentContainer && myContentBuf) myContentContainer.innerHTML = myContentBuf;
-  else if(myContentContainer) myContentContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada konten publik.</p>`;
 }
+
+// FIX: PENGAMBILAN KONTEN SAYA (PENDING + APPROVED)
+window.loadMyContent = () => {
+    const cont = document.getElementById('my-content-list');
+    if(!cont || !currentUser) return;
+    
+    let myItems = globalAllItems.filter(i => i.uid === currentUser.uid).map(i => ({...i, status: 'Approved'}));
+    
+    get(ref(db, 'items_pending')).then(snap => {
+        if(snap.exists()) {
+            snap.forEach(child => {
+                const val = child.val();
+                if(val.uid === currentUser.uid) { myItems.push({id: child.key, status: 'Pending', ...val}); }
+            });
+        }
+        
+        if(myItems.length === 0) {
+            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada konten.</p>';
+            return;
+        }
+        
+        myItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        let html = '';
+        myItems.forEach(item => {
+            const statusBadge = item.status === 'Approved' 
+                ? '<span class="item-status-badge status-approved">Approved</span>' 
+                : '<span class="item-status-badge status-pending">Pending</span>';
+            
+            html += `
+            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center; margin-bottom:10px;">
+                <div class="card-img-wrapper skeleton" style="width:80px; min-width:80px; height:80px;"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                <div class="card-body" style="padding:8px;">
+                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
+                    <div style="font-size:10px; margin-bottom:4px;">${statusBadge}</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category}</div>
+                </div>
+                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px; flex-shrink:0;" onclick="window.deletePublicItem('${item.id}', '${item.title}', '${item.status}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    });
+};
 
 let cropperInstance = null;
 window.handleLocalImage = (e) => {
@@ -634,7 +772,35 @@ window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if(item &
 window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
 window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
-window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { try { await remove(ref(db, `items_public/${id}`)); } catch(e){} }); };
+window.deletePublicItem = (id, title, status) => { 
+    window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { 
+        try { 
+            if(status === 'Pending') await remove(ref(db, `items_pending/${id}`));
+            else await remove(ref(db, `items_public/${id}`)); 
+            window.showModalAlert("Dihapus.");
+            window.loadMyContent(); 
+        } catch(e){} 
+    }); 
+};
+
+// FIX: ADMIN EDIT PUBLISHED ITEMS
+window.openAdminEdit = (id, imgUrl, fileUrl) => {
+    document.getElementById('edit-item-id').value = id;
+    document.getElementById('edit-img-url').value = imgUrl;
+    document.getElementById('edit-file-url').value = fileUrl;
+    window.openDialog('dialog-edit-admin');
+};
+window.saveAdminEdit = async () => {
+    const id = document.getElementById('edit-item-id').value;
+    const imgUrl = document.getElementById('edit-img-url').value.trim();
+    const fileUrl = document.getElementById('edit-file-url').value.trim();
+    if(!imgUrl || !fileUrl) { window.showModalAlert('URL tidak boleh kosong'); return; }
+    try {
+        await update(ref(db, `items_public/${id}`), { url_img: imgUrl, url_file: fileUrl });
+        window.showModalAlert('Berhasil diupdate!');
+        window.closeDialog('dialog-edit-admin');
+    } catch(e) { window.showModalAlert('Gagal update: ' + e.message); }
+};
 
 window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
 const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
