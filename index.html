@@ -12,6 +12,7 @@
 </head>
 <body>
 
+  <!-- Fallback iFrame untuk Download (Jika metode Blob ditolak browser) -->
   <iframe id="download-iframe" style="display:none;"></iframe>
 
   <div id="dialogLayer">
@@ -32,7 +33,7 @@
       </div>
     </div>
 
-    <!-- CROPPER MODAL (SERVER BANNER 468x60) -->
+    <!-- CROPPER MODAL -->
     <div id="dialog-cropper" class="dialog-box" style="width:95%; max-width: 600px; padding:15px;">
        <h3 class="font-bold text-main" style="margin-bottom:10px;">Crop Banner Server</h3>
        <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;">Sesuaikan area terang (Rasio 468x60).</p>
@@ -53,6 +54,22 @@
       <div class="flex" style="gap:10px;">
         <button class="btn btn-secondary" style="flex:1;" onclick="window.closeDialog('dialog-reject-admin')">Batal</button>
         <button class="btn btn-danger" style="flex:1;" onclick="window.submitReject()">Tolak Item</button>
+      </div>
+    </div>
+
+    <!-- ADMIN EDIT MODAL -->
+    <div id="dialog-edit-admin" class="dialog-box">
+      <h3 class="text-primary font-bold" style="margin-bottom: 15px;">Edit Item</h3>
+      <input type="hidden" id="edit-item-id">
+      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">URL Gambar Preview:</label>
+      <input type="text" id="edit-img-url" class="input-field text-selectable" style="padding:10px; font-size:12px;">
+      
+      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">URL File Download:</label>
+      <input type="text" id="edit-file-url" class="input-field text-selectable" style="padding:10px; font-size:12px;">
+      
+      <div class="flex" style="gap:10px;">
+        <button class="btn btn-secondary" style="flex:1; padding:10px;" onclick="window.closeDialog('dialog-edit-admin')">Batal</button>
+        <button class="btn btn-primary" style="flex:1; padding:10px;" onclick="window.saveAdminEdit()">Simpan Update</button>
       </div>
     </div>
   </div>
@@ -83,7 +100,7 @@
     </div>
   </div>
 
-  <!-- MODAL DETAIL ITEM -->
+  <!-- MODAL DETAIL ITEM (Hanya untuk Kategori Spesifik) -->
   <div id="screen-detail-container">
         <div class="detail-header-img-wrapper img-click-wrapper skeleton">
              <button class="detail-close-btn" onclick="document.getElementById('screen-detail-container').classList.remove('active')">
@@ -173,16 +190,6 @@
     </div>
   </div>
 
-  <div id="notif-drawer" class="side-drawer drawer-right">
-    <div class="flex items-center justify-between" style="padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:15px;">
-      <h3 class="font-bold text-main">Notifikasi</h3>
-      <button onclick="window.closeAllDrawers()" style="color:var(--text-muted); padding:5px;"><svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-    <div id="notif-container" style="flex:1;">
-      <p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>
-    </div>
-  </div>
-
   <div id="screen-login" class="app-container screen hidden">
     <button class="header-btn" style="position:absolute; top:20px; left:20px; padding:10px; background:var(--bg-surface); border-radius:50%; border:1px solid var(--border-color);" onclick="window.switchScreen('screen-home')">
         <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -228,10 +235,6 @@
         <span class="text-primary">Stecy</span><span style="color: white;">Master</span>
       </div>
       <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap:10px;">
-        <button id="btn-notif-header" class="icon-btn hidden" onclick="window.toggleDrawer('notif-drawer')">
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          <span id="notif-badge" class="notif-badge-icon hidden">0</span>
-        </button>
         <button id="btn-login-header" class="btn btn-primary" style="padding: 6px 12px; font-size:12px; width:auto;" onclick="window.switchScreen('screen-login')">Masuk</button>
       </div>
     </header>
@@ -276,14 +279,14 @@
       </div>
     </div>
     
-    <!-- STATISTIK GRID -->
+    <!-- STATISTIK GRID (Upload & Download Icon) -->
     <div class="profile-stats-grid">
        <div class="stat-box">
-           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+           <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
            <div class="val" id="stat-upload">0</div><div class="lbl">Total Upload</div>
        </div>
        <div class="stat-box">
-           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+           <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
            <div class="val" id="stat-download">0</div><div class="lbl">Total Download</div>
        </div>
     </div>
@@ -294,6 +297,13 @@
            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
            Konten Saya
        </div>
+       
+       <div class="profile-menu-item" onclick="window.switchProfileTab('notif')">
+           <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+           <div style="flex:1;">Notifikasi</div>
+           <span id="notif-badge-profile" class="notif-badge-icon">0</span>
+       </div>
+       
        <div class="profile-menu-item" onclick="window.switchProfileTab('settings')">
            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
            Pengaturan Akun
@@ -304,6 +314,7 @@
        </div>
     </div>
     
+    <!-- SUB-TAB KONTEN SAYA -->
     <div id="tab-content" class="profile-content-section">
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Daftar Konten Saya</h3>
         <div id="my-content-list" class="content-list" style="padding:0; gap:10px;">
@@ -311,10 +322,17 @@
         </div>
     </div>
 
+    <!-- SUB-TAB NOTIFIKASI -->
+    <div id="tab-notif" class="profile-content-section hidden">
+        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Riwayat Notifikasi</h3>
+        <div id="notif-list-profile" style="padding:0; gap:10px;">
+             <p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>
+        </div>
+    </div>
+
     <!-- SUB-TAB PENGATURAN (Bio, Ganti Username, Ganti Password) -->
     <div id="tab-settings" class="profile-content-section hidden">
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Edit Profil</h3>
-        
         <label class="form-label" style="text-align:left; font-size:11px;">Edit Bio (Maks 80 kar):</label>
         <input type="text" id="input-self-bio" class="input-field text-selectable" maxlength="80" style="padding:10px; margin-bottom:10px; font-size:12px;">
         <button class="btn btn-primary" style="padding:10px; font-size:12px; margin-bottom:25px;" onclick="window.saveBioSelf()">Simpan Bio</button>
@@ -394,13 +412,13 @@
       <label class="form-label">Deskripsi*</label>
       <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
       
-      <label class="form-label">Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Umum Max 5MB | Server Max 8MB & GIF/Video support, rasio 468x60)</span></label>
+      <label class="form-label" id="label-img-preview">Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span></label>
       <div class="input-field text-selectable" style="padding:0; overflow:hidden; display:flex; margin-bottom:20px;">
-          <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" placeholder="URL Gambar / GIF / Video...">
+          <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" placeholder="URL Gambar / GIF...">
           <label style="background:var(--primary); color:#000; padding:14px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
               <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#000"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               File
-              <input type="file" id="file-img" accept="image/*, video/mp4, video/webm" class="hidden" onchange="window.handleLocalImage(event)">
+              <input type="file" id="file-img" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="window.handleLocalImage(event)">
           </label>
       </div>
       <p id="img-status" style="font-size:11px; color:var(--success); margin-top:-15px; margin-bottom:15px; font-weight:600; text-align:right;"></p>
