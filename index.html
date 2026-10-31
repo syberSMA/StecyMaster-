@@ -84,7 +84,7 @@
     </div>
   </div>
 
-  <!-- MODAL DETAIL ITEM (Hanya untuk Mod/Texture/Map) -->
+  <!-- MODAL DETAIL ITEM -->
   <div id="screen-detail-container">
         <div class="detail-header-img-wrapper img-click-wrapper skeleton">
              <button class="detail-close-btn" onclick="document.getElementById('screen-detail-container').classList.remove('active')">
@@ -120,7 +120,7 @@
                     <div class="comment-input-area">
                         <textarea id="new-comment-text" class="comment-textarea text-selectable" placeholder="Tulis komentar..." maxlength="200" oninput="window.updateCommentCounter('new-comment-text', 'new-comment-counter')"></textarea>
                         <div class="flex justify-between items-center">
-                            <span id="new-comment-counter" class="char-counter">0/200</span>
+                            <span id="new-comment-counter" class="char-counter" style="font-size: 11px; color: var(--text-muted);">0/200</span>
                             <button class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 12px;" onclick="window.postComment()">Kirim Komentar</button>
                         </div>
                     </div>
@@ -146,7 +146,7 @@
       <div id="sidebar-role"></div>
     </div>
     <ul class="drawer-menu">
-      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="border-bottom:2px dashed var(--danger); margin-bottom:5px;">
+      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="background: rgba(244, 67, 54, 0.1); border-left: 4px solid var(--danger); border-bottom: 1px solid var(--border-color); margin-bottom: 10px; border-radius: 0 4px 4px 0;">
         <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--danger)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span class="text-danger font-bold">Admin Panel</span>
       </li>
@@ -164,7 +164,7 @@
             <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
         </label>
       </li>
-      <li onclick="window.open('https://wa.me/6283151363087', '_blank')">
+      <li onclick="window.open('https://wa.me/6285137258944', '_blank')">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 2.98.97 4.29L2 22l5.71-.97C9.02 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zM12 16h-1v-4h1v4zm0-6h-1V8h1v2z" fill="currentColor" stroke="none"/></svg>
         <span>Layanan / Bantuan</span>
       </li>
@@ -308,8 +308,8 @@
            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
            Pengaturan Akun
        </div>
-       <div class="profile-menu-item" style="color:var(--danger);" onclick="window.customLogout()">
-           <svg viewBox="0 0 24 24" style="color:var(--danger);"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+       <div class="profile-menu-item danger-menu" onclick="window.customLogout()">
+           <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
            Keluar Akun
        </div>
     </div>
