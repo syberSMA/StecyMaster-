@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getDatabase, ref, onValue, set, get, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getDatabase, ref, onValue, off, set, get, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { staticItems } from "./data-static.js";
 
 const firebaseConfig = {
@@ -22,23 +22,100 @@ let currentUser = null; let currentUsername = null; let isAdmin = false; let isS
 let globalAllItems = []; let currentCategoryFilter = 'Semua'; let currentSearchQuery = '';
 let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem = null;
 let currentDetailItemId = null; let lastCommentTime = 0; 
-let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
-let adminModeActive = sessionStorage.getItem('adminMode') !== 'false'; // Mode Penyamaran Admin
+let adminModeActive = sessionStorage.getItem('adminMode') !== 'false';
 let adminQueueMemory = {}; 
+let currentCommentRef = null; // Mencegah listener dobel pada komentar
 
+// ==========================================
+// 1. SISTEM TRANSLATE (i18n)
+// ==========================================
+let currentLang = localStorage.getItem('lang') || 'id';
+const uiTranslations = {
+    id: {
+        "info": "Informasi", "ok": "Oke", "confirm": "Konfirmasi", "cancel": "Batal", "sure": "Yakin",
+        "crop_banner": "Crop Banner Server", "crop_desc": "Sesuaikan area terang (Rasio 468x60).", "crop_save": "Crop & Simpan",
+        "reject_item": "Tolak Item", "reject_reason": "Alasan penolakan (dikirim ke user).", "reject_placeholder": "Contoh: File rusak...", "reject_submit": "Tolak Item",
+        "edit_item": "Edit Item", "edit_img_url": "URL Gambar Preview:", "edit_file_url": "URL File Download:", "save_update": "Simpan Update",
+        "loading_sys": "Memuat sistem...", "error_title": "Terjadi Kesalahan", "error_msg": "Gagal memuat akun, coba lagi.", "try_again": "Coba Lagi",
+        "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim Komentar",
+        "login_comment_prompt": "Silakan masuk untuk memberikan komentar.", "loading_comments": "Memuat...", "nav_admin": "Admin Panel", "mode_admin": "Mode Admin", 
+        "nav_translate": "Translate UI (EN)", "nav_help": "Layanan / Bantuan", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
+        "register_here": "Daftar di sini", "email_placeholder": "Alamat Email", "pass_placeholder": "Password (Min 6)", "btn_login": "Masuk", "or_via": "atau via", 
+        "login_google": "Masuk dengan Google", "create_user": "Buat Username", "user_rule": "Hanya huruf, angka, dan underscore (3-16 karakter).", "save_user": "Simpan Username",
+        "search_placeholder": "Cari item...", "nav_home": "Beranda", "nav_upload": "Upload", "nav_profile": "Profil", "my_profile": "Profil Saya",
+        "total_up": "Total Upload", "total_down": "Total Download", "menu_content": "Konten Saya", "menu_notif": "Notifikasi", "menu_settings": "Pengaturan Akun", "menu_logout": "Keluar Akun",
+        "list_content": "Daftar Konten Saya", "no_content": "Belum ada konten.", "history_notif": "Riwayat Notifikasi", "edit_profile": "Edit Profil", "edit_bio": "Edit Bio (Maks 80 kar):",
+        "save_bio": "Simpan Bio", "change_user": "Ganti Username (Batas 1x / 30 Hari):", "btn_change": "Ubah", "change_pass": "Ganti Password (Hanya via Email):",
+        "old_pass": "Password Lama", "new_pass": "Password Baru (Min 6)", "confirm_pass": "Konfirmasi Password Baru", "update_pass": "Update Password",
+        "title_upload": "Kirim Baru", "lbl_cat": "Kategori*", "lbl_title": "Judul Item*", "lbl_server_name": "Nama Server*", "lbl_server_loc": "Negara / Lokasi Server*",
+        "lbl_version": "Versi MCPE*", "lbl_img": "Gambar Preview*", "url_img": "URL Gambar...", "lbl_file": "File Download / Mod*", "url_file": "URL File Download...", "btn_upload": "Upload Sekarang",
+        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean."
+    },
+    en: {
+        "info": "Information", "ok": "OK", "confirm": "Confirm", "cancel": "Cancel", "sure": "Sure",
+        "crop_banner": "Crop Server Banner", "crop_desc": "Adjust bright area (Ratio 468x60).", "crop_save": "Crop & Save",
+        "reject_item": "Reject Item", "reject_reason": "Reason for rejection (sent to user).", "reject_placeholder": "Example: Broken file...", "reject_submit": "Reject Item",
+        "edit_item": "Edit Item", "edit_img_url": "Preview Image URL:", "edit_file_url": "Download File URL:", "save_update": "Save Update",
+        "loading_sys": "Loading system...", "error_title": "An Error Occurred", "error_msg": "Failed to load account, try again.", "try_again": "Try Again",
+        "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send Comment",
+        "login_comment_prompt": "Please login to comment.", "loading_comments": "Loading...", "nav_admin": "Admin Panel", "mode_admin": "Admin Mode", 
+        "nav_translate": "Translate UI (ID)", "nav_help": "Support / Help", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
+        "register_here": "Register here", "email_placeholder": "Email Address", "pass_placeholder": "Password (Min 6)", "btn_login": "Login", "or_via": "or via", 
+        "login_google": "Login with Google", "create_user": "Create Username", "user_rule": "Letters, numbers, and underscores only (3-16 chars).", "save_user": "Save Username",
+        "search_placeholder": "Search items...", "nav_home": "Home", "nav_upload": "Upload", "nav_profile": "Profile", "my_profile": "My Profile",
+        "total_up": "Total Uploads", "total_down": "Total Downloads", "menu_content": "My Content", "menu_notif": "Notifications", "menu_settings": "Account Settings", "menu_logout": "Logout",
+        "list_content": "My Content List", "no_content": "No content yet.", "history_notif": "Notification History", "edit_profile": "Edit Profile", "edit_bio": "Edit Bio (Max 80 char):",
+        "save_bio": "Save Bio", "change_user": "Change Username (Limit 1x / 30 Days):", "btn_change": "Change", "change_pass": "Change Password (Email only):",
+        "old_pass": "Old Password", "new_pass": "New Password (Min 6)", "confirm_pass": "Confirm New Password", "update_pass": "Update Password",
+        "title_upload": "Submit New", "lbl_cat": "Category*", "lbl_title": "Item Title*", "lbl_server_name": "Server Name*", "lbl_server_loc": "Country / Location*",
+        "lbl_version": "MCPE Version*", "lbl_img": "Preview Image*", "url_img": "Image URL...", "lbl_file": "Download File / Mod*", "url_file": "Download File URL...", "btn_upload": "Upload Now",
+        "review_queue": "Review Queue", "no_queue": "No queue."
+    }
+};
+
+window.applyTranslation = () => {
+    const dict = uiTranslations[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = dict[key];
+            else el.innerText = dict[key];
+        }
+    });
+};
+
+window.toggleAutoTranslate = (e) => {
+    if(e) e.preventDefault();
+    currentLang = currentLang === 'id' ? 'en' : 'id';
+    localStorage.setItem('lang', currentLang);
+    const cb = document.getElementById('auto-translate-checkbox');
+    if(cb) cb.checked = (currentLang === 'en');
+    window.applyTranslation();
+};
+document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('auto-translate-checkbox');
+    if(cb) cb.checked = (currentLang === 'en');
+    window.applyTranslation();
+});
+
+
+// ==========================================
+// 2. RESOURCE DATA (IKON KATEGORI, DLL)
+// ==========================================
 const catIcons = {
-    'Semua': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
-    'Mod': '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
-    'Texture': '<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
-    'Map': '<svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
-    'Launcher': '<svg viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
-    'Plugin Server': '<svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
-    'MCPE and Craftman': '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
-    'Server': '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
+    'Semua': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    'Texture': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    'Map': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+    'Launcher': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    'Plugin Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
+    'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
+    'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
 const flagIcons = { 'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb' };
 
 function formatDate(timestamp) { if(!timestamp) return ''; return new Intl.DateTimeFormat('id-ID', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp)); }
+function getSafeIcon(cat) { return catIcons[cat] || ''; }
 
 function renderCategoryChips() {
     const cont = document.getElementById('category-filter-container'); if(!cont) return; cont.innerHTML = '';
@@ -48,8 +125,10 @@ function renderCategoryChips() {
     });
 }
 document.addEventListener('DOMContentLoaded', renderCategoryChips);
-window.toggleAutoTranslate = (e) => { if(e) e.preventDefault(); autoTranslateEnabled = !autoTranslateEnabled; localStorage.setItem('autoTranslate', autoTranslateEnabled); const cb = document.getElementById('auto-translate-checkbox'); if(cb) cb.checked = autoTranslateEnabled; };
 
+// ==========================================
+// 3. UI HELPER (MODALS & NAVIGATION)
+// ==========================================
 let activeDialogs = [];
 window.openDialog = (id) => { const el = document.getElementById(id); if(!el) return; document.getElementById('dialogLayer')?.classList.remove('hidden'); document.getElementById('dialogLayer')?.classList.add('active'); el.classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
 window.closeDialog = (id) => { const el = document.getElementById(id); if(!el) return; el.classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer')?.classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300); document.body.style.overflow = ''; } };
@@ -57,11 +136,9 @@ window.closeTopDialog = () => { if(activeDialogs.length > 0) window.closeDialog(
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape') window.closeTopDialog(); });
 window.showModalAlert = (msg) => { const el = document.getElementById('dialog-alert-msg'); if(el) { el.innerText = msg; window.openDialog('dialog-alert'); } };
 window.showModalConfirm = (msg, onConfirmCallback) => { const el = document.getElementById('dialog-confirm-msg'); if(el) { el.innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); } };
-window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin: ${text}`); }); };
+window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil disalin!`); }); };
 
 window.downloadBase64File = (dataUrl, filename) => { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
-
-// FIX: Metode Blob (Bypass popup "Download Lagi?" dari browser)
 window.handleDownload = async (url, itemId, event) => {
     if (!url || url === '#') return;
     if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
@@ -99,11 +176,7 @@ window.handleDownload = async (url, itemId, event) => {
             document.body.appendChild(a);
             a.click();
             
-            setTimeout(() => {
-                window.URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(a);
-                if(btn) btn.innerHTML = origHTML;
-            }, 1000);
+            setTimeout(() => { window.URL.revokeObjectURL(blobUrl); document.body.removeChild(a); if(btn) btn.innerHTML = origHTML; }, 1000);
         } catch(e) {
             let iframe = document.getElementById('download-iframe');
             if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
@@ -113,12 +186,29 @@ window.handleDownload = async (url, itemId, event) => {
     }
 };
 
+window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay')?.classList.remove('active'); };
+window.switchScreen = (id) => { 
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
+    const el = document.getElementById(id); 
+    if(el) { el.classList.remove('hidden'); window.scrollTo(0, 0); }
+    
+    // Inisiasi form otomatis agar Icon Mod muncul saat di tab Upload
+    if(id === 'screen-add') {
+        const wrap = document.getElementById('selected-category-text-wrap');
+        if(wrap && wrap.innerHTML === '') window.selectCategoryForm('Mod');
+    }
+};
+window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert("Silakan masuk untuk mengakses halaman ini."); window.switchScreen('screen-login'); } };
+window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) return; const isAct = el.classList.contains('active'); window.closeAllDrawers(); if(!isAct) { el.classList.add('active'); document.getElementById('drawer-overlay')?.classList.add('active'); } };
+window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
+
+// ==========================================
+// 4. FORM OPTIONS & CATEGORIES
+// ==========================================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
-function getSafeIcon(cat) { return catIcons[cat] || ''; }
 
 window.openCategorySheet = () => {
-   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Pilih Kategori";
    const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
    const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
@@ -149,19 +239,18 @@ window.selectCategoryForm = (cat) => {
        if(wf) wf.classList.add('hidden'); 
        if(fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
        if(inputImg) inputImg.placeholder = "URL Gambar / GIF / Video...";
-       if(labelImg) labelImg.innerHTML = `Gambar / Banner Server* <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
+       if(labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar / Banner Server*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
    } else { 
        if(ws) ws.classList.remove('hidden'); 
        if(wsrv) wsrv.classList.add('hidden'); 
        if(wf) wf.classList.remove('hidden'); 
        if(fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
        if(inputImg) inputImg.placeholder = "URL Gambar...";
-       if(labelImg) labelImg.innerHTML = `Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
+       if(labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
    }
 };
 
 window.openVersionSheet = () => {
-   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Versi MCPE";
    const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
    const current = document.getElementById('selected-version-text')?.innerText || '0.15.10';
    if(opts){
@@ -175,7 +264,6 @@ window.openVersionSheet = () => {
 window.selectVersionForm = (ver) => { const el = document.getElementById('selected-version-text'); if(el) el.innerText = ver; window.closeBottomSheet(); };
 
 window.openCountrySheet = () => {
-   const titleEl = document.getElementById('sheet-title'); if(titleEl) titleEl.innerText = "Pilih Negara Server";
    const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
    const currentWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
    const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
@@ -189,12 +277,10 @@ window.openCountrySheet = () => {
 };
 window.selectCountryForm = (country) => { const el = document.getElementById('selected-country-text-wrap'); if(el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
 
-window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay')?.classList.remove('active'); };
-window.switchScreen = (id) => { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); const el = document.getElementById(id); if(el) { el.classList.remove('hidden'); window.scrollTo(0, 0); } };
-window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert("Silakan masuk untuk mengakses halaman ini."); window.switchScreen('screen-login'); } };
-window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) return; const isAct = el.classList.contains('active'); window.closeAllDrawers(); if(!isAct) { el.classList.add('active'); document.getElementById('drawer-overlay')?.classList.add('active'); } };
-window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
 
+// ==========================================
+// 5. AUTH & PROFIL LENGKAP
+// ==========================================
 function getRoleBadge(role) {
     if ((role === 'admin' || role === 'dev') && adminModeActive) return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
     return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
@@ -243,51 +329,12 @@ function updateHeaderAuthUI() {
     }
 }
 
-// TOGGLE MODE ADMIN
 window.toggleAdminMode = () => {
     adminModeActive = !adminModeActive;
     sessionStorage.setItem('adminMode', adminModeActive);
     updateHeaderAuthUI();
     renderItemsToUI();
     if(adminModeActive && isAdmin) loadPendingItems();
-};
-
-function loadNotifications() {
-    if(!currentUser) return;
-    onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
-        const cont = document.getElementById('notif-list-profile');
-        const badge = document.getElementById('notif-badge-profile');
-        if(!cont) return;
-        if(!snapshot.exists()) {
-            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>';
-            if(badge) badge.style.display = 'none';
-            return;
-        }
-        let html = ''; let unreadCount = 0;
-        const notifs = [];
-        snapshot.forEach(c => notifs.push({id: c.key, ...c.val()}));
-        notifs.sort((a,b) => (b.time||0) - (a.time||0));
-        
-        notifs.forEach(n => {
-            if(!n.read) unreadCount++;
-            const color = n.type === 'accepted' ? 'var(--success)' : 'var(--danger)';
-            const icon = n.type === 'accepted' ? '✓' : '✗';
-            html += `
-            <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
-                <div style="font-weight:bold; color:${color}; margin-bottom:4px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
-                <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
-                ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
-            </div>`;
-        });
-        cont.innerHTML = html;
-        if(badge) {
-            badge.innerText = unreadCount;
-            badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-        }
-    });
-}
-window.markNotifRead = async (id) => {
-    try { await update(ref(db, `notifications/${currentUser.uid}/${id}`), {read: true}); } catch(e){}
 };
 
 let splashTimeout = setTimeout(() => {
@@ -319,6 +366,8 @@ async function proceedToHome(user, pData) {
          
          const iUserEl = document.getElementById('input-self-username');
          if(iUserEl) iUserEl.value = currentUsername;
+         const iBio = document.getElementById('input-self-bio');
+         if(iBio) iBio.value = pData.bio || '';
          
          updateHeaderAuthUI();
          if(isAdmin && adminModeActive) loadPendingItems(); 
@@ -326,9 +375,6 @@ async function proceedToHome(user, pData) {
          
          window.switchScreen('screen-home'); 
          fetchAllItemsAndRender();
-         
-         const selCat = document.getElementById('selected-category-text-wrap');
-         if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
      } catch (e) {
          window.switchScreen('screen-home');
      }
@@ -353,8 +399,6 @@ setPersistence(auth, browserLocalPersistence).then(() => {
       } catch (err) { const errEl = document.getElementById('screen-error-msg'); if(errEl) errEl.innerText = "Gagal memuat akun: " + err.message; window.switchScreen('screen-error'); }
     } else {
       currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-      const selCat = document.getElementById('selected-category-text-wrap');
-      if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
     }
   });
 }).catch(() => { clearTimeout(splashTimeout); window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
@@ -396,36 +440,175 @@ window.handleProfileUpload = async (event) => {
   } catch (error) {}
 };
 
-window.openUserProfile = async (uid) => {
-    if(!currentUser) { window.showModalAlert("Silakan masuk/login untuk melihat profil."); return; }
-    try {
-        const pSnap = await get(ref(db, `profiles/${uid}`)); if(!pSnap.exists()) return; const p = pSnap.val();
-        const imgEl = document.getElementById('pub-profile-img'); if(imgEl) imgEl.src = p.avatar || generateDefaultAvatar(p.username);
-        const nameEl = document.getElementById('pub-profile-name'); if(nameEl) nameEl.innerHTML = p.username;
-        const roleEl = document.getElementById('pub-profile-role'); if(roleEl) roleEl.innerHTML = getRoleBadge(p.role);
-        const bioEl = document.getElementById('pub-profile-bio'); if(bioEl) bioEl.innerText = p.bio || (uid === currentUser.uid ? 'Belum ada bio.' : '');
-        const joinedEl = document.getElementById('pub-profile-joined'); if(joinedEl) joinedEl.innerText = formatDate(p.joinedAt); 
-        const itemsEl = document.getElementById('pub-profile-items'); if(itemsEl) itemsEl.innerText = p.itemCount || 0;
-        
-        const editSec = document.getElementById('pub-profile-edit-section');
-        if(uid === currentUser.uid) { if(editSec) editSec.classList.remove('hidden'); const iBio = document.getElementById('input-pub-bio'); if(iBio) iBio.value = p.bio || ''; } else { if(editSec) editSec.classList.add('hidden'); }
-        window.openDialog('dialog-user-profile');
-    } catch(e) { window.showModalAlert("Gagal memuat profil."); }
-};
-window.saveBio = async () => { const el = document.getElementById('input-pub-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); const bioEl = document.getElementById('pub-profile-bio'); if(bioEl) bioEl.innerText = bio; window.showModalAlert("Bio disimpan."); } catch(e) { window.showModalAlert("Error."); } };
-window.saveBioSelf = async () => { const el = document.getElementById('input-self-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
 
+// ==========================================
+// 6. PERBAIKAN FUNGSI TAB PROFIL (KONTEN, NOTIF, SETTING)
+// ==========================================
 window.switchProfileTab = (tab) => {
-    document.querySelectorAll('.profile-content-section').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.profile-content-section').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('hidden');
+    });
+    
     const target = document.getElementById(`tab-${tab}`);
-    if(target) target.classList.remove('hidden');
-    if(tab === 'content') window.loadMyContent();
-    if(tab === 'notif') {
+    if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
+    }
+    
+    if (tab === 'content') window.loadMyContent();
+    if (tab === 'notif') {
         const badge = document.getElementById('notif-badge-profile');
-        if(badge) badge.style.display = 'none';
+        if (badge) badge.style.display = 'none';
     }
 };
 
+window.loadMyContent = () => {
+    const cont = document.getElementById('my-content-list');
+    if(!cont || !currentUser) return;
+    
+    let myItems = globalAllItems.filter(i => i.uid === currentUser.uid).map(i => ({...i, status: 'Approved'}));
+    
+    get(ref(db, 'items_pending')).then(snap => {
+        if(snap.exists()) {
+            snap.forEach(child => {
+                const val = child.val();
+                if(val.uid === currentUser.uid) { myItems.push({id: child.key, status: 'Pending', ...val}); }
+            });
+        }
+        
+        if(myItems.length === 0) {
+            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">Belum ada konten.</p>';
+            return;
+        }
+        
+        myItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        let html = '';
+        myItems.forEach(item => {
+            const statusBadge = item.status === 'Approved' ? '<span class="item-status-badge status-approved">Approved</span>' : '<span class="item-status-badge status-pending">Pending</span>';
+            
+            html += `
+            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center; margin-bottom:10px;">
+                <div class="card-img-wrapper skeleton" style="width:80px; min-width:80px; height:80px;"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                <div class="card-body" style="padding:8px;">
+                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
+                    <div style="font-size:10px; margin-bottom:4px;">${statusBadge}</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category}</div>
+                </div>
+                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px; flex-shrink:0;" onclick="window.deletePublicItem('${item.id}', '${item.title}', '${item.status}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    });
+};
+
+function loadNotifications() {
+    if(!currentUser) return;
+    onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
+        const cont = document.getElementById('notif-list-profile');
+        const badge = document.getElementById('notif-badge-profile');
+        if(!cont) return;
+        if(!snapshot.exists()) {
+            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>';
+            if(badge) badge.style.display = 'none';
+            return;
+        }
+        let html = ''; let unreadCount = 0;
+        const notifs = [];
+        snapshot.forEach(c => notifs.push({id: c.key, ...c.val()}));
+        notifs.sort((a,b) => (b.time||0) - (a.time||0));
+        
+        notifs.forEach(n => {
+            if(!n.read) unreadCount++;
+            const color = n.type === 'accepted' ? 'var(--success)' : 'var(--danger)';
+            const icon = n.type === 'accepted' ? '✓' : '✗';
+            html += `
+            <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
+                <div style="font-weight:bold; color:${color}; margin-bottom:4px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
+                <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
+                ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
+            </div>`;
+        });
+        cont.innerHTML = html;
+        if(badge) {
+            badge.innerText = unreadCount;
+            badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+    });
+}
+window.markNotifRead = async (id) => {
+    try { await update(ref(db, `notifications/${currentUser.uid}/${id}`), {read: true}); } catch(e){}
+};
+
+window.saveBioSelf = async () => { const el = document.getElementById('input-self-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
+window.changeUserPassword = async () => {
+    if (!currentUser) return;
+    const oldPass = document.getElementById('input-old-password').value;
+    const newPass = document.getElementById('input-new-password').value;
+    const confPass = document.getElementById('input-confirm-password').value;
+
+    if (!oldPass || !newPass || !confPass) { window.showModalAlert("Harap isi semua kolom password."); return; }
+    if (newPass !== confPass) { window.showModalAlert("Password baru dan konfirmasi tidak cocok."); return; }
+    if (newPass.length < 6) { window.showModalAlert("Password baru minimal 6 karakter."); return; }
+
+    try {
+        const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPass);
+        
+        window.showModalAlert("Password berhasil diubah!");
+        document.getElementById('input-old-password').value = '';
+        document.getElementById('input-new-password').value = '';
+        document.getElementById('input-confirm-password').value = '';
+    } catch (error) {
+        if (error.code === 'auth/invalid-credential') window.showModalAlert("Password lama salah atau mendaftar menggunakan Google.");
+        else window.showModalAlert("Gagal mengubah password: " + error.message);
+    }
+};
+window.changeUsernameSettings = async () => {
+    if (!currentUser) return;
+    const newName = document.getElementById('input-self-username').value.trim();
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert("Username hanya boleh berisi huruf, angka, underscore (3-16 karakter)."); return; }
+    if (newName === currentUsername) { window.showModalAlert("Username masih sama dengan yang sekarang."); return; }
+
+    try {
+        const pSnap = await get(ref(db, `profiles/${currentUser.uid}`));
+        const pData = pSnap.val();
+        const now = Date.now();
+        const lastChange = pData.lastUsernameChange || 0;
+        const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
+        
+        if (daysPassed < 30) {
+            const remaining = Math.ceil(30 - daysPassed);
+            document.getElementById('username-cooldown-text').innerText = `Anda baru bisa mengganti username dalam ${remaining} hari lagi.`;
+            document.getElementById('input-self-username').value = currentUsername; 
+            return;
+        }
+
+        const usernameLower = newName.toLowerCase();
+        const unSnap = await get(ref(db, `usernames/${usernameLower}`));
+        if (unSnap.exists()) { window.showModalAlert("Username ini sudah dipakai orang lain."); return; }
+
+        const updates = {};
+        if (currentUsername) updates[`usernames/${currentUsername.toLowerCase()}`] = null;
+        updates[`usernames/${usernameLower}`] = currentUser.uid;
+        updates[`profiles/${currentUser.uid}/username`] = newName;
+        updates[`profiles/${currentUser.uid}/lastUsernameChange`] = now; 
+
+        await update(ref(db), updates);
+        currentUsername = newName;
+        document.getElementById('profile-name').innerText = currentUsername;
+        document.getElementById('sidebar-name').innerText = currentUsername;
+        document.getElementById('username-cooldown-text').innerText = "Username berhasil diperbarui!";
+        document.getElementById('username-cooldown-text').style.color = "var(--success)";
+        
+    } catch (error) { window.showModalAlert("Gagal mengganti username."); }
+};
+
+
+// ==========================================
+// 7. RENDERING ITEM & HAPUS ITEM (ADMIN)
+// ==========================================
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
 window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; renderCategoryChips(); renderItemsToUI(); };
 
@@ -489,8 +672,6 @@ window.openDetail = async (itemId) => {
     const badgeEl = document.getElementById('detail-uploader-badge'); if(badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
     const avatarEl = document.getElementById('detail-uploader-avatar'); if(avatarEl) avatarEl.src = avatarUrl;
     if(nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
-    if(avatarEl) avatarEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); }; 
-    if(nameEl) nameEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); };
     
     const catEl = document.getElementById('detail-category'); if(catEl) catEl.innerText = item.category; 
     const verEl = document.getElementById('detail-version'); if(verEl) verEl.innerText = item.version || 'All Vers.'; 
@@ -499,7 +680,16 @@ window.openDetail = async (itemId) => {
     const actionContainer = document.getElementById('detail-action-container'); 
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
-    if(actionContainer) actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)">${dlIconSVG} Download File</button>`;
+    // Tambahan tombol Hapus khusus admin di halaman detail
+    let adminActionHTML = '';
+    if (isAdmin && adminModeActive) {
+        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active');" style="flex:1; margin-left:10px;">Hapus Item</button>`;
+    }
+
+    if(actionContainer) actionContainer.innerHTML = `<div style="display:flex; width:100%;">
+         <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} Download File</button>
+         ${adminActionHTML}
+    </div>`;
 
     loadComments(itemId);
     const cfContainer = document.getElementById('comment-form-container'); const cpPrompt = document.getElementById('comment-login-prompt');
@@ -522,14 +712,18 @@ function renderItemsToUI() {
   if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
   if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0)); else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
   
-  if (displayItems.length === 0 && container) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ditemukan.</p>`; }
+  if (displayItems.length === 0 && container) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">Tidak ditemukan.</p>`; }
 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
   let htmlBuf = '';
   
   displayItems.forEach(item => {
-      // Tombol Edit Khusus Mode Admin
-      const adminEditBtn = (isAdmin && adminModeActive) ? `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>` : '';
+      // Tombol Khusus Admin
+      let adminEditBtn = ''; let adminDeleteBtn = '';
+      if (isAdmin && adminModeActive) {
+          adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
+          adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
+      }
 
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
@@ -569,11 +763,11 @@ function renderItemsToUI() {
                         <span id="players-${item.id}">0 / 0</span>
                     </div>
                     ${adminEditBtn}
+                    ${adminDeleteBtn}
                 </div>
             </div>
         </div>`;
       } else if (isSemua) {
-        // TAMPILAN SEMUA (COMPACT)
         htmlBuf += `
         <div class="card-compact-all">
             <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
@@ -585,6 +779,7 @@ function renderItemsToUI() {
                 </div>
             </div>
             ${adminEditBtn}
+            ${adminDeleteBtn}
             <button class="btn-download-compact" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)">
                 <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </button>
@@ -599,6 +794,7 @@ function renderItemsToUI() {
             <div style="margin-bottom:8px; display:flex; align-items:center;">
                <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="margin-left:6px; background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
                ${adminEditBtn}
+               ${adminDeleteBtn}
             </div>
             <p class="card-desc">${item.desc_id || item.desc || ''}</p>
             <div class="flex" style="gap:10px;">${actionBtnHTML}</div>
@@ -621,46 +817,57 @@ function renderItemsToUI() {
   }
   
   if(container) container.innerHTML = htmlBuf;
+  window.applyTranslation(); // Terapkan translate lagi setelah render
 }
 
-window.loadMyContent = () => {
-    const cont = document.getElementById('my-content-list');
-    if(!cont || !currentUser) return;
+// ==========================================
+// 8. KOMENTAR & UPLOAD
+// ==========================================
+window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
+const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+
+let globalProfilesCache = {};
+function loadComments(itemId) {
+    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; 
+    commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat...</p>`;
     
-    let myItems = globalAllItems.filter(i => i.uid === currentUser.uid).map(i => ({...i, status: 'Approved'}));
+    // PERBAIKAN: Hentikan listener lama agar komentar tidak tampil dobel
+    if (currentCommentRef) { off(currentCommentRef); }
+    currentCommentRef = ref(db, `comments/${itemId}`);
     
-    get(ref(db, 'items_pending')).then(snap => {
-        if(snap.exists()) {
-            snap.forEach(child => {
-                const val = child.val();
-                if(val.uid === currentUser.uid) { myItems.push({id: child.key, status: 'Pending', ...val}); }
-            });
-        }
+    onValue(currentCommentRef, async (snapshot) => {
+        commentsList.innerHTML = ''; 
+        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
         
-        if(myItems.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada konten.</p>';
-            return;
-        }
+        const allComments = []; 
+        snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
+        const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         
-        myItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-        let html = '';
-        myItems.forEach(item => {
-            const statusBadge = item.status === 'Approved' ? '<span class="item-status-badge status-approved">Approved</span>' : '<span class="item-status-badge status-pending">Pending</span>';
+        if (mainComments.length === 0) return;
+
+        let htmlBuf = '';
+        for (const comment of mainComments) {
+            let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
+            if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
+            else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
+            const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
             
-            html += `
-            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center; margin-bottom:10px;">
-                <div class="card-img-wrapper skeleton" style="width:80px; min-width:80px; height:80px;"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
-                <div class="card-body" style="padding:8px;">
-                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
-                    <div style="font-size:10px; margin-bottom:4px;">${statusBadge}</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category}</div>
+            htmlBuf += `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
+                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
                 </div>
-                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px; flex-shrink:0;" onclick="window.deletePublicItem('${item.id}', '${item.title}', '${item.status}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                <p class="comment-text">${escapeHtml(comment.text)}</p>
+                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
             </div>`;
-        });
-        cont.innerHTML = html;
+        }
+        commentsList.innerHTML = htmlBuf;
     });
-};
+}
+window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
+window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
+function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
 let cropperInstance = null;
 window.handleLocalImage = (e) => {
@@ -736,6 +943,9 @@ window.submitItem = async () => {
   if(btnSubmit) btnSubmit.disabled = false;
 };
 
+// ==========================================
+// 9. ADMIN PANEL & KELOLA ITEM
+// ==========================================
 function loadPendingItems() {
   if(!isAdmin || !adminModeActive) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
@@ -771,12 +981,12 @@ function loadPendingItems() {
                 ${testBtnHTML}
               </div>
               <div class="admin-queue-actions" style="margin-top:12px; border-top:1px dashed var(--border-color); padding-top:12px;">
-                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
+                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')" data-i18n="cancel">Tolak</button>
                 <button class="btn btn-success" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima & Publikasi</button>
               </div>
           </div>`;
       });
-    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Tidak ada antrean saat ini.</p>`; }
+    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;" data-i18n="no_queue">Tidak ada antrean.</p>`; }
     const badgeCount = document.getElementById('pending-count'); if(badgeCount) badgeCount.innerText = count;
   });
 }
@@ -793,9 +1003,9 @@ window.deletePublicItem = (id, title, status) => {
         try { 
             if(status === 'Pending') await remove(ref(db, `items_pending/${id}`));
             else await remove(ref(db, `items_public/${id}`)); 
-            window.showModalAlert("Dihapus.");
-            window.loadMyContent(); 
-        } catch(e){} 
+            window.showModalAlert("Item berhasil dihapus.");
+            if(window.loadMyContent) window.loadMyContent(); 
+        } catch(e) { window.showModalAlert("Gagal menghapus."); } 
     }); 
 };
 
@@ -815,103 +1025,4 @@ window.saveAdminEdit = async () => {
         window.showModalAlert('Berhasil diupdate!');
         window.closeDialog('dialog-edit-admin');
     } catch(e) { window.showModalAlert('Gagal update: ' + e.message); }
-};
-
-window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
-const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-
-let globalProfilesCache = {};
-function loadComments(itemId) {
-    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Memuat...</p>`;
-    onValue(ref(db, `comments/${itemId}`), async (snapshot) => {
-        commentsList.innerHTML = ''; if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
-        const allComments = []; snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
-        const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        if (mainComments.length === 0) return;
-
-        for (const comment of mainComments) {
-            let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
-            if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
-            else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
-            const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
-            commentsList.innerHTML += `
-            <div class="comment-item">
-                <div class="comment-header">
-                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
-                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
-                </div>
-                <p class="comment-text">${escapeHtml(comment.text)}</p>
-                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
-            </div>`;
-        }
-    });
-}
-window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
-window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
-function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = 'Translate'; } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = 'Show original'; } else {bEl.innerText = 'Translate';} } catch(e) {bEl.innerText = 'Translate';} } }
-
-window.changeUserPassword = async () => {
-    if (!currentUser) return;
-    const oldPass = document.getElementById('input-old-password').value;
-    const newPass = document.getElementById('input-new-password').value;
-    const confPass = document.getElementById('input-confirm-password').value;
-
-    if (!oldPass || !newPass || !confPass) { window.showModalAlert("Harap isi semua kolom password."); return; }
-    if (newPass !== confPass) { window.showModalAlert("Password baru dan konfirmasi tidak cocok."); return; }
-    if (newPass.length < 6) { window.showModalAlert("Password baru minimal 6 karakter."); return; }
-
-    try {
-        const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
-        await reauthenticateWithCredential(currentUser, credential);
-        await updatePassword(currentUser, newPass);
-        
-        window.showModalAlert("Password berhasil diubah!");
-        document.getElementById('input-old-password').value = '';
-        document.getElementById('input-new-password').value = '';
-        document.getElementById('input-confirm-password').value = '';
-    } catch (error) {
-        if (error.code === 'auth/invalid-credential') window.showModalAlert("Password lama salah atau mendaftar menggunakan Google.");
-        else window.showModalAlert("Gagal mengubah password: " + error.message);
-    }
-};
-
-window.changeUsernameSettings = async () => {
-    if (!currentUser) return;
-    const newName = document.getElementById('input-self-username').value.trim();
-    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert("Username hanya boleh berisi huruf, angka, underscore (3-16 karakter)."); return; }
-    if (newName === currentUsername) { window.showModalAlert("Username masih sama dengan yang sekarang."); return; }
-
-    try {
-        const pSnap = await get(ref(db, `profiles/${currentUser.uid}`));
-        const pData = pSnap.val();
-        const now = Date.now();
-        const lastChange = pData.lastUsernameChange || 0;
-        const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
-        
-        if (daysPassed < 30) {
-            const remaining = Math.ceil(30 - daysPassed);
-            document.getElementById('username-cooldown-text').innerText = `Anda baru bisa mengganti username dalam ${remaining} hari lagi.`;
-            document.getElementById('input-self-username').value = currentUsername; 
-            return;
-        }
-
-        const usernameLower = newName.toLowerCase();
-        const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-        if (unSnap.exists()) { window.showModalAlert("Username ini sudah dipakai orang lain."); return; }
-
-        const updates = {};
-        if (currentUsername) updates[`usernames/${currentUsername.toLowerCase()}`] = null;
-        updates[`usernames/${usernameLower}`] = currentUser.uid;
-        updates[`profiles/${currentUser.uid}/username`] = newName;
-        updates[`profiles/${currentUser.uid}/lastUsernameChange`] = now; 
-
-        await update(ref(db), updates);
-        currentUsername = newName;
-        document.getElementById('profile-name').innerText = currentUsername;
-        document.getElementById('sidebar-name').innerText = currentUsername;
-        document.getElementById('username-cooldown-text').innerText = "Username berhasil diperbarui!";
-        document.getElementById('username-cooldown-text').style.color = "var(--success)";
-        
-    } catch (error) { window.showModalAlert("Gagal mengganti username."); }
 };
