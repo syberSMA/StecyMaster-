@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getDatabase, ref, onValue, set, get, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { staticItems } from "./data-static.js";
 
@@ -25,7 +25,6 @@ let currentDetailItemId = null; let lastCommentTime = 0;
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
 let adminQueueMemory = {}; // State memory untuk test file admin
 
-// FIX IKON KATEGORI
 const catIcons = {
     'Semua': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     'Mod': '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
@@ -208,12 +207,10 @@ async function proceedToHome(user, pData) {
          if(profRoleBadge) profRoleBadge.innerHTML = roleB; 
          if(sideRoleBadge) sideRoleBadge.innerHTML = roleB;
          
-         const statUpEl = document.getElementById('stat-upload');
          const iUserEl = document.getElementById('input-self-username');
          const adminMenu = document.getElementById('drawer-menu-admin');
          const authSec = document.getElementById('sidebar-auth-section');
     
-         if(statUpEl) statUpEl.innerText = pData.itemCount || 0;
          if(iUserEl) iUserEl.value = currentUsername;
          if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
          else if(adminMenu) adminMenu.classList.add('hidden');
@@ -403,7 +400,6 @@ window.openDetail = async (itemId) => {
 }
 window.closeDetailAndLogin = () => { const dContainer = document.getElementById('screen-detail-container'); if(dContainer) dContainer.classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
 
-// FIX RENDER ITEMS: "Oleh: System" dan "Badge Dev" DIHAPUS DARI BERANDA
 function renderItemsToUI() {
   const container = document.getElementById('public-items-container'); if(!container) return; container.innerHTML = '';
   const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
@@ -494,6 +490,19 @@ function renderItemsToUI() {
           `;
       }
   });
+
+  if (currentUser) {
+      let totalMyUploads = 0; let totalMyDownloads = 0;
+      globalAllItems.forEach(it => {
+          if (it.uid === currentUser.uid) {
+              totalMyUploads++;
+              if (it.downloadsData) totalMyDownloads += Object.keys(it.downloadsData).length;
+          }
+      });
+      const statUpEl = document.getElementById('stat-upload'); const statDlEl = document.getElementById('stat-download');
+      if (statUpEl) statUpEl.innerText = totalMyUploads;
+      if (statDlEl) statDlEl.innerText = totalMyDownloads;
+  }
   
   if(container) container.innerHTML = htmlBuf;
   if(myContentContainer && myContentBuf) myContentContainer.innerHTML = myContentBuf;
@@ -574,17 +583,16 @@ window.submitItem = async () => {
   if(btnSubmit) btnSubmit.disabled = false;
 };
 
-// FIX PANEL ADMIN: LAYOUT & TEST PREVIEW (Cegah Base64 Error HTML)
 function loadPendingItems() {
   if(!isAdmin) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
     const container = document.getElementById('pending-items-container'); if(!container) return; container.innerHTML = ''; let count = 0;
-    adminQueueMemory = {}; // reset memori antrean
+    adminQueueMemory = {}; 
     
     if (snapshot.exists()) {
       snapshot.forEach(child => {
         count++; const item = child.val();
-        adminQueueMemory[child.key] = item; // Simpan item ke memori RAM
+        adminQueueMemory[child.key] = item; 
         
         let testBtnHTML = item.category === 'Server' 
            ? `<button class="btn btn-secondary" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` 
@@ -620,20 +628,8 @@ function loadPendingItems() {
   });
 }
 
-// Fungsi Test Akses untuk Admin (Bisa langsung panggil tanpa merusak atribut HTML dengan string kepanjangan)
-window.testAdminFile = (key) => {
-    const item = adminQueueMemory[key];
-    if(item && item.url_file) { window.handleDownload(item.url_file, key); }
-};
-window.testAdminImage = (key) => {
-    const item = adminQueueMemory[key];
-    if(item && item.url_img) {
-        if (item.url_img.startsWith('data:')) {
-            const newTab = window.open();
-            newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`;
-        } else { window.open(item.url_img, '_blank'); }
-    }
-};
+window.testAdminFile = (key) => { const item = adminQueueMemory[key]; if(item && item.url_file) { window.handleDownload(item.url_file, key); } };
+window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if(item && item.url_img) { if (item.url_img.startsWith('data:')) { const newTab = window.open(); newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`; } else { window.open(item.url_img, '_blank'); } } };
 
 window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
@@ -673,3 +669,68 @@ window.postComment = async () => { if(!currentUser) return; const tEl = document
 window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
 function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = 'Translate'; } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = 'Show original'; } else {bEl.innerText = 'Translate';} } catch(e) {bEl.innerText = 'Translate';} } }
+
+window.changeUserPassword = async () => {
+    if (!currentUser) return;
+    const oldPass = document.getElementById('input-old-password').value;
+    const newPass = document.getElementById('input-new-password').value;
+    const confPass = document.getElementById('input-confirm-password').value;
+
+    if (!oldPass || !newPass || !confPass) { window.showModalAlert("Harap isi semua kolom password."); return; }
+    if (newPass !== confPass) { window.showModalAlert("Password baru dan konfirmasi tidak cocok."); return; }
+    if (newPass.length < 6) { window.showModalAlert("Password baru minimal 6 karakter."); return; }
+
+    try {
+        const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPass);
+        
+        window.showModalAlert("Password berhasil diubah!");
+        document.getElementById('input-old-password').value = '';
+        document.getElementById('input-new-password').value = '';
+        document.getElementById('input-confirm-password').value = '';
+    } catch (error) {
+        if (error.code === 'auth/invalid-credential') window.showModalAlert("Password lama salah atau mendaftar menggunakan Google.");
+        else window.showModalAlert("Gagal mengubah password: " + error.message);
+    }
+};
+
+window.changeUsernameSettings = async () => {
+    if (!currentUser) return;
+    const newName = document.getElementById('input-self-username').value.trim();
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert("Username hanya boleh berisi huruf, angka, underscore (3-16 karakter)."); return; }
+    if (newName === currentUsername) { window.showModalAlert("Username masih sama dengan yang sekarang."); return; }
+
+    try {
+        const pSnap = await get(ref(db, `profiles/${currentUser.uid}`));
+        const pData = pSnap.val();
+        const now = Date.now();
+        const lastChange = pData.lastUsernameChange || 0;
+        const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
+        
+        if (daysPassed < 30) {
+            const remaining = Math.ceil(30 - daysPassed);
+            document.getElementById('username-cooldown-text').innerText = `Anda baru bisa mengganti username dalam ${remaining} hari lagi.`;
+            document.getElementById('input-self-username').value = currentUsername; 
+            return;
+        }
+
+        const usernameLower = newName.toLowerCase();
+        const unSnap = await get(ref(db, `usernames/${usernameLower}`));
+        if (unSnap.exists()) { window.showModalAlert("Username ini sudah dipakai orang lain."); return; }
+
+        const updates = {};
+        if (currentUsername) updates[`usernames/${currentUsername.toLowerCase()}`] = null;
+        updates[`usernames/${usernameLower}`] = currentUser.uid;
+        updates[`profiles/${currentUser.uid}/username`] = newName;
+        updates[`profiles/${currentUser.uid}/lastUsernameChange`] = now; 
+
+        await update(ref(db), updates);
+        currentUsername = newName;
+        document.getElementById('profile-name').innerText = currentUsername;
+        document.getElementById('sidebar-name').innerText = currentUsername;
+        document.getElementById('username-cooldown-text').innerText = "Username berhasil diperbarui!";
+        document.getElementById('username-cooldown-text').style.color = "var(--success)";
+        
+    } catch (error) { window.showModalAlert("Gagal mengganti username."); }
+};
