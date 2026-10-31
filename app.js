@@ -23,9 +23,7 @@ let globalAllItems = []; let currentCategoryFilter = 'Semua'; let currentSearchQ
 let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem = null;
 let currentDetailItemId = null; let lastCommentTime = 0; 
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
-let currentLang = localStorage.getItem('lang') || 'id';
 
-// ================= ICONS SVG MAPPING =================
 const catIcons = {
     'Semua': '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
@@ -48,7 +46,6 @@ function renderCategoryChips() {
     });
 }
 document.addEventListener('DOMContentLoaded', renderCategoryChips);
-
 window.toggleAutoTranslate = (e) => { if(e) e.preventDefault(); autoTranslateEnabled = !autoTranslateEnabled; localStorage.setItem('autoTranslate', autoTranslateEnabled); const cb = document.getElementById('auto-translate-checkbox'); if(cb) cb.checked = autoTranslateEnabled; };
 
 let activeDialogs = [];
@@ -60,25 +57,9 @@ window.showModalAlert = (msg) => { const el = document.getElementById('dialog-al
 window.showModalConfirm = (msg, onConfirmCallback) => { const el = document.getElementById('dialog-confirm-msg'); if(el) { el.innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); } };
 window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil menyalin: ${text}`); }); };
 
-// ================= FORCE DOWNLOAD VIA PROXY API =================
 window.downloadBase64File = (dataUrl, filename) => { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 window.handleDownload = async (url, itemId) => {
     if (!url || url === '#') return;
-    if (currentUser && itemId) {
-        try {
-            const snapItem = await get(ref(db, `items_public/${itemId}/downloadsData/${currentUser.uid}`));
-            if(!snapItem.exists()) {
-                await update(ref(db), { [`items_public/${itemId}/downloadsData/${currentUser.uid}`]: true });
-                const snapDls = await get(ref(db, `items_public/${itemId}/downloadsData`));
-                const totalDls = snapDls.exists() ? Object.keys(snapDls.val()).length : 1;
-                const uploaderId = (await get(ref(db, `items_public/${itemId}/uid`))).val();
-                if(uploaderId && uploaderId !== currentUser.uid && totalDls % 5 === 0 && totalDls <= 150) {
-                    const snapPts = await get(ref(db, `profiles/${uploaderId}/points`));
-                    await update(ref(db, `profiles/${uploaderId}`), {points: (snapPts.val() || 0) + 1});
-                }
-            }
-        } catch(e) {}
-    }
     if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
     let finalUrl = url; let isRedirect = false; let providerName = ''; const lowerUrl = url.toLowerCase();
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
@@ -95,7 +76,6 @@ window.handleDownload = async (url, itemId) => {
     }
 };
 
-// ================= BOTTOM SHEETS =================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
 function getSafeIcon(cat) { if(!catIcons[cat]) return ''; return catIcons[cat].replace('<svg ', '<svg style="width:20px; height:20px; flex-shrink:0; margin-right:8px; display:inline-block;" '); }
@@ -181,7 +161,6 @@ window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm(
 
 function updateHeaderAuthUI() {
     const loginBtn = document.getElementById('btn-login-header');
-    const notifBtn = document.getElementById('btn-notif-header');
     const adminMenu = document.getElementById('drawer-menu-admin');
     const profImg = document.getElementById('sidebar-profile-img');
     const profName = document.getElementById('sidebar-name');
@@ -190,10 +169,8 @@ function updateHeaderAuthUI() {
 
     if(currentUser) {
         if(loginBtn) loginBtn.classList.add('hidden');
-        if(notifBtn) notifBtn.classList.remove('hidden');
     } else {
         if(loginBtn) loginBtn.classList.remove('hidden'); 
-        if(notifBtn) notifBtn.classList.add('hidden');
         if(adminMenu) adminMenu.classList.add('hidden');
         if(profImg) profImg.src = "https://via.placeholder.com/60"; 
         if(profName) profName.innerText = "Tamu"; 
@@ -202,68 +179,62 @@ function updateHeaderAuthUI() {
     }
 }
 
-// Timeout Safeguard (Fallback biar gak stuck)
+// TIMEOUT SAFEGUARD! MENCEGAH STUCK DI SPLASH SCREEN
 let splashTimeout = setTimeout(() => {
-    window.switchScreen('screen-home');
-    fetchAllItemsAndRender();
-}, 8000); // Max 8 sec waiting for Firebase Auth
+    try { window.switchScreen('screen-home'); fetchAllItemsAndRender(); } catch(e){}
+}, 5000); 
 
 async function proceedToHome(user, pData) {
-     currentUsername = pData.username; isAdmin = pData.role === 'admin' || pData.role === 'dev';
-     
-     const profNameEl = document.getElementById('profile-name');
-     const profImgEl = document.getElementById('profile-img');
-     const sideImgEl = document.getElementById('sidebar-profile-img');
-     const sideNameEl = document.getElementById('sidebar-name');
-     const profVerBadge = document.getElementById('profile-verified-badge');
-     const profRoleBadge = document.getElementById('profile-role-badge');
-     const sideRoleBadge = document.getElementById('sidebar-role');
-     
-     if(profNameEl) profNameEl.innerText = currentUsername; 
-     if(sideNameEl) sideNameEl.innerText = currentUsername;
-     const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
-     if(profImgEl) profImgEl.src = dp; 
-     if(sideImgEl) sideImgEl.src = dp;
-     
-     if(profVerBadge) profVerBadge.innerHTML = pData.points >= 150 ? '<svg class="verified-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' : '';
-     if(profRoleBadge) profRoleBadge.innerHTML = getRoleBadge(pData.role); 
-     if(sideRoleBadge) sideRoleBadge.innerHTML = getRoleBadge(pData.role);
-     
-     let pts = pData.points || 0;
-     let level = pts >= 150 ? (pts >= 400 ? (pts >= 800 ? 3 : 2) : 1) : 0;
-     let nextTgt = level === 0 ? 150 : (level === 1 ? 400 : (level === 2 ? 800 : 9999));
-     
-     const lvlInfoEl = document.getElementById('profile-level-info');
-     const nxtTgtEl = document.getElementById('profile-next-target');
-     const progBarEl = document.getElementById('profile-progress-bar');
-     const statUpEl = document.getElementById('stat-upload');
-     const statPtEl = document.getElementById('stat-points');
-     const adminMenu = document.getElementById('drawer-menu-admin');
-     const authSec = document.getElementById('sidebar-auth-section');
-
-     if(lvlInfoEl) lvlInfoEl.innerText = `Level ${level} (${pts} Poin)`;
-     if(nxtTgtEl) nxtTgtEl.innerText = `${pts} / ${nextTgt} Poin menuju Level ${level+1}`;
-     if(progBarEl) progBarEl.style.width = `${Math.min((pts/nextTgt)*100, 100)}%`;
-     if(statUpEl) statUpEl.innerText = pData.itemCount || 0;
-     if(statPtEl) statPtEl.innerText = pts;
-     
-     if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
-     else if(adminMenu) adminMenu.classList.add('hidden');
-     
-     if(authSec) authSec.innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">Keluar Akun</button>`;
-
-     const today = new Date().toISOString().split('T')[0];
-     if(pData.lastDailyLogin !== today) { await update(ref(db, `profiles/${user.uid}`), { lastDailyLogin: today, points: pts + 2 }); }
-     
-     if(isAdmin) loadPendingItems(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
-     
-     const selCat = document.getElementById('selected-category-text-wrap');
-     if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
+     try {
+         currentUsername = pData.username || 'User'; 
+         isAdmin = pData.role === 'admin' || pData.role === 'dev';
+         
+         const profNameEl = document.getElementById('profile-name');
+         const sideNameEl = document.getElementById('sidebar-name');
+         const profImgEl = document.getElementById('profile-img');
+         const sideImgEl = document.getElementById('sidebar-profile-img');
+         const profRoleBadge = document.getElementById('profile-role-badge');
+         const sideRoleBadge = document.getElementById('sidebar-role');
+         
+         if(profNameEl) profNameEl.innerText = currentUsername; 
+         if(sideNameEl) sideNameEl.innerText = currentUsername;
+         
+         const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
+         if(profImgEl) profImgEl.src = dp; 
+         if(sideImgEl) sideImgEl.src = dp;
+         
+         const roleB = getRoleBadge(pData.role);
+         if(profRoleBadge) profRoleBadge.innerHTML = roleB; 
+         if(sideRoleBadge) sideRoleBadge.innerHTML = roleB;
+         
+         // Setup Profil Text (Tanpa Point System Dulu)
+         const statUpEl = document.getElementById('stat-upload');
+         const iUserEl = document.getElementById('input-self-username');
+         const adminMenu = document.getElementById('drawer-menu-admin');
+         const authSec = document.getElementById('sidebar-auth-section');
+    
+         if(statUpEl) statUpEl.innerText = pData.itemCount || 0;
+         if(iUserEl) iUserEl.value = currentUsername;
+         if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
+         else if(adminMenu) adminMenu.classList.add('hidden');
+         
+         if(authSec) authSec.innerHTML = `<button class="btn btn-secondary" onclick="window.customLogout()" style="width:100%; border-color:var(--danger); color:var(--danger);">Keluar Akun</button>`;
+    
+         if(isAdmin) loadPendingItems(); 
+         
+         window.switchScreen('screen-home'); 
+         fetchAllItemsAndRender();
+         
+         const selCat = document.getElementById('selected-category-text-wrap');
+         if(selCat) selCat.innerHTML = `${getSafeIcon('Mod')} <span>Mod</span>`;
+     } catch (e) {
+         window.switchScreen('screen-home');
+     }
 }
 
 setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, async (user) => {
-    clearTimeout(splashTimeout); // Hentikan timer fallback
+    clearTimeout(splashTimeout); 
     if (user) {
       currentUser = user; updateHeaderAuthUI();
       try {
@@ -328,9 +299,7 @@ window.openUserProfile = async (uid) => {
     try {
         const pSnap = await get(ref(db, `profiles/${uid}`)); if(!pSnap.exists()) return; const p = pSnap.val();
         const imgEl = document.getElementById('pub-profile-img'); if(imgEl) imgEl.src = p.avatar || generateDefaultAvatar(p.username);
-        const isVer = p.points >= 150 ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--info);" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' : '';
         const nameEl = document.getElementById('pub-profile-name'); if(nameEl) nameEl.innerHTML = p.username;
-        const verEl = document.getElementById('pub-profile-verified'); if(verEl) verEl.innerHTML = isVer; 
         const roleEl = document.getElementById('pub-profile-role'); if(roleEl) roleEl.innerHTML = getRoleBadge(p.role);
         const bioEl = document.getElementById('pub-profile-bio'); if(bioEl) bioEl.innerText = p.bio || (uid === currentUser.uid ? 'Belum ada bio.' : '');
         const joinedEl = document.getElementById('pub-profile-joined'); if(joinedEl) joinedEl.innerText = formatDate(p.joinedAt); 
@@ -378,7 +347,6 @@ setInterval(() => {
   }
 }, 30000);
 
-// ================= SISTEM VOTE BINTANG REAL-TIME & ANTI-ABUSE =================
 window.toggleVote = async (itemId) => {
     if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
     const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
@@ -393,11 +361,6 @@ window.toggleVote = async (itemId) => {
     } else {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
         updates[`items_public/${itemId}/stars`] = currentStars + 1;
-        if (item.uid && item.uid !== currentUser.uid && currentStars < 40) {
-            get(ref(db, `profiles/${item.uid}/points`)).then(s => {
-                update(ref(db, `profiles/${item.uid}`), { points: (s.val() || 0) + 2 });
-            });
-        }
     }
     try { await update(ref(db), updates); } catch(e) { window.showModalAlert("Gagal mengirim vote."); }
 }
@@ -411,27 +374,24 @@ window.openDetail = async (itemId) => {
     const titleEl = document.getElementById('detail-title'); if(titleEl) titleEl.innerText = item.title; 
     const nameEl = document.getElementById('detail-uploader-name'); if(nameEl) nameEl.innerText = item.username || 'System';
     
-    let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username); let isVer = '';
+    let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username);
     if(item.uid) {
-         try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); if(p.points >= 150) isVer = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } catch(e){}
+         try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); } } catch(e){}
     } else if (item.source === 'github') uploaderRole = 'dev';
     
     const badgeEl = document.getElementById('detail-uploader-badge'); if(badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
     const avatarEl = document.getElementById('detail-uploader-avatar'); if(avatarEl) avatarEl.src = avatarUrl;
-    if(nameEl) nameEl.innerHTML = `${item.username || 'System'} ${isVer}`;
+    if(nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
     if(avatarEl) avatarEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); }; 
     if(nameEl) nameEl.onclick = () => { if(item.uid) window.openUserProfile(item.uid); };
     
     const catEl = document.getElementById('detail-category'); if(catEl) catEl.innerText = item.category; 
     const verEl = document.getElementById('detail-version'); if(verEl) verEl.innerText = item.version || 'All Vers.'; 
-    const descEl = document.getElementById('detail-desc'); if(descEl) { descEl.innerText = item.desc_id || item.desc || '-'; descEl.dataset.originalText = item.desc_id || item.desc || ''; descEl.dataset.translated = "false"; }
-    const transText = document.getElementById('text-translate-desc'); if(transText) transText.innerText = 'Translate'; 
-    const transBtn = document.getElementById('btn-translate-desc'); if(transBtn) transBtn.disabled = false;
+    const descEl = document.getElementById('detail-desc'); if(descEl) { descEl.innerText = item.desc_id || item.desc || '-'; }
 
-    const actionContainer = document.getElementById('detail-action-container'); const statusContainer = document.getElementById('detail-server-status-container');
+    const actionContainer = document.getElementById('detail-action-container'); 
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
-    if(statusContainer) statusContainer.classList.add('hidden');
     if(actionContainer) actionContainer.innerHTML = `<button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}')">${dlIconSVG} Download File</button>`;
 
     loadComments(itemId);
@@ -444,7 +404,7 @@ window.openDetail = async (itemId) => {
 window.closeDetailAndLogin = () => { const dContainer = document.getElementById('screen-detail-container'); if(dContainer) dContainer.classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
 
 function renderItemsToUI() {
-  const container = document.getElementById('public-items-container'); if(container) container.innerHTML = '';
+  const container = document.getElementById('public-items-container'); if(!container) return; container.innerHTML = '';
   const myContentContainer = document.getElementById('my-content-list'); if(myContentContainer) myContentContainer.innerHTML = '';
 
   let displayItems = globalAllItems;
@@ -459,10 +419,11 @@ function renderItemsToUI() {
   const isSpecific = currentCategoryFilter !== 'Semua'; 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
-  let htmlBuf = '';
+  let htmlBuf = ''; let myContentBuf = '';
+  
   displayItems.forEach(item => {
       const userRoleBadge = item.source === 'github' ? getRoleBadge('dev') : `<span id="badge-${item.id}">${getRoleBadge('member')}</span>`;
-      if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const p=s.val(); const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(p.role); if(p.points >= 150){ const vEl=document.getElementById(`ver-${item.id}`); if(vEl) vEl.innerHTML = '<span class="verified-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>'; } } }); }
+      if(item.uid) { get(ref(db, `profiles/${item.uid}`)).then(s=>{ if(s.exists()){ const p=s.val(); const el=document.getElementById(`badge-${item.id}`); if(el) el.innerHTML = getRoleBadge(p.role); } }); }
 
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
@@ -485,7 +446,6 @@ function renderItemsToUI() {
                 <div class="server-header-row">
                     <div class="server-title-row">
                         <span class="server-title-text">${item.title}</span>
-                        <span id="ver-${item.id}"></span>
                         ${userRoleBadge}
                     </div>
                     <button class="icon-btn btn-copy-ip" onclick="window.copyText('${ipTarget}')" style="padding:4px; border:none; background:none;">
@@ -516,7 +476,7 @@ function renderItemsToUI() {
           <div class="card-body">
             <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
             <div style="font-size:11px; margin-bottom:8px; color:var(--text-muted); display:flex; align-items:center;" onclick="event.stopPropagation(); window.openUserProfile('${item.uid}')">
-               Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> <span id="ver-${item.id}"></span> ${userRoleBadge}
+               Oleh: <span class="text-main" style="margin-left:4px; margin-right:4px;">${item.username || 'System'}</span> ${userRoleBadge}
             </div>
             <div>
                <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
@@ -527,14 +487,13 @@ function renderItemsToUI() {
         </div>`;
       }
       
-      // Render My Content
-      if (currentUser && item.uid === currentUser.uid && myContentContainer) {
-          myContentContainer.innerHTML += `
+      if (currentUser && item.uid === currentUser.uid) {
+          myContentBuf += `
             <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center;">
                 <div class="card-img-wrapper" style="width:80px; min-width:80px;"><img src="${item.url_img}" class="card-img"></div>
                 <div class="card-body" style="padding:8px;">
                     <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
-                    <div style="font-size:10px; color:var(--success); font-weight:bold; margin-bottom:4px;"><svg class="icon icon-sm" style="width:10px;height:10px;vertical-align:middle;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Approved</div>
+                    <div style="font-size:10px; color:var(--success); font-weight:bold; margin-bottom:4px;"><span class="item-status-badge status-approved">Approved</span></div>
                     <div style="font-size:10px; color:var(--text-muted);"><svg class="icon icon-sm" style="width:10px;height:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ${item.downloadsData ? Object.keys(item.downloadsData).length : 0} Dls</div>
                 </div>
                 <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px;" onclick="window.deletePublicItem('${item.id}', '${item.title}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
@@ -542,7 +501,10 @@ function renderItemsToUI() {
           `;
       }
   });
+  
   if(container) container.innerHTML = htmlBuf;
+  if(myContentContainer && myContentBuf) myContentContainer.innerHTML = myContentBuf;
+  else if(myContentContainer) myContentContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada konten publik.</p>`;
 }
 
 // ================= CROPPER JS & BYPASS GIF/VIDEO =================
@@ -644,14 +606,15 @@ function loadPendingItems() {
               </div>
               <div class="admin-queue-actions">
                 <button class="btn btn-danger" style="flex:1;" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')">Tolak</button>
-                <button class="btn btn-success" style="flex:1;" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima (+15 Poin)</button>
+                <button class="btn btn-success" style="flex:1;" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima</button>
               </div>
           </div>`;
       });
     } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Tidak ada antrean.</p>`; }
+    const badgeCount = document.getElementById('pending-count'); if(badgeCount) badgeCount.innerText = count;
   });
 }
-window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {points: (pSnap.val().points||0) + 15, itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
+window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
 window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
 window.deletePublicItem = (id, title) => { window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { try { await remove(ref(db, `items_public/${id}`)); } catch(e){} }); };
@@ -665,7 +628,6 @@ function loadComments(itemId) {
         commentsList.innerHTML = ''; if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
         const allComments = []; snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
         const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        const replies = allComments.filter(c => c.parentId);
         if (mainComments.length === 0) return;
 
         for (const comment of mainComments) {
@@ -688,4 +650,4 @@ function loadComments(itemId) {
 window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
 window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
 function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = t('translate'); } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = t('show_original'); } else {bEl.innerText = t('translate');} } catch(e) {bEl.innerText = t('translate');} } }
+window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = 'Translate'; } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = 'Show original'; } else {bEl.innerText = 'Translate';} } catch(e) {bEl.innerText = 'Translate';} } }
