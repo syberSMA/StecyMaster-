@@ -23,7 +23,8 @@ let globalAllItems = []; let currentCategoryFilter = 'Semua'; let currentSearchQ
 let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem = null;
 let currentDetailItemId = null; let lastCommentTime = 0; 
 let autoTranslateEnabled = localStorage.getItem('autoTranslate') === 'true';
-let adminQueueMemory = {}; // State memory untuk test file admin
+let adminModeActive = sessionStorage.getItem('adminMode') !== 'false'; // Mode Penyamaran Admin
+let adminQueueMemory = {}; 
 
 const catIcons = {
     'Semua': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
@@ -104,7 +105,6 @@ window.handleDownload = async (url, itemId, event) => {
                 if(btn) btn.innerHTML = origHTML;
             }, 1000);
         } catch(e) {
-            // Fallback iframe jika fetch error (misal krn adblock dsb)
             let iframe = document.getElementById('download-iframe');
             if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
             iframe.src = '/api/download?url=' + encodeURIComponent(finalUrl) + '&t=' + Date.now();
@@ -141,18 +141,21 @@ window.selectCategoryForm = (cat) => {
    const wf = document.getElementById('form-file-container');
    const fileImg = document.getElementById('file-img');
    const labelImg = document.getElementById('label-img-preview');
+   const inputImg = document.getElementById('add-img');
    
    if(cat === 'Server') { 
        if(ws) ws.classList.add('hidden'); 
        if(wsrv) wsrv.classList.remove('hidden'); 
        if(wf) wf.classList.add('hidden'); 
        if(fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
+       if(inputImg) inputImg.placeholder = "URL Gambar / GIF / Video...";
        if(labelImg) labelImg.innerHTML = `Gambar / Banner Server* <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
    } else { 
        if(ws) ws.classList.remove('hidden'); 
        if(wsrv) wsrv.classList.add('hidden'); 
        if(wf) wf.classList.remove('hidden'); 
        if(fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
+       if(inputImg) inputImg.placeholder = "URL Gambar...";
        if(labelImg) labelImg.innerHTML = `Gambar Preview* <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
    }
 };
@@ -193,7 +196,7 @@ window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) 
 window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
 
 function getRoleBadge(role) {
-    if (role === 'admin' || role === 'dev') return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
+    if ((role === 'admin' || role === 'dev') && adminModeActive) return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
     return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
 }
 function generateDefaultAvatar(name) {
@@ -214,22 +217,41 @@ window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm(
 function updateHeaderAuthUI() {
     const loginBtn = document.getElementById('btn-login-header');
     const adminMenu = document.getElementById('drawer-menu-admin');
+    const adminToggle = document.getElementById('drawer-menu-admin-toggle');
     const profImg = document.getElementById('sidebar-profile-img');
     const profName = document.getElementById('sidebar-name');
     const profRole = document.getElementById('sidebar-role');
 
     if(currentUser) {
         if(loginBtn) loginBtn.classList.add('hidden');
+        if(isAdmin) {
+             if(adminToggle) adminToggle.classList.remove('hidden');
+             const cb = document.getElementById('admin-mode-checkbox');
+             if(cb) cb.checked = adminModeActive;
+             if(adminMenu) { if(adminModeActive) adminMenu.classList.remove('hidden'); else adminMenu.classList.add('hidden'); }
+        } else {
+             if(adminMenu) adminMenu.classList.add('hidden');
+             if(adminToggle) adminToggle.classList.add('hidden');
+        }
     } else {
         if(loginBtn) loginBtn.classList.remove('hidden'); 
         if(adminMenu) adminMenu.classList.add('hidden');
+        if(adminToggle) adminToggle.classList.add('hidden');
         if(profImg) profImg.src = "https://via.placeholder.com/60"; 
         if(profName) profName.innerText = "Tamu"; 
         if(profRole) profRole.innerHTML = "";
     }
 }
 
-// FIX: PENGAMBILAN NOTIFIKASI
+// TOGGLE MODE ADMIN
+window.toggleAdminMode = () => {
+    adminModeActive = !adminModeActive;
+    sessionStorage.setItem('adminMode', adminModeActive);
+    updateHeaderAuthUI();
+    renderItemsToUI();
+    if(adminModeActive && isAdmin) loadPendingItems();
+};
+
 function loadNotifications() {
     if(!currentUser) return;
     onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
@@ -296,13 +318,10 @@ async function proceedToHome(user, pData) {
          if(sideRoleBadge) sideRoleBadge.innerHTML = roleB;
          
          const iUserEl = document.getElementById('input-self-username');
-         const adminMenu = document.getElementById('drawer-menu-admin');
-    
          if(iUserEl) iUserEl.value = currentUsername;
-         if(isAdmin && adminMenu) adminMenu.classList.remove('hidden'); 
-         else if(adminMenu) adminMenu.classList.add('hidden');
          
-         if(isAdmin) loadPendingItems(); 
+         updateHeaderAuthUI();
+         if(isAdmin && adminModeActive) loadPendingItems(); 
          loadNotifications();
          
          window.switchScreen('screen-home'); 
@@ -509,8 +528,8 @@ function renderItemsToUI() {
   let htmlBuf = '';
   
   displayItems.forEach(item => {
-      // Tombol Edit untuk Admin
-      const adminEditBtn = isAdmin ? `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>` : '';
+      // Tombol Edit Khusus Mode Admin
+      const adminEditBtn = (isAdmin && adminModeActive) ? `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>` : '';
 
       if (item.category.toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
@@ -554,7 +573,7 @@ function renderItemsToUI() {
             </div>
         </div>`;
       } else if (isSemua) {
-        // TAMPILAN SEMUA (COMPACT, Tanpa Open Detail)
+        // TAMPILAN SEMUA (COMPACT)
         htmlBuf += `
         <div class="card-compact-all">
             <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
@@ -571,7 +590,6 @@ function renderItemsToUI() {
             </button>
         </div>`;
       } else {
-        // TAMPILAN KATEGORI SPESIFIK (LEBAR, Bisa Open Detail)
         let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} Download</button>`;
         htmlBuf += `
         <div class="card-vertical" onclick="window.openDetail('${item.id}')">
@@ -605,7 +623,6 @@ function renderItemsToUI() {
   if(container) container.innerHTML = htmlBuf;
 }
 
-// FIX: PENGAMBILAN KONTEN SAYA (PENDING + APPROVED)
 window.loadMyContent = () => {
     const cont = document.getElementById('my-content-list');
     if(!cont || !currentUser) return;
@@ -628,9 +645,7 @@ window.loadMyContent = () => {
         myItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
         let html = '';
         myItems.forEach(item => {
-            const statusBadge = item.status === 'Approved' 
-                ? '<span class="item-status-badge status-approved">Approved</span>' 
-                : '<span class="item-status-badge status-pending">Pending</span>';
+            const statusBadge = item.status === 'Approved' ? '<span class="item-status-badge status-approved">Approved</span>' : '<span class="item-status-badge status-pending">Pending</span>';
             
             html += `
             <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center; margin-bottom:10px;">
@@ -705,7 +720,7 @@ window.submitItem = async () => {
   if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
 
   try {
-    if (isAdmin) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
+    if (isAdmin && adminModeActive) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
     else { await push(ref(db, 'items_pending'), data); window.showModalAlert("Terkirim ke antrean!"); }
     window.switchScreen('screen-home');
     const fTitle = document.getElementById('add-title'); if(fTitle) fTitle.value = ''; 
@@ -722,7 +737,7 @@ window.submitItem = async () => {
 };
 
 function loadPendingItems() {
-  if(!isAdmin) return;
+  if(!isAdmin || !adminModeActive) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
     const container = document.getElementById('pending-items-container'); if(!container) return; container.innerHTML = ''; let count = 0;
     adminQueueMemory = {}; 
@@ -772,6 +787,7 @@ window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if(item &
 window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
 window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
+
 window.deletePublicItem = (id, title, status) => { 
     window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { 
         try { 
@@ -783,7 +799,6 @@ window.deletePublicItem = (id, title, status) => {
     }); 
 };
 
-// FIX: ADMIN EDIT PUBLISHED ITEMS
 window.openAdminEdit = (id, imgUrl, fileUrl) => {
     document.getElementById('edit-item-id').value = id;
     document.getElementById('edit-img-url').value = imgUrl;
