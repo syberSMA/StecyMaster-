@@ -57,10 +57,17 @@
       </div>
     </div>
 
-    <!-- ADMIN EDIT MODAL -->
+    <!-- ADMIN EDIT MODAL (Diperbarui dengan Judul & Deskripsi) -->
     <div id="dialog-edit-admin" class="dialog-box">
       <h3 class="text-primary font-bold" style="margin-bottom: 15px;" data-i18n="edit_item">Edit Item</h3>
       <input type="hidden" id="edit-item-id">
+      
+      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">Judul Item:</label>
+      <input type="text" id="edit-title" class="input-field text-selectable" style="padding:10px; font-size:12px;">
+      
+      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">Deskripsi Item:</label>
+      <textarea id="edit-desc" class="input-field text-selectable" rows="3" style="padding:10px; font-size:12px;"></textarea>
+
       <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;" data-i18n="edit_img_url">URL Gambar Preview:</label>
       <input type="text" id="edit-img-url" class="input-field text-selectable" style="padding:10px; font-size:12px;">
       
@@ -373,7 +380,7 @@
       <div style="width:40px;"></div>
     </header>
     
-    <div style="padding: 20px; padding-bottom:100px;">
+    <div style="padding: 20px; padding-bottom:120px;">
       <label class="form-label" data-i18n="lbl_cat">Kategori*</label>
       <div class="input-field flex items-center justify-between" onclick="window.openCategorySheet()" style="cursor:pointer; margin-bottom:20px;">
         <div class="flex items-center" style="gap:8px; font-weight:600; color:var(--primary);" id="selected-category-text-wrap"></div>
@@ -418,7 +425,6 @@
       <label class="form-label" data-i18n="description">Deskripsi*</label>
       <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
       
-      <!-- FIX: UPLOAD PREVIEW DINAMIS -->
       <label class="form-label" id="label-img-preview"><span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span></label>
       <div class="input-field text-selectable" style="padding:0; overflow:hidden; display:flex; margin-bottom:20px;">
           <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" data-i18n="url_img" placeholder="URL Gambar...">
