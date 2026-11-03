@@ -24,11 +24,8 @@ let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem =
 let currentDetailItemId = null; let lastCommentTime = 0; 
 let adminModeActive = sessionStorage.getItem('adminMode') !== 'false';
 let adminQueueMemory = {}; 
-let currentCommentRef = null; // Mencegah listener dobel pada komentar
+let currentCommentRef = null; 
 
-// ==========================================
-// 1. SISTEM TRANSLATE (i18n)
-// ==========================================
 let currentLang = localStorage.getItem('lang') || 'id';
 const uiTranslations = {
     id: {
@@ -79,7 +76,7 @@ window.applyTranslation = () => {
         const key = el.getAttribute('data-i18n');
         if (dict[key]) {
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = dict[key];
-            else el.innerText = dict[key];
+            else el.innerHTML = dict[key];
         }
     });
 };
@@ -92,16 +89,7 @@ window.toggleAutoTranslate = (e) => {
     if(cb) cb.checked = (currentLang === 'en');
     window.applyTranslation();
 };
-document.addEventListener('DOMContentLoaded', () => {
-    const cb = document.getElementById('auto-translate-checkbox');
-    if(cb) cb.checked = (currentLang === 'en');
-    window.applyTranslation();
-});
 
-
-// ==========================================
-// 2. RESOURCE DATA (IKON KATEGORI, DLL)
-// ==========================================
 const catIcons = {
     'Semua': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
@@ -112,7 +100,14 @@ const catIcons = {
     'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
     'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
-const flagIcons = { 'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb' };
+
+// DAFTAR NEGARA DITAMBAHKAN
+const flagIcons = { 
+    'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb',
+    'Arab Saudi': 'sa', 'Kolombia': 'co', 'Pakistan': 'pk', 'Jerman': 'de', 'Filipina': 'ph', 'Korea Selatan': 'kr', 'Turki': 'tr', 'Irak': 'iq', 'Paraguay': 'py', 'Tiongkok': 'cn', 'Italia': 'it', 'Norwegia': 'no', 'Meksiko': 'mx', 'Uni Eropa': 'eu'
+};
+// OPSI VERSI BARU DITAMBAHKAN
+const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10', '0.14.3 - 1.1'];
 
 function formatDate(timestamp) { if(!timestamp) return ''; return new Intl.DateTimeFormat('id-ID', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp)); }
 function getSafeIcon(cat) { return catIcons[cat] || ''; }
@@ -124,11 +119,13 @@ function renderCategoryChips() {
         cont.innerHTML += `<button class="chip ${isActive?'active':''}" onclick="window.setCategoryFilter('${cat}', this)">${catIcons[cat]} <span>${cat}</span></button>`;
     });
 }
-document.addEventListener('DOMContentLoaded', renderCategoryChips);
+document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('auto-translate-checkbox');
+    if(cb) cb.checked = (currentLang === 'en');
+    window.applyTranslation();
+    renderCategoryChips();
+});
 
-// ==========================================
-// 3. UI HELPER (MODALS & NAVIGATION)
-// ==========================================
 let activeDialogs = [];
 window.openDialog = (id) => { const el = document.getElementById(id); if(!el) return; document.getElementById('dialogLayer')?.classList.remove('hidden'); document.getElementById('dialogLayer')?.classList.add('active'); el.classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
 window.closeDialog = (id) => { const el = document.getElementById(id); if(!el) return; el.classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer')?.classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300); document.body.style.overflow = ''; } };
@@ -192,7 +189,6 @@ window.switchScreen = (id) => {
     const el = document.getElementById(id); 
     if(el) { el.classList.remove('hidden'); window.scrollTo(0, 0); }
     
-    // Inisiasi form otomatis agar Icon Mod muncul saat di tab Upload
     if(id === 'screen-add') {
         const wrap = document.getElementById('selected-category-text-wrap');
         if(wrap && wrap.innerHTML === '') window.selectCategoryForm('Mod');
@@ -202,12 +198,7 @@ window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id)
 window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) return; const isAct = el.classList.contains('active'); window.closeAllDrawers(); if(!isAct) { el.classList.add('active'); document.getElementById('drawer-overlay')?.classList.add('active'); } };
 window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
 
-// ==========================================
-// 4. FORM OPTIONS & CATEGORIES
-// ==========================================
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
-const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10'];
-
 window.openCategorySheet = () => {
    const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
    const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
@@ -277,10 +268,6 @@ window.openCountrySheet = () => {
 };
 window.selectCountryForm = (country) => { const el = document.getElementById('selected-country-text-wrap'); if(el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
 
-
-// ==========================================
-// 5. AUTH & PROFIL LENGKAP
-// ==========================================
 function getRoleBadge(role) {
     if ((role === 'admin' || role === 'dev') && adminModeActive) return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
     return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
@@ -440,10 +427,6 @@ window.handleProfileUpload = async (event) => {
   } catch (error) {}
 };
 
-
-// ==========================================
-// 6. PERBAIKAN FUNGSI TAB PROFIL (KONTEN, NOTIF, SETTING)
-// ==========================================
 window.switchProfileTab = (tab) => {
     document.querySelectorAll('.profile-content-section').forEach(el => {
         el.classList.remove('active');
@@ -607,7 +590,7 @@ window.changeUsernameSettings = async () => {
 
 
 // ==========================================
-// 7. RENDERING ITEM & HAPUS ITEM (ADMIN)
+// 9. RENDERING & KELOLA ITEM
 // ==========================================
 window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
 window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; renderCategoryChips(); renderItemsToUI(); };
@@ -680,16 +663,16 @@ window.openDetail = async (itemId) => {
     const actionContainer = document.getElementById('detail-action-container'); 
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
-    // Tambahan tombol Hapus khusus admin di halaman detail
     let adminActionHTML = '';
     if (isAdmin && adminModeActive) {
         adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active');" style="flex:1; margin-left:10px;">Hapus Item</button>`;
     }
 
     if(actionContainer) actionContainer.innerHTML = `<div style="display:flex; width:100%;">
-         <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} Download File</button>
+         <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">Download File</span></button>
          ${adminActionHTML}
     </div>`;
+    window.applyTranslation();
 
     loadComments(itemId);
     const cfContainer = document.getElementById('comment-form-container'); const cpPrompt = document.getElementById('comment-login-prompt');
@@ -718,10 +701,9 @@ function renderItemsToUI() {
   let htmlBuf = '';
   
   displayItems.forEach(item => {
-      // Tombol Khusus Admin
       let adminEditBtn = ''; let adminDeleteBtn = '';
       if (isAdmin && adminModeActive) {
-          adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}', '${item.url_img}', '${item.url_file}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
+          adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
           adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
       }
 
@@ -785,7 +767,7 @@ function renderItemsToUI() {
             </button>
         </div>`;
       } else {
-        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} Download</button>`;
+        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">Download</span></button>`;
         htmlBuf += `
         <div class="card-vertical" onclick="window.openDetail('${item.id}')">
           <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
@@ -817,57 +799,8 @@ function renderItemsToUI() {
   }
   
   if(container) container.innerHTML = htmlBuf;
-  window.applyTranslation(); // Terapkan translate lagi setelah render
+  window.applyTranslation();
 }
-
-// ==========================================
-// 8. KOMENTAR & UPLOAD
-// ==========================================
-window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
-const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-
-let globalProfilesCache = {};
-function loadComments(itemId) {
-    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; 
-    commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat...</p>`;
-    
-    // PERBAIKAN: Hentikan listener lama agar komentar tidak tampil dobel
-    if (currentCommentRef) { off(currentCommentRef); }
-    currentCommentRef = ref(db, `comments/${itemId}`);
-    
-    onValue(currentCommentRef, async (snapshot) => {
-        commentsList.innerHTML = ''; 
-        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
-        
-        const allComments = []; 
-        snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
-        const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        
-        if (mainComments.length === 0) return;
-
-        let htmlBuf = '';
-        for (const comment of mainComments) {
-            let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
-            if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
-            else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
-            const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
-            
-            htmlBuf += `
-            <div class="comment-item">
-                <div class="comment-header">
-                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
-                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
-                </div>
-                <p class="comment-text">${escapeHtml(comment.text)}</p>
-                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
-            </div>`;
-        }
-        commentsList.innerHTML = htmlBuf;
-    });
-}
-window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
-window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
-function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
 let cropperInstance = null;
 window.handleLocalImage = (e) => {
@@ -943,9 +876,6 @@ window.submitItem = async () => {
   if(btnSubmit) btnSubmit.disabled = false;
 };
 
-// ==========================================
-// 9. ADMIN PANEL & KELOLA ITEM
-// ==========================================
 function loadPendingItems() {
   if(!isAdmin || !adminModeActive) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
@@ -1009,20 +939,82 @@ window.deletePublicItem = (id, title, status) => {
     }); 
 };
 
-window.openAdminEdit = (id, imgUrl, fileUrl) => {
+// FIX: FITUR EDIT ADMIN LENGKAP (Judul, Deskripsi, Gambar, File)
+window.openAdminEdit = (id) => {
+    const item = globalAllItems.find(i => i.id === id);
+    if (!item) return;
+    
     document.getElementById('edit-item-id').value = id;
-    document.getElementById('edit-img-url').value = imgUrl;
-    document.getElementById('edit-file-url').value = fileUrl;
+    document.getElementById('edit-title').value = item.title || '';
+    document.getElementById('edit-desc').value = item.desc_id || item.desc || '';
+    document.getElementById('edit-img-url').value = item.url_img || '';
+    document.getElementById('edit-file-url').value = item.url_file || '';
+    
     window.openDialog('dialog-edit-admin');
 };
 window.saveAdminEdit = async () => {
     const id = document.getElementById('edit-item-id').value;
+    const title = document.getElementById('edit-title').value.trim();
+    const desc = document.getElementById('edit-desc').value.trim();
     const imgUrl = document.getElementById('edit-img-url').value.trim();
     const fileUrl = document.getElementById('edit-file-url').value.trim();
-    if(!imgUrl || !fileUrl) { window.showModalAlert('URL tidak boleh kosong'); return; }
+    
+    if(!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert('Semua field (Judul, Deskripsi, URL) tidak boleh kosong'); return; }
+    
     try {
-        await update(ref(db, `items_public/${id}`), { url_img: imgUrl, url_file: fileUrl });
+        await update(ref(db, `items_public/${id}`), { 
+            title: title,
+            desc_id: desc,
+            url_img: imgUrl, 
+            url_file: fileUrl 
+        });
         window.showModalAlert('Berhasil diupdate!');
         window.closeDialog('dialog-edit-admin');
     } catch(e) { window.showModalAlert('Gagal update: ' + e.message); }
 };
+
+window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
+const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+
+let globalProfilesCache = {};
+function loadComments(itemId) {
+    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; 
+    commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat...</p>`;
+    
+    if (currentCommentRef) { off(currentCommentRef); }
+    currentCommentRef = ref(db, `comments/${itemId}`);
+    
+    onValue(currentCommentRef, async (snapshot) => {
+        commentsList.innerHTML = ''; 
+        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
+        
+        const allComments = []; 
+        snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
+        const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        
+        if (mainComments.length === 0) return;
+
+        let htmlBuf = '';
+        for (const comment of mainComments) {
+            let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
+            if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
+            else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
+            const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
+            
+            htmlBuf += `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
+                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
+                </div>
+                <p class="comment-text">${escapeHtml(comment.text)}</p>
+                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
+            </div>`;
+        }
+        commentsList.innerHTML = htmlBuf;
+    });
+}
+window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
+window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
+function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = 'Translate'; } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = 'Show original'; } else {bEl.innerText = 'Translate';} } catch(e) {bEl.innerText = 'Translate';} } }
