@@ -104,7 +104,7 @@
 
   <div id="screen-splash" class="app-container screen splash-container">
     <div class="logo font-bold" style="font-size: 32px; margin-bottom: 30px;">
-      <span class="text-primary">Stecy</span><span style="color: white;">Master</span>
+      <span class="text-primary">Stecy</span><span style="color: var(--text-main);">Master</span>
     </div>
     <div class="loader"></div>
     <p style="color: var(--text-muted); margin-top: 20px; font-size: 14px; font-weight: bold;" data-i18n="loading_sys">Memuat sistem...</p>
@@ -205,14 +205,6 @@
             <input type="checkbox" id="admin-mode-checkbox" class="mcpe-toggle-checkbox" checked>
             <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
         </label>
-      </li>
-
-      <!-- TOGGLE GANTI TEMA (DARK/LIGHT) -->
-      <li onclick="window.toggleTheme()" style="justify-content: space-between; border-bottom: 1px solid var(--border-color);">
-        <div class="flex items-center" style="gap:12px;">
-           <svg class="icon icon-sm" id="theme-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-           <span data-i18n="nav_theme">Ganti Tema</span>
-        </div>
       </li>
 
       <!-- TRANSLATE UI -->
@@ -357,6 +349,7 @@
            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
            <span data-i18n="menu_settings">Pengaturan Akun</span>
        </div>
+       
        <div class="profile-menu-item danger-menu" onclick="window.customLogout()">
            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
            <span data-i18n="menu_logout">Keluar Akun</span>
@@ -381,11 +374,39 @@
 
     <!-- SUB-TAB PENGATURAN -->
     <div id="tab-settings" class="profile-content-section hidden">
+        
+        <!-- SECTION: MODE WARNA (CARD VISUAL THEME) -->
+        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; align-items:center; gap:8px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            Mode Warna
+        </h3>
+        <div class="theme-selection-container">
+            <div class="theme-card light-card" id="theme-card-light" onclick="window.setTheme('light')">
+                <div class="theme-preview-box">
+                    <div class="preview-line long"></div>
+                    <div class="preview-line short"></div>
+                    <div class="preview-accent"></div>
+                </div>
+                <div class="theme-label">Terang <div class="theme-radio"></div></div>
+            </div>
+            
+            <div class="theme-card dark-card" id="theme-card-dark" onclick="window.setTheme('dark')">
+                <div class="theme-preview-box">
+                    <div class="preview-line long"></div>
+                    <div class="preview-line short"></div>
+                    <div class="preview-accent"></div>
+                </div>
+                <div class="theme-label">Gelap <div class="theme-radio"></div></div>
+            </div>
+        </div>
+
+        <!-- SECTION: EDIT PROFIL -->
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="edit_profile">Edit Profil</h3>
         <label class="form-label" style="text-align:left; font-size:11px;" data-i18n="edit_bio">Edit Bio (Maks 80 kar):</label>
         <input type="text" id="input-self-bio" class="input-field text-selectable" maxlength="80" style="padding:10px; margin-bottom:10px; font-size:12px;">
         <button class="btn btn-primary" style="padding:10px; font-size:12px; margin-bottom:25px;" onclick="window.saveBioSelf()" data-i18n="save_bio">Simpan Bio</button>
 
+        <!-- SECTION: PENGATURAN AKUN -->
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="menu_settings">Pengaturan Akun</h3>
 
         <label class="form-label" style="text-align:left; font-size:11px;" data-i18n="change_user">Ganti Username (Batas 1x / 30 Hari):</label>
@@ -507,7 +528,7 @@
             <span data-i18n="review_queue">Antrean Review</span> (<span id="pending-count">0</span>)
         </button>
         <button class="btn btn-secondary" style="flex:1; padding:10px; font-size:12px;" onclick="window.switchAdminTab('feedback')" id="tab-admin-feedback">
-            Laporan Feedback
+            Laporan Bug / Feedback
         </button>
     </div>
     
