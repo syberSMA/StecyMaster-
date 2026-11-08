@@ -47,7 +47,6 @@ window.applyTheme = () => {
         document.body.classList.remove('light-theme');
     }
     
-    // Update visual kartu di halaman Pengaturan Akun
     const lightCard = document.getElementById('theme-card-light');
     const darkCard = document.getElementById('theme-card-dark');
     if (lightCard && darkCard) {
@@ -168,7 +167,7 @@ function renderCategoryChips() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.applyTheme(); // Terapkan tema saat halaman dimuat
+    window.applyTheme(); 
     const cb = document.getElementById('auto-translate-checkbox');
     if (cb) cb.checked = (currentLang === 'en');
     window.applyTranslation();
@@ -265,7 +264,7 @@ window.handleDownload = async (url, itemId, event) => {
     } else {
         const btn = event?.currentTarget;
         const origHTML = btn ? btn.innerHTML : '';
-        if (btn) btn.innerHTML = '<div class="loader-inline"></div> Mengunduh...';
+        if (btn) btn.innerHTML = '<div class="loader-inline"></div>...';
         
         try {
             const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
@@ -366,8 +365,9 @@ window.openCategorySheet = () => {
     document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
 
+// BUG FIX #1 & #2: Tambahan proteksi trim() agar icon selalu terdeteksi
 window.selectCategoryForm = (cat) => {
-    cat = cat.trim(); // BUG FIX #1: Pastikan teks kategori selalu bersih dari spasi ekstra
+    cat = (cat || 'Mod').trim(); 
     const wrap = document.getElementById('selected-category-text-wrap');
     if (wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
     window.closeBottomSheet();
@@ -768,7 +768,7 @@ window.loadMyContent = () => {
                 <div class="card-body" style="padding:8px;">
                     <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
                     <div style="font-size:10px; margin-bottom:4px;">${statusBadge}</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category}</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category || ''}</div>
                 </div>
                 <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px; flex-shrink:0;" onclick="window.deletePublicItem('${item.id}', '${item.title}', '${item.status}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>`;
@@ -958,10 +958,11 @@ setInterval(() => {
   }
 }, 30000);
 
-// SISTEM LIKE REAL-TIME DENGAN ANTI-ABUSE & POIN
+// SISTEM LIKE REAL-TIME DENGAN ANTI-ABUSE & POIN (BUG FIX #3)
 window.toggleLike = async (itemId) => {
     if (!currentUser) {
-        window.showModalAlert("Silakan masuk/login untuk menyukai item ini.");
+        window.showModalAlert("Silakan masuk/login terlebih dahulu untuk menyukai item ini.");
+        window.switchScreen('screen-login'); // Lempar user ke halaman login jika belum login
         return;
     }
     const item = globalAllItems.find(i => i.id === itemId);
@@ -997,12 +998,12 @@ window.toggleLike = async (itemId) => {
             }
         }
     } catch (e) {
-        window.showModalAlert("Gagal memproses like.");
+        window.showModalAlert("Gagal memproses like. Cek koneksi Anda.");
     }
 };
 
 window.toggleVote = async (itemId) => {
-    if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
+    if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); window.switchScreen('screen-login'); return; }
     const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
     if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert("Kamu tidak bisa vote server milikmu sendiri."); return; }
 
@@ -1047,7 +1048,7 @@ window.openDetail = async (itemId) => {
     const avatarEl = document.getElementById('detail-uploader-avatar'); if (avatarEl) avatarEl.src = avatarUrl;
     if (nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
     
-    const catEl = document.getElementById('detail-category'); if (catEl) catEl.innerText = item.category; 
+    const catEl = document.getElementById('detail-category'); if (catEl) catEl.innerText = item.category || ''; 
     const verEl = document.getElementById('detail-version'); if (verEl) verEl.innerText = item.version || 'All Vers.'; 
     const descEl = document.getElementById('detail-desc'); if (descEl) { descEl.innerText = item.desc_id || item.desc || '-'; }
 
@@ -1056,11 +1057,12 @@ window.openDetail = async (itemId) => {
 
     const likesCount = item.likes ? Object.keys(item.likes).length : 0;
     const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
-    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+    // IKON JEMPOL / THUMBS UP
+    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 
     let adminActionHTML = '';
     if (isAdmin && adminModeActive) {
-        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active'); document.body.style.overflow='';" style="flex:1;">Hapus</button>`;
+        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${escapeHtml(item.title)}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active'); document.body.style.overflow='';" style="flex:1;">Hapus</button>`;
     }
 
     if (actionContainer) {
@@ -1109,6 +1111,7 @@ function renderItemsToUI() {
   const isSemua = currentCategoryFilter === 'Semua';
   
   if (isSemua) {
+      // BUG FIX #3: Pelindung untuk data lama yang mungkin field category-nya hilang/undefined
       displayItems = displayItems.filter(item => (item.category || '').toLowerCase() !== 'server');
   } else {
       displayItems = displayItems.filter(item => (item.category || '').toLowerCase() === currentCategoryFilter.toLowerCase());
@@ -1136,7 +1139,7 @@ function renderItemsToUI() {
       let adminDeleteBtn = '';
       if (isAdmin && adminModeActive) {
           adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
-          adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
+          adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${escapeHtml(item.title)}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
       }
 
       if ((item.category || '').toLowerCase() === 'server') {
@@ -1184,9 +1187,10 @@ function renderItemsToUI() {
       } else {
         const likesCount = item.likes ? Object.keys(item.likes).length : 0;
         const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+        // IKON JEMPOL
         const likeBtnHTML = `
             <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); window.toggleLike('${item.id}')">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
                 <span>${likesCount}</span>
             </button>`;
 
@@ -1195,9 +1199,9 @@ function renderItemsToUI() {
             <div class="card-compact-all">
                 <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
                 <div class="card-body">
-                    <h3 class="text-main">${item.title}</h3>
-                    <div style="display:flex; gap:6px; margin-bottom:4px; align-items:center;">
-                        <span class="card-meta">${item.category}</span>
+                    <h3 class="text-main">${item.title || 'Tanpa Judul'}</h3>
+                    <div class="card-meta-container">
+                        <span class="card-meta">${item.category || 'Lainnya'}</span>
                         ${item.version ? `<span class="card-meta" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
                     </div>
                 </div>
@@ -1214,9 +1218,10 @@ function renderItemsToUI() {
             <div class="card-vertical" onclick="window.openDetail('${item.id}')">
               <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
               <div class="card-body">
-                <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
-                <div style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                   <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+                <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title || 'Tanpa Judul'}</h3>
+                <div class="card-meta-container" style="margin-bottom:8px;">
+                   <span class="card-meta">${item.category || 'Lainnya'}</span> 
+                   ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
                    ${adminEditBtn}
                    ${adminDeleteBtn}
                 </div>
