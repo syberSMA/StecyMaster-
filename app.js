@@ -35,29 +35,36 @@ let adminQueueMemory = {};
 let currentCommentRef = null;
 let feedbackImageBase64 = null;
 
-// Pengaturan Tema Terang / Gelap
+// ==========================================
+// TEMA TERANG / GELAP (Mode Warna)
+// ==========================================
 let isLightMode = localStorage.getItem('theme') === 'light';
 
-function applyTheme() {
-    const themeIcon = document.getElementById('theme-icon');
+window.applyTheme = () => {
     if (isLightMode) {
         document.body.classList.add('light-theme');
-        if (themeIcon) {
-            themeIcon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
-        }
     } else {
         document.body.classList.remove('light-theme');
-        if (themeIcon) {
-            themeIcon.innerHTML = `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
+    }
+    
+    // Update visual kartu di halaman Pengaturan Akun
+    const lightCard = document.getElementById('theme-card-light');
+    const darkCard = document.getElementById('theme-card-dark');
+    if (lightCard && darkCard) {
+        if (isLightMode) {
+            lightCard.classList.add('active');
+            darkCard.classList.remove('active');
+        } else {
+            darkCard.classList.add('active');
+            lightCard.classList.remove('active');
         }
     }
-}
+};
 
-window.toggleTheme = () => {
-    isLightMode = !isLightMode;
-    localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
-    applyTheme();
-    window.closeAllDrawers();
+window.setTheme = (mode) => {
+    isLightMode = (mode === 'light');
+    localStorage.setItem('theme', mode);
+    window.applyTheme();
 };
 
 let currentLang = localStorage.getItem('lang') || 'id';
@@ -70,7 +77,7 @@ const uiTranslations = {
         "loading_sys": "Memuat sistem...", "error_title": "Terjadi Kesalahan", "error_msg": "Gagal memuat akun, coba lagi.", "try_again": "Coba Lagi",
         "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim Komentar",
         "login_comment_prompt": "Silakan masuk untuk memberikan komentar.", "loading_comments": "Memuat...", "nav_admin": "Admin Panel", "mode_admin": "Mode Admin", 
-        "nav_translate": "Translate UI (EN)", "nav_help": "Lapor Bug / Feedback", "nav_theme": "Ganti Tema", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
+        "nav_translate": "Translate UI (EN)", "nav_help": "Lapor Bug / Feedback", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
         "register_here": "Daftar di sini", "email_placeholder": "Alamat Email", "pass_placeholder": "Password (Min 6)", "btn_login": "Masuk", "or_via": "atau via", 
         "login_google": "Masuk dengan Google", "create_user": "Buat Username", "user_rule": "Hanya huruf, angka, dan underscore (3-16 karakter).", "save_user": "Simpan Username",
         "search_placeholder": "Cari item...", "nav_home": "Beranda", "nav_upload": "Upload", "nav_profile": "Profil", "my_profile": "Profil Saya",
@@ -90,7 +97,7 @@ const uiTranslations = {
         "loading_sys": "Loading system...", "error_title": "An Error Occurred", "error_msg": "Failed to load account, try again.", "try_again": "Try Again",
         "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send Comment",
         "login_comment_prompt": "Please login to comment.", "loading_comments": "Loading...", "nav_admin": "Admin Panel", "mode_admin": "Admin Mode", 
-        "nav_translate": "Translate UI (ID)", "nav_help": "Bug Report / Feedback", "nav_theme": "Switch Theme", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
+        "nav_translate": "Translate UI (ID)", "nav_help": "Bug Report / Feedback", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
         "register_here": "Register here", "email_placeholder": "Email Address", "pass_placeholder": "Password (Min 6)", "btn_login": "Login", "or_via": "or via", 
         "login_google": "Login with Google", "create_user": "Create Username", "user_rule": "Letters, numbers, and underscores only (3-16 chars).", "save_user": "Save Username",
         "search_placeholder": "Search items...", "nav_home": "Home", "nav_upload": "Upload", "nav_profile": "Profile", "my_profile": "My Profile",
@@ -161,7 +168,7 @@ function renderCategoryChips() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    applyTheme();
+    window.applyTheme(); // Terapkan tema saat halaman dimuat
     const cb = document.getElementById('auto-translate-checkbox');
     if (cb) cb.checked = (currentLang === 'en');
     window.applyTranslation();
@@ -186,7 +193,7 @@ window.closeDialog = (id) => {
     activeDialogs = activeDialogs.filter(d => d !== id);
     if (activeDialogs.length === 0) {
         document.getElementById('dialogLayer')?.classList.remove('active');
-        setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300);
+        setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 200);
         document.body.style.overflow = '';
     }
 };
@@ -360,6 +367,7 @@ window.openCategorySheet = () => {
 };
 
 window.selectCategoryForm = (cat) => {
+    cat = cat.trim(); // BUG FIX #1: Pastikan teks kategori selalu bersih dari spasi ekstra
     const wrap = document.getElementById('selected-category-text-wrap');
     if (wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
     window.closeBottomSheet();
@@ -1014,7 +1022,7 @@ window.toggleVote = async (itemId) => {
 window.openDetail = async (itemId) => {
     const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
     currentDetailItemId = itemId;
-    if (item.category.toLowerCase() === 'server') return;
+    if ((item.category || '').toLowerCase() === 'server') return;
 
     const imgEl = document.getElementById('detail-img'); if (imgEl) imgEl.src = item.url_img; 
     const titleEl = document.getElementById('detail-title'); if (titleEl) titleEl.innerText = item.title; 
@@ -1048,11 +1056,11 @@ window.openDetail = async (itemId) => {
 
     const likesCount = item.likes ? Object.keys(item.likes).length : 0;
     const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
-    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
 
     let adminActionHTML = '';
     if (isAdmin && adminModeActive) {
-        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active');" style="flex:1;">Hapus</button>`;
+        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active'); document.body.style.overflow='';" style="flex:1;">Hapus</button>`;
     }
 
     if (actionContainer) {
@@ -1101,14 +1109,15 @@ function renderItemsToUI() {
   const isSemua = currentCategoryFilter === 'Semua';
   
   if (isSemua) {
-      displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server');
+      displayItems = displayItems.filter(item => (item.category || '').toLowerCase() !== 'server');
   } else {
-      displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
+      displayItems = displayItems.filter(item => (item.category || '').toLowerCase() === currentCategoryFilter.toLowerCase());
   }
 
   if (currentSearchQuery.trim() !== '') {
-      displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
+      displayItems = displayItems.filter(item => (item.title || '').toLowerCase().includes(currentSearchQuery));
   }
+  
   if (currentCategoryFilter === 'Server') {
       displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0));
   } else {
@@ -1130,7 +1139,7 @@ function renderItemsToUI() {
           adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
       }
 
-      if (item.category.toLowerCase() === 'server') {
+      if ((item.category || '').toLowerCase() === 'server') {
         const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
         const countryFlag = item.country ? `<div class="server-flag-badge"><img src="https://flagcdn.com/${flagIcons[item.country] || 'id'}.svg" style="width:16px; object-fit:contain; border-radius:2px;"></div>` : '';
         const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
@@ -1177,7 +1186,7 @@ function renderItemsToUI() {
         const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
         const likeBtnHTML = `
             <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); window.toggleLike('${item.id}')">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 <span>${likesCount}</span>
             </button>`;
 
@@ -1206,13 +1215,13 @@ function renderItemsToUI() {
               <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
               <div class="card-body">
                 <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
-                <div style="margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                    <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
                    ${adminEditBtn}
                    ${adminDeleteBtn}
                 </div>
                 <p class="card-desc">${item.desc_id || item.desc || ''}</p>
-                <div class="flex" style="gap:10px; margin-top:10px;">
+                <div class="flex" style="gap:10px; margin-top:12px;">
                     ${actionBtnHTML}
                     ${likeBtnHTML}
                 </div>
@@ -1484,7 +1493,7 @@ function loadPendingItems() {
         count++; const item = child.val();
         adminQueueMemory[child.key] = item; 
         
-        let testBtnHTML = item.category === 'Server' 
+        let testBtnHTML = (item.category || '') === 'Server' 
            ? `<button class="btn btn-secondary" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` 
            : `<button class="btn btn-secondary" onclick="window.testAdminFile('${child.key}')">
                  <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Test File
@@ -1494,11 +1503,11 @@ function loadPendingItems() {
           <div class="admin-queue-card">
               <div class="admin-queue-header">
                   <div style="flex:1;">
-                      <h4 class="font-bold text-main" style="margin-bottom:4px; font-size:16px;">${item.title}</h4>
-                      <span class="card-meta" style="margin:0;">${item.category}</span>
+                      <h4 class="font-bold text-main" style="margin-bottom:4px; font-size:16px;">${item.title || 'Tanpa Judul'}</h4>
+                      <span class="card-meta" style="margin:0;">${item.category || 'Lainnya'}</span>
                   </div>
                   <div style="text-align:right; font-size:11px; color:var(--text-muted);">
-                      Pengirim:<br><span class="text-main font-bold">${item.username}</span>
+                      Pengirim:<br><span class="text-main font-bold">${item.username || 'Anonim'}</span>
                   </div>
               </div>
               <div class="admin-queue-actions">
@@ -1508,8 +1517,8 @@ function loadPendingItems() {
                 ${testBtnHTML}
               </div>
               <div class="admin-queue-actions" style="margin-top:12px; border-top:1px dashed var(--border-color); padding-top:12px;">
-                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${item.title}')" data-i18n="cancel">Tolak</button>
-                <button class="btn btn-success" onclick="window.approveItem('${child.key}', '${item.uid}', '${item.title}')">Terima & Publikasi</button>
+                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${escapeHtml(item.title)}')">Tolak</button>
+                <button class="btn btn-success" onclick="window.approveItem('${child.key}', '${item.uid}', '${escapeHtml(item.title)}')">Terima & Publikasi</button>
               </div>
           </div>`;
       });
