@@ -18,13 +18,47 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 // Global State
-let currentUser = null; let currentUsername = null; let isAdmin = false; let isSignUpMode = false;
-let globalAllItems = []; let currentCategoryFilter = 'Semua'; let currentSearchQuery = '';
-let localImageBase64 = null; let localFileBase64 = null; let currentRejectItem = null;
-let currentDetailItemId = null; let lastCommentTime = 0; 
+let currentUser = null;
+let currentUsername = null;
+let isAdmin = false;
+let isSignUpMode = false;
+let globalAllItems = [];
+let currentCategoryFilter = 'Semua';
+let currentSearchQuery = '';
+let localImageBase64 = null;
+let localFileBase64 = null;
+let currentRejectItem = null;
+let currentDetailItemId = null;
+let lastCommentTime = 0;
 let adminModeActive = sessionStorage.getItem('adminMode') !== 'false';
-let adminQueueMemory = {}; 
-let currentCommentRef = null; 
+let adminQueueMemory = {};
+let currentCommentRef = null;
+let feedbackImageBase64 = null;
+
+// Pengaturan Tema Terang / Gelap
+let isLightMode = localStorage.getItem('theme') === 'light';
+
+function applyTheme() {
+    const themeIcon = document.getElementById('theme-icon');
+    if (isLightMode) {
+        document.body.classList.add('light-theme');
+        if (themeIcon) {
+            themeIcon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        }
+    } else {
+        document.body.classList.remove('light-theme');
+        if (themeIcon) {
+            themeIcon.innerHTML = `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
+        }
+    }
+}
+
+window.toggleTheme = () => {
+    isLightMode = !isLightMode;
+    localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+    applyTheme();
+    window.closeAllDrawers();
+};
 
 let currentLang = localStorage.getItem('lang') || 'id';
 const uiTranslations = {
@@ -36,7 +70,7 @@ const uiTranslations = {
         "loading_sys": "Memuat sistem...", "error_title": "Terjadi Kesalahan", "error_msg": "Gagal memuat akun, coba lagi.", "try_again": "Coba Lagi",
         "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim Komentar",
         "login_comment_prompt": "Silakan masuk untuk memberikan komentar.", "loading_comments": "Memuat...", "nav_admin": "Admin Panel", "mode_admin": "Mode Admin", 
-        "nav_translate": "Translate UI (EN)", "nav_help": "Layanan / Bantuan", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
+        "nav_translate": "Translate UI (EN)", "nav_help": "Lapor Bug / Feedback", "nav_theme": "Ganti Tema", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
         "register_here": "Daftar di sini", "email_placeholder": "Alamat Email", "pass_placeholder": "Password (Min 6)", "btn_login": "Masuk", "or_via": "atau via", 
         "login_google": "Masuk dengan Google", "create_user": "Buat Username", "user_rule": "Hanya huruf, angka, dan underscore (3-16 karakter).", "save_user": "Simpan Username",
         "search_placeholder": "Cari item...", "nav_home": "Beranda", "nav_upload": "Upload", "nav_profile": "Profil", "my_profile": "Profil Saya",
@@ -56,7 +90,7 @@ const uiTranslations = {
         "loading_sys": "Loading system...", "error_title": "An Error Occurred", "error_msg": "Failed to load account, try again.", "try_again": "Try Again",
         "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send Comment",
         "login_comment_prompt": "Please login to comment.", "loading_comments": "Loading...", "nav_admin": "Admin Panel", "mode_admin": "Admin Mode", 
-        "nav_translate": "Translate UI (ID)", "nav_help": "Support / Help", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
+        "nav_translate": "Translate UI (ID)", "nav_help": "Bug Report / Feedback", "nav_theme": "Switch Theme", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
         "register_here": "Register here", "email_placeholder": "Email Address", "pass_placeholder": "Password (Min 6)", "btn_login": "Login", "or_via": "or via", 
         "login_google": "Login with Google", "create_user": "Create Username", "user_rule": "Letters, numbers, and underscores only (3-16 chars).", "save_user": "Save Username",
         "search_placeholder": "Search items...", "nav_home": "Home", "nav_upload": "Upload", "nav_profile": "Profile", "my_profile": "My Profile",
@@ -82,11 +116,11 @@ window.applyTranslation = () => {
 };
 
 window.toggleAutoTranslate = (e) => {
-    if(e) e.preventDefault();
+    if (e) e.preventDefault();
     currentLang = currentLang === 'id' ? 'en' : 'id';
     localStorage.setItem('lang', currentLang);
     const cb = document.getElementById('auto-translate-checkbox');
-    if(cb) cb.checked = (currentLang === 'en');
+    if (cb) cb.checked = (currentLang === 'en');
     window.applyTranslation();
 };
 
@@ -101,62 +135,135 @@ const catIcons = {
     'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
 };
 
-// DAFTAR NEGARA DITAMBAHKAN
 const flagIcons = { 
     'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb',
     'Arab Saudi': 'sa', 'Kolombia': 'co', 'Pakistan': 'pk', 'Jerman': 'de', 'Filipina': 'ph', 'Korea Selatan': 'kr', 'Turki': 'tr', 'Irak': 'iq', 'Paraguay': 'py', 'Tiongkok': 'cn', 'Italia': 'it', 'Norwegia': 'no', 'Meksiko': 'mx', 'Uni Eropa': 'eu'
 };
-// OPSI VERSI BARU DITAMBAHKAN
+
 const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10', '0.14.3 - 1.1'];
 
-function formatDate(timestamp) { if(!timestamp) return ''; return new Intl.DateTimeFormat('id-ID', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(timestamp)); }
-function getSafeIcon(cat) { return catIcons[cat] || ''; }
+function formatDate(timestamp) {
+    if (!timestamp) return '';
+    return new Intl.DateTimeFormat('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp));
+}
+function getSafeIcon(cat) {
+    return catIcons[cat] || '';
+}
 
 function renderCategoryChips() {
-    const cont = document.getElementById('category-filter-container'); if(!cont) return; cont.innerHTML = '';
+    const cont = document.getElementById('category-filter-container');
+    if (!cont) return;
+    cont.innerHTML = '';
     Object.keys(catIcons).forEach(cat => {
         const isActive = cat === currentCategoryFilter;
-        cont.innerHTML += `<button class="chip ${isActive?'active':''}" onclick="window.setCategoryFilter('${cat}', this)">${catIcons[cat]} <span>${cat}</span></button>`;
+        cont.innerHTML += `<button class="chip ${isActive ? 'active' : ''}" onclick="window.setCategoryFilter('${cat}', this)">${catIcons[cat]} <span>${cat}</span></button>`;
     });
 }
+
 document.addEventListener('DOMContentLoaded', () => {
+    applyTheme();
     const cb = document.getElementById('auto-translate-checkbox');
-    if(cb) cb.checked = (currentLang === 'en');
+    if (cb) cb.checked = (currentLang === 'en');
     window.applyTranslation();
     renderCategoryChips();
 });
 
 let activeDialogs = [];
-window.openDialog = (id) => { const el = document.getElementById(id); if(!el) return; document.getElementById('dialogLayer')?.classList.remove('hidden'); document.getElementById('dialogLayer')?.classList.add('active'); el.classList.add('active'); activeDialogs.push(id); document.body.style.overflow = 'hidden'; };
-window.closeDialog = (id) => { const el = document.getElementById(id); if(!el) return; el.classList.remove('active'); activeDialogs = activeDialogs.filter(d => d !== id); if(activeDialogs.length === 0) { document.getElementById('dialogLayer')?.classList.remove('active'); setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300); document.body.style.overflow = ''; } };
-window.closeTopDialog = () => { if(activeDialogs.length > 0) window.closeDialog(activeDialogs[activeDialogs.length - 1]); };
-document.addEventListener('keydown', (e) => { if(e.key === 'Escape') window.closeTopDialog(); });
-window.showModalAlert = (msg) => { const el = document.getElementById('dialog-alert-msg'); if(el) { el.innerText = msg; window.openDialog('dialog-alert'); } };
-window.showModalConfirm = (msg, onConfirmCallback) => { const el = document.getElementById('dialog-confirm-msg'); if(el) { el.innerText = msg; document.getElementById('btn-dialog-confirm').onclick = () => { window.closeDialog('dialog-confirm'); onConfirmCallback(); }; window.openDialog('dialog-confirm'); } };
-window.copyText = (text) => { navigator.clipboard.writeText(text).then(() => { window.showModalAlert(`Berhasil disalin!`); }); };
+window.openDialog = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    document.getElementById('dialogLayer')?.classList.remove('hidden');
+    document.getElementById('dialogLayer')?.classList.add('active');
+    el.classList.add('active');
+    activeDialogs.push(id);
+    document.body.style.overflow = 'hidden';
+};
 
-window.downloadBase64File = (dataUrl, filename) => { const a = document.createElement('a'); a.href = dataUrl; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+window.closeDialog = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('active');
+    activeDialogs = activeDialogs.filter(d => d !== id);
+    if (activeDialogs.length === 0) {
+        document.getElementById('dialogLayer')?.classList.remove('active');
+        setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 300);
+        document.body.style.overflow = '';
+    }
+};
+
+window.closeTopDialog = () => {
+    if (activeDialogs.length > 0) window.closeDialog(activeDialogs[activeDialogs.length - 1]);
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.closeTopDialog();
+});
+
+window.showModalAlert = (msg) => {
+    const el = document.getElementById('dialog-alert-msg');
+    if (el) {
+        el.innerText = msg;
+        window.openDialog('dialog-alert');
+    }
+};
+
+window.showModalConfirm = (msg, onConfirmCallback) => {
+    const el = document.getElementById('dialog-confirm-msg');
+    if (el) {
+        el.innerText = msg;
+        document.getElementById('btn-dialog-confirm').onclick = () => {
+            window.closeDialog('dialog-confirm');
+            onConfirmCallback();
+        };
+        window.openDialog('dialog-confirm');
+    }
+};
+
+window.copyText = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+        window.showModalAlert("Berhasil disalin!");
+    });
+};
+
+window.downloadBase64File = (dataUrl, filename) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
 window.handleDownload = async (url, itemId, event) => {
     if (!url || url === '#') return;
-    if(url.startsWith('data:')) { window.downloadBase64File(url, "downloaded_file"); return; }
-    let finalUrl = url; let isRedirect = false; let providerName = ''; const lowerUrl = url.toLowerCase();
+    if (url.startsWith('data:')) {
+        window.downloadBase64File(url, "downloaded_file");
+        return;
+    }
+    let finalUrl = url;
+    let isRedirect = false;
+    let providerName = '';
+    const lowerUrl = url.toLowerCase();
     
     if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
     else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
     else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
-    else if (lowerUrl.includes('dropbox.com')) { finalUrl = url.replace('?dl=0', '?dl=1'); if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1'); }
+    else if (lowerUrl.includes('dropbox.com')) {
+        finalUrl = url.replace('?dl=0', '?dl=1');
+        if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
+    }
 
     if (isRedirect) { 
         window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?`, () => window.open(finalUrl, '_blank')); 
     } else {
         const btn = event?.currentTarget;
         const origHTML = btn ? btn.innerHTML : '';
-        if(btn) btn.innerHTML = '<div class="loader-inline"></div> Menyumbangkan...';
+        if (btn) btn.innerHTML = '<div class="loader-inline"></div> Mengunduh...';
         
         try {
             const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
             const response = await fetch(proxyUrl);
-            if(!response.ok) throw new Error("Gagal Unduh");
+            if (!response.ok) throw new Error("Gagal Unduh");
             
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
@@ -173,119 +280,226 @@ window.handleDownload = async (url, itemId, event) => {
             document.body.appendChild(a);
             a.click();
             
-            setTimeout(() => { window.URL.revokeObjectURL(blobUrl); document.body.removeChild(a); if(btn) btn.innerHTML = origHTML; }, 1000);
-        } catch(e) {
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                if (btn) btn.innerHTML = origHTML;
+            }, 1000);
+        } catch (e) {
             let iframe = document.getElementById('download-iframe');
-            if (!iframe) { iframe = document.createElement('iframe'); iframe.id = 'download-iframe'; iframe.style.display = 'none'; document.body.appendChild(iframe); }
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'download-iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
             iframe.src = '/api/download?url=' + encodeURIComponent(finalUrl) + '&t=' + Date.now();
-            if(btn) btn.innerHTML = origHTML;
+            if (btn) btn.innerHTML = origHTML;
         }
     }
 };
 
-window.closeBottomSheet = () => { document.getElementById('bottom-sheet-overlay')?.classList.remove('active'); };
+window.closeBottomSheet = () => {
+    document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
+};
+
 window.switchScreen = (id) => { 
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
     const el = document.getElementById(id); 
-    if(el) { el.classList.remove('hidden'); window.scrollTo(0, 0); }
+    if (el) {
+        el.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
     
-    if(id === 'screen-add') {
+    if (id === 'screen-add') {
         const wrap = document.getElementById('selected-category-text-wrap');
-        if(wrap && wrap.innerHTML === '') window.selectCategoryForm('Mod');
+        if (wrap && wrap.innerHTML === '') window.selectCategoryForm('Mod');
     }
 };
-window.requireLoginAndSwitch = (id) => { if(currentUser) window.switchScreen(id); else { window.showModalAlert("Silakan masuk untuk mengakses halaman ini."); window.switchScreen('screen-login'); } };
-window.toggleDrawer = (id) => { const el = document.getElementById(id); if(!el) return; const isAct = el.classList.contains('active'); window.closeAllDrawers(); if(!isAct) { el.classList.add('active'); document.getElementById('drawer-overlay')?.classList.add('active'); } };
-window.closeAllDrawers = () => { document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active')); document.getElementById('drawer-overlay')?.classList.remove('active'); };
+
+window.requireLoginAndSwitch = (id) => {
+    if (currentUser) {
+        window.switchScreen(id);
+    } else {
+        window.showModalAlert("Silakan masuk untuk mengakses halaman ini.");
+        window.switchScreen('screen-login');
+    }
+};
+
+window.toggleDrawer = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isAct = el.classList.contains('active');
+    window.closeAllDrawers();
+    if (!isAct) {
+        el.classList.add('active');
+        document.getElementById('drawer-overlay')?.classList.add('active');
+    }
+};
+
+window.closeAllDrawers = () => {
+    document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active'));
+    document.getElementById('drawer-overlay')?.classList.remove('active');
+};
 
 const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
+
 window.openCategorySheet = () => {
-   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
-   const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
-   const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
-   if(opts){
-       categoryOptions.forEach(cat => {
-           const isSel = cat === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
-       });
-   }
-   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
+    const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
+    if (opts) {
+        categoryOptions.forEach(cat => {
+            const isSel = cat === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
 
 window.selectCategoryForm = (cat) => {
-   const wrap = document.getElementById('selected-category-text-wrap');
-   if(wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
-   window.closeBottomSheet();
-   
-   const ws = document.getElementById('wrapper-title-standard'); 
-   const wsrv = document.getElementById('wrapper-title-server'); 
-   const wf = document.getElementById('form-file-container');
-   const fileImg = document.getElementById('file-img');
-   const labelImg = document.getElementById('label-img-preview');
-   const inputImg = document.getElementById('add-img');
-   
-   if(cat === 'Server') { 
-       if(ws) ws.classList.add('hidden'); 
-       if(wsrv) wsrv.classList.remove('hidden'); 
-       if(wf) wf.classList.add('hidden'); 
-       if(fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
-       if(inputImg) inputImg.placeholder = "URL Gambar / GIF / Video...";
-       if(labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar / Banner Server*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
-   } else { 
-       if(ws) ws.classList.remove('hidden'); 
-       if(wsrv) wsrv.classList.add('hidden'); 
-       if(wf) wf.classList.remove('hidden'); 
-       if(fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
-       if(inputImg) inputImg.placeholder = "URL Gambar...";
-       if(labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
-   }
+    const wrap = document.getElementById('selected-category-text-wrap');
+    if (wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
+    window.closeBottomSheet();
+    
+    const ws = document.getElementById('wrapper-title-standard'); 
+    const wsrv = document.getElementById('wrapper-title-server'); 
+    const wf = document.getElementById('form-file-container');
+    const fileImg = document.getElementById('file-img');
+    const labelImg = document.getElementById('label-img-preview');
+    const inputImg = document.getElementById('add-img');
+    
+    if (cat === 'Server') { 
+        if (ws) ws.classList.add('hidden'); 
+        if (wsrv) wsrv.classList.remove('hidden'); 
+        if (wf) wf.classList.add('hidden'); 
+        if (fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
+        if (inputImg) inputImg.placeholder = "URL Gambar / GIF / Video...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar / Banner Server*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
+    } else { 
+        if (ws) ws.classList.remove('hidden'); 
+        if (wsrv) wsrv.classList.add('hidden'); 
+        if (wf) wf.classList.remove('hidden'); 
+        if (fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
+        if (inputImg) inputImg.placeholder = "URL Gambar...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
+    }
 };
 
 window.openVersionSheet = () => {
-   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
-   const current = document.getElementById('selected-version-text')?.innerText || '0.15.10';
-   if(opts){
-       versionOptions.forEach(ver => {
-           const isSel = ver === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
-       });
-   }
-   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const current = document.getElementById('selected-version-text')?.innerText || '0.15.10';
+    if (opts) {
+        versionOptions.forEach(ver => {
+            const isSel = ver === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
-window.selectVersionForm = (ver) => { const el = document.getElementById('selected-version-text'); if(el) el.innerText = ver; window.closeBottomSheet(); };
+window.selectVersionForm = (ver) => {
+    const el = document.getElementById('selected-version-text');
+    if (el) el.innerText = ver;
+    window.closeBottomSheet();
+};
 
 window.openCountrySheet = () => {
-   const opts = document.getElementById('sheet-options'); if(opts) opts.innerHTML = '';
-   const currentWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
-   const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
-   if(opts) {
-       Object.keys(flagIcons).forEach(country => {
-           const isSel = country === current; const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
-           opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
-       });
-   }
-   document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const currentWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
+    const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
+    if (opts) {
+        Object.keys(flagIcons).forEach(country => {
+            const isSel = country === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
-window.selectCountryForm = (country) => { const el = document.getElementById('selected-country-text-wrap'); if(el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`; window.closeBottomSheet(); };
+window.selectCountryForm = (country) => {
+    const el = document.getElementById('selected-country-text-wrap');
+    if (el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`;
+    window.closeBottomSheet();
+};
 
 function getRoleBadge(role) {
-    if ((role === 'admin' || role === 'dev') && adminModeActive) return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
+    if ((role === 'admin' || role === 'dev') && adminModeActive) {
+        return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
+    }
     return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
 }
+
 function generateDefaultAvatar(name) {
-    const c = document.createElement('canvas'); c.width = 100; c.height = 100; const ctx = c.getContext('2d');
-    ctx.fillStyle = '#ff8c00'; ctx.fillRect(0,0,100,100); ctx.fillStyle = '#000000'; ctx.font = 'bold 50px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50); return c.toDataURL('image/jpeg', 0.8);
+    const c = document.createElement('canvas');
+    c.width = 100;
+    c.height = 100;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ff8c00';
+    ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 50px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50);
+    return c.toDataURL('image/jpeg', 0.8);
 }
 
-window.toggleAuthMode = () => { isSignUpMode = !isSignUpMode; const errEl = document.getElementById('login-error'); if(errEl) errEl.innerText = ''; };
-window.processEmailAuth = async () => {
-  const email = document.getElementById('auth-email')?.value.trim(); const password = document.getElementById('auth-password')?.value;
-  if (!email || !password) { window.showModalAlert('Isi form dengan lengkap.'); return; }
-  const btn = document.getElementById('auth-submit-btn'); if(btn) btn.disabled = true;
-  try { if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, password); else await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) { const errEl = document.getElementById('login-error'); if(errEl) errEl.innerText = err.message; if(btn) btn.disabled = false; }
+window.toggleAuthMode = () => {
+    isSignUpMode = !isSignUpMode;
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.innerText = '';
+    const submitBtn = document.getElementById('auth-submit-btn');
+    if (submitBtn) submitBtn.innerText = isSignUpMode ? 'Daftar' : 'Masuk';
 };
-window.customLogout = () => { window.closeAllDrawers(); window.showModalConfirm("Keluar dari Akun?", () => { signOut(auth).then(() => { isAdmin = false; currentUser = null; currentUsername = null; window.switchScreen('screen-login'); updateHeaderAuthUI();}); }); };
+
+window.processEmailAuth = async () => {
+    const email = document.getElementById('auth-email')?.value.trim();
+    const password = document.getElementById('auth-password')?.value;
+    if (!email || !password) {
+        window.showModalAlert('Isi form dengan lengkap.');
+        return;
+    }
+    const btn = document.getElementById('auth-submit-btn');
+    if (btn) btn.disabled = true;
+    try {
+        if (isSignUpMode) {
+            await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+        }
+    } catch (err) {
+        const errEl = document.getElementById('login-error');
+        if (errEl) errEl.innerText = err.message;
+        if (btn) btn.disabled = false;
+    }
+};
+
+window.loginGoogle = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    } catch (err) {
+        window.showModalAlert("Gagal masuk dengan Google: " + err.message);
+    }
+};
+
+window.customLogout = () => {
+    window.closeAllDrawers();
+    window.showModalConfirm("Keluar dari Akun?", () => {
+        signOut(auth).then(() => {
+            isAdmin = false;
+            currentUser = null;
+            currentUsername = null;
+            window.switchScreen('screen-login');
+            updateHeaderAuthUI();
+        });
+    });
+};
 
 function updateHeaderAuthUI() {
     const loginBtn = document.getElementById('btn-login-header');
@@ -294,25 +508,31 @@ function updateHeaderAuthUI() {
     const profImg = document.getElementById('sidebar-profile-img');
     const profName = document.getElementById('sidebar-name');
     const profRole = document.getElementById('sidebar-role');
+    const authSection = document.getElementById('sidebar-auth-section');
 
-    if(currentUser) {
-        if(loginBtn) loginBtn.classList.add('hidden');
-        if(isAdmin) {
-             if(adminToggle) adminToggle.classList.remove('hidden');
+    if (currentUser) {
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (authSection) authSection.classList.add('hidden');
+        if (isAdmin) {
+             if (adminToggle) adminToggle.classList.remove('hidden');
              const cb = document.getElementById('admin-mode-checkbox');
-             if(cb) cb.checked = adminModeActive;
-             if(adminMenu) { if(adminModeActive) adminMenu.classList.remove('hidden'); else adminMenu.classList.add('hidden'); }
+             if (cb) cb.checked = adminModeActive;
+             if (adminMenu) {
+                 if (adminModeActive) adminMenu.classList.remove('hidden');
+                 else adminMenu.classList.add('hidden');
+             }
         } else {
-             if(adminMenu) adminMenu.classList.add('hidden');
-             if(adminToggle) adminToggle.classList.add('hidden');
+             if (adminMenu) adminMenu.classList.add('hidden');
+             if (adminToggle) adminToggle.classList.add('hidden');
         }
     } else {
-        if(loginBtn) loginBtn.classList.remove('hidden'); 
-        if(adminMenu) adminMenu.classList.add('hidden');
-        if(adminToggle) adminToggle.classList.add('hidden');
-        if(profImg) profImg.src = "https://via.placeholder.com/60"; 
-        if(profName) profName.innerText = "Tamu"; 
-        if(profRole) profRole.innerHTML = "";
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (authSection) authSection.classList.remove('hidden');
+        if (adminMenu) adminMenu.classList.add('hidden');
+        if (adminToggle) adminToggle.classList.add('hidden');
+        if (profImg) profImg.src = "https://via.placeholder.com/60"; 
+        if (profName) profName.innerText = "Tamu"; 
+        if (profRole) profRole.innerHTML = "";
     }
 }
 
@@ -321,12 +541,15 @@ window.toggleAdminMode = () => {
     sessionStorage.setItem('adminMode', adminModeActive);
     updateHeaderAuthUI();
     renderItemsToUI();
-    if(adminModeActive && isAdmin) loadPendingItems();
+    if (adminModeActive && isAdmin) loadPendingItems();
 };
 
 let splashTimeout = setTimeout(() => {
-    try { window.switchScreen('screen-home'); fetchAllItemsAndRender(); } catch(e){}
-}, 5000); 
+    try {
+        window.switchScreen('screen-home');
+        fetchAllItemsAndRender();
+    } catch (e) {}
+}, 5000);
 
 async function proceedToHome(user, pData) {
      try {
@@ -340,24 +563,24 @@ async function proceedToHome(user, pData) {
          const profRoleBadge = document.getElementById('profile-role-badge');
          const sideRoleBadge = document.getElementById('sidebar-role');
          
-         if(profNameEl) profNameEl.innerText = currentUsername; 
-         if(sideNameEl) sideNameEl.innerText = currentUsername;
+         if (profNameEl) profNameEl.innerText = currentUsername; 
+         if (sideNameEl) sideNameEl.innerText = currentUsername;
          
          const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
-         if(profImgEl) profImgEl.src = dp; 
-         if(sideImgEl) sideImgEl.src = dp;
+         if (profImgEl) profImgEl.src = dp; 
+         if (sideImgEl) sideImgEl.src = dp;
          
          const roleB = getRoleBadge(pData.role);
-         if(profRoleBadge) profRoleBadge.innerHTML = roleB; 
-         if(sideRoleBadge) sideRoleBadge.innerHTML = roleB;
+         if (profRoleBadge) profRoleBadge.innerHTML = roleB; 
+         if (sideRoleBadge) sideRoleBadge.innerHTML = roleB;
          
          const iUserEl = document.getElementById('input-self-username');
-         if(iUserEl) iUserEl.value = currentUsername;
+         if (iUserEl) iUserEl.value = currentUsername;
          const iBio = document.getElementById('input-self-bio');
-         if(iBio) iBio.value = pData.bio || '';
+         if (iBio) iBio.value = pData.bio || '';
          
          updateHeaderAuthUI();
-         if(isAdmin && adminModeActive) loadPendingItems(); 
+         if (isAdmin && adminModeActive) loadPendingItems(); 
          loadNotifications();
          
          window.switchScreen('screen-home'); 
@@ -371,55 +594,114 @@ setPersistence(auth, browserLocalPersistence).then(() => {
   onAuthStateChanged(auth, async (user) => {
     clearTimeout(splashTimeout); 
     if (user) {
-      currentUser = user; updateHeaderAuthUI();
+      currentUser = user;
+      updateHeaderAuthUI();
       try {
           const pSnap = await get(ref(db, `profiles/${user.uid}`));
-          if (pSnap.exists() && pSnap.val().username) { proceedToHome(user, pSnap.val()); } 
-          else {
+          if (pSnap.exists() && pSnap.val().username) {
+              proceedToHome(user, pSnap.val());
+          } else {
              const uSnap = await get(ref(db, `users/${user.uid}/username`));
              if (uSnap.exists() && uSnap.val()) {
-                 const oldUsername = uSnap.val(); const oldUserLower = oldUsername.toLowerCase(); const isAdm = (await get(ref(db, `admins/${user.uid}`))).val() === true;
-                 const updates = {}; updates[`profiles/${user.uid}`] = { username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0, points: 0 }; updates[`usernames/${oldUserLower}`] = user.uid;
-                 await update(ref(db), updates); proceedToHome(user, updates[`profiles/${user.uid}`]);
-             } else { window.switchScreen('screen-username'); }
+                 const oldUsername = uSnap.val();
+                 const oldUserLower = oldUsername.toLowerCase();
+                 const isAdm = (await get(ref(db, `admins/${user.uid}`))).val() === true;
+                 const updates = {};
+                 updates[`profiles/${user.uid}`] = { username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0, points: 0 };
+                 updates[`usernames/${oldUserLower}`] = user.uid;
+                 await update(ref(db), updates);
+                 proceedToHome(user, updates[`profiles/${user.uid}`]);
+             } else {
+                 window.switchScreen('screen-username');
+             }
           }
-      } catch (err) { const errEl = document.getElementById('screen-error-msg'); if(errEl) errEl.innerText = "Gagal memuat akun: " + err.message; window.switchScreen('screen-error'); }
+      } catch (err) {
+          const errEl = document.getElementById('screen-error-msg');
+          if (errEl) errEl.innerText = "Gagal memuat akun: " + err.message;
+          window.switchScreen('screen-error');
+      }
     } else {
-      currentUser = null; currentUsername = null; isAdmin = false; updateHeaderAuthUI(); window.switchScreen('screen-home'); fetchAllItemsAndRender();
+      currentUser = null;
+      currentUsername = null;
+      isAdmin = false;
+      updateHeaderAuthUI();
+      window.switchScreen('screen-home');
+      fetchAllItemsAndRender();
     }
   });
-}).catch(() => { clearTimeout(splashTimeout); window.switchScreen('screen-home'); fetchAllItemsAndRender(); });
+}).catch(() => {
+    clearTimeout(splashTimeout);
+    window.switchScreen('screen-home');
+    fetchAllItemsAndRender();
+});
 
 window.saveUsername = async () => {
-  const username = document.getElementById('input-username').value.trim(); const usernameLower = username.toLowerCase();
-  const errEl = document.getElementById('username-error'); const btn = document.getElementById('btn-save-username');
-  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) { if(errEl) errEl.innerText = "Tidak valid."; return; }
-  if(btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; } if(errEl) errEl.innerText = "";
+  const username = document.getElementById('input-username').value.trim();
+  const usernameLower = username.toLowerCase();
+  const errEl = document.getElementById('username-error');
+  const btn = document.getElementById('btn-save-username');
+  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
+      if (errEl) errEl.innerText = "Hanya huruf, angka, dan underscore (3-16 karakter).";
+      return;
+  }
+  if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Menyimpan...";
+  }
+  if (errEl) errEl.innerText = "";
   try {
     const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-    if (unSnap.exists() && unSnap.val() !== currentUser.uid) { if(errEl) errEl.innerText = "Username terpakai!"; if(btn) { btn.disabled = false; btn.innerText = "Simpan"; } return; }
-    const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true; const dp = currentUser.photoURL || generateDefaultAvatar(username);
-    const updates = {}; updates[`usernames/${usernameLower}`] = currentUser.uid; updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0, points: 0 };
-    await update(ref(db), updates); proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
-  } catch (e) { if(errEl) errEl.innerText = "Akses ditolak. " + e.message; if(btn) { btn.disabled = false; btn.innerText = "Simpan"; } }
+    if (unSnap.exists() && unSnap.val() !== currentUser.uid) {
+        if (errEl) errEl.innerText = "Username sudah dipakai orang lain.";
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Simpan Username";
+        }
+        return;
+    }
+    const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true;
+    const dp = currentUser.photoURL || generateDefaultAvatar(username);
+    const updates = {};
+    updates[`usernames/${usernameLower}`] = currentUser.uid;
+    updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0, points: 0 };
+    await update(ref(db), updates);
+    proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
+  } catch (e) {
+      if (errEl) errEl.innerText = "Akses ditolak: " + e.message;
+      if (btn) {
+          btn.disabled = false;
+          btn.innerText = "Simpan Username";
+      }
+  }
 };
 
 window.handleProfileUpload = async (event) => {
-  const file = event.target.files[0]; if (!file) return;
-  if (!file.type.startsWith('image/')) return;
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
   try {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = async () => {
           try {
-              const canvas = document.createElement('canvas'); const size = Math.min(img.width, img.height); const targetSize = 256; canvas.width = targetSize; canvas.height = targetSize; const ctx = canvas.getContext('2d');
-              const offsetX = (img.width - size) / 2; const offsetY = (img.height - size) / 2; ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, targetSize, targetSize);
+              const canvas = document.createElement('canvas');
+              const size = Math.min(img.width, img.height);
+              const targetSize = 256;
+              canvas.width = targetSize;
+              canvas.height = targetSize;
+              const ctx = canvas.getContext('2d');
+              const offsetX = (img.width - size) / 2;
+              const offsetY = (img.height - size) / 2;
+              ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, targetSize, targetSize);
               let base64Image = canvas.toDataURL('image/jpeg', 0.8); 
               await update(ref(db, `profiles/${currentUser.uid}`), { avatar: base64Image });
-              const imgEl1 = document.getElementById('profile-img'); const imgEl2 = document.getElementById('sidebar-profile-img');
-              if(imgEl1) imgEl1.src = base64Image; if(imgEl2) imgEl2.src = base64Image;
-          } catch(err) { window.showModalAlert("Error upload."); }
+              const imgEl1 = document.getElementById('profile-img');
+              const imgEl2 = document.getElementById('sidebar-profile-img');
+              if (imgEl1) imgEl1.src = base64Image;
+              if (imgEl2) imgEl2.src = base64Image;
+          } catch (err) {
+              window.showModalAlert("Gagal upload foto profil.");
+          }
         };
         img.src = e.target.result;
       };
@@ -448,19 +730,21 @@ window.switchProfileTab = (tab) => {
 
 window.loadMyContent = () => {
     const cont = document.getElementById('my-content-list');
-    if(!cont || !currentUser) return;
+    if (!cont || !currentUser) return;
     
     let myItems = globalAllItems.filter(i => i.uid === currentUser.uid).map(i => ({...i, status: 'Approved'}));
     
     get(ref(db, 'items_pending')).then(snap => {
-        if(snap.exists()) {
+        if (snap.exists()) {
             snap.forEach(child => {
                 const val = child.val();
-                if(val.uid === currentUser.uid) { myItems.push({id: child.key, status: 'Pending', ...val}); }
+                if (val.uid === currentUser.uid) {
+                    myItems.push({ id: child.key, status: 'Pending', ...val });
+                }
             });
         }
         
-        if(myItems.length === 0) {
+        if (myItems.length === 0) {
             cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">Belum ada konten.</p>';
             return;
         }
@@ -486,44 +770,58 @@ window.loadMyContent = () => {
 };
 
 function loadNotifications() {
-    if(!currentUser) return;
+    if (!currentUser) return;
     onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
         const cont = document.getElementById('notif-list-profile');
         const badge = document.getElementById('notif-badge-profile');
-        if(!cont) return;
-        if(!snapshot.exists()) {
+        if (!cont) return;
+        if (!snapshot.exists()) {
             cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>';
-            if(badge) badge.style.display = 'none';
+            if (badge) badge.style.display = 'none';
             return;
         }
-        let html = ''; let unreadCount = 0;
+        let html = '';
+        let unreadCount = 0;
         const notifs = [];
-        snapshot.forEach(c => notifs.push({id: c.key, ...c.val()}));
+        snapshot.forEach(c => notifs.push({ id: c.key, ...c.val() }));
         notifs.sort((a,b) => (b.time||0) - (a.time||0));
         
         notifs.forEach(n => {
-            if(!n.read) unreadCount++;
+            if (!n.read) unreadCount++;
             const color = n.type === 'accepted' ? 'var(--success)' : 'var(--danger)';
-            const icon = n.type === 'accepted' ? '✓' : '✗';
+            const icon = n.type === 'accepted' ? '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
             html += `
             <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
-                <div style="font-weight:bold; color:${color}; margin-bottom:4px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
+                <div style="font-weight:bold; color:${color}; margin-bottom:4px; display:flex; align-items:center; gap:6px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
                 <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
                 ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
             </div>`;
         });
         cont.innerHTML = html;
-        if(badge) {
+        if (badge) {
             badge.innerText = unreadCount;
             badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
         }
     });
 }
+
 window.markNotifRead = async (id) => {
-    try { await update(ref(db, `notifications/${currentUser.uid}/${id}`), {read: true}); } catch(e){}
+    try {
+        await update(ref(db, `notifications/${currentUser.uid}/${id}`), { read: true });
+    } catch (e) {}
 };
 
-window.saveBioSelf = async () => { const el = document.getElementById('input-self-bio'); if(!el) return; const bio = el.value.trim(); if(bio.length > 80) return; try { await update(ref(db, `profiles/${currentUser.uid}`), {bio: bio}); window.showModalAlert("Bio disimpan."); } catch(e) {} };
+window.saveBioSelf = async () => {
+    const el = document.getElementById('input-self-bio');
+    if (!el) return;
+    const bio = el.value.trim();
+    if (bio.length > 80) return;
+    try {
+        await update(ref(db, `profiles/${currentUser.uid}`), { bio: bio });
+        window.showModalAlert("Bio berhasil disimpan.");
+    } catch (e) {}
+};
+
 window.changeUserPassword = async () => {
     if (!currentUser) return;
     const oldPass = document.getElementById('input-old-password').value;
@@ -548,6 +846,7 @@ window.changeUserPassword = async () => {
         else window.showModalAlert("Gagal mengubah password: " + error.message);
     }
 };
+
 window.changeUsernameSettings = async () => {
     if (!currentUser) return;
     const newName = document.getElementById('input-self-username').value.trim();
@@ -585,40 +884,114 @@ window.changeUsernameSettings = async () => {
         document.getElementById('username-cooldown-text').innerText = "Username berhasil diperbarui!";
         document.getElementById('username-cooldown-text').style.color = "var(--success)";
         
-    } catch (error) { window.showModalAlert("Gagal mengganti username."); }
+    } catch (error) {
+        window.showModalAlert("Gagal mengganti username.");
+    }
 };
 
+// ==========================================
+// RENDERING & KELOLA ITEM
+// ==========================================
+window.handleSearch = (query) => {
+    currentSearchQuery = query.toLowerCase();
+    renderItemsToUI();
+};
 
-// ==========================================
-// 9. RENDERING & KELOLA ITEM
-// ==========================================
-window.handleSearch = (query) => { currentSearchQuery = query.toLowerCase(); renderItemsToUI(); };
-window.setCategoryFilter = (category, btnElement) => { currentCategoryFilter = category; renderCategoryChips(); renderItemsToUI(); };
+window.setCategoryFilter = (category, btnElement) => {
+    currentCategoryFilter = category;
+    renderCategoryChips();
+    renderItemsToUI();
+};
 
 function fetchAllItemsAndRender() {
   onValue(ref(db, 'items_public'), (snapshot) => {
     let dynamicItems = [];
-    if (snapshot.exists()) { snapshot.forEach(child => { dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() }); }); }
+    if (snapshot.exists()) {
+        snapshot.forEach(child => {
+            dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() });
+        });
+    }
     globalAllItems = [...staticItems, ...dynamicItems]; 
     renderItemsToUI(); 
   });
 }
 
 function fetchServerStatus(id, target) {
-  const statusEl = document.getElementById(`status-${id}`); const playersEl = document.getElementById(`players-${id}`);
+  const statusEl = document.getElementById(`status-${id}`);
+  const playersEl = document.getElementById(`players-${id}`);
   if (!statusEl) return;
-  const [host, portRaw] = target.split(':'); const port = portRaw || '19132';
+  const [host, portRaw] = target.split(':');
+  const port = portRaw || '19132';
   fetch(`/api/server?host=${host}&port=${port}`).then(res => res.json()).then(data => {
-      if (data.online) { statusEl.className = 'badge-status online'; statusEl.innerText = 'Online'; if(playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`; } 
-      else { statusEl.className = 'badge-status offline'; statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline'; }
-    }).catch(() => { statusEl.className = 'badge-status offline'; statusEl.innerText = 'Error'; });
+      if (data.online) {
+          statusEl.className = 'badge-status online';
+          statusEl.innerText = 'Online';
+          if (playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`;
+      } else {
+          statusEl.className = 'badge-status offline';
+          statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline';
+      }
+    }).catch(() => {
+        statusEl.className = 'badge-status offline';
+        statusEl.innerText = 'Error';
+    });
 }
+
 setInterval(() => {
   const homeEl = document.getElementById('screen-home');
   if (homeEl && !homeEl.classList.contains('hidden')) {
-      if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') { document.querySelectorAll('.badge-status').forEach(el => { const t = el.getAttribute('data-target'); const id = el.id.replace('status-', ''); if (t) fetchServerStatus(id, t); }); }
+      if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') {
+          document.querySelectorAll('.badge-status').forEach(el => {
+              const t = el.getAttribute('data-target');
+              const id = el.id.replace('status-', '');
+              if (t) fetchServerStatus(id, t);
+          });
+      }
   }
 }, 30000);
+
+// SISTEM LIKE REAL-TIME DENGAN ANTI-ABUSE & POIN
+window.toggleLike = async (itemId) => {
+    if (!currentUser) {
+        window.showModalAlert("Silakan masuk/login untuk menyukai item ini.");
+        return;
+    }
+    const item = globalAllItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (item.uid === currentUser.uid && item.source !== 'github') {
+        window.showModalAlert("Kamu tidak bisa like item milikmu sendiri.");
+        return;
+    }
+
+    const isLiked = item.likes && item.likes[currentUser.uid];
+    const updates = {};
+
+    if (isLiked) {
+        updates[`items_public/${itemId}/likes/${currentUser.uid}`] = null;
+    } else {
+        updates[`items_public/${itemId}/likes/${currentUser.uid}`] = true;
+    }
+
+    try {
+        await update(ref(db), updates);
+
+        if (item.uid && item.uid !== currentUser.uid) {
+            const pSnap = await get(ref(db, `profiles/${item.uid}`));
+            if (pSnap.exists()) {
+                let currentPoints = pSnap.val().points || 0;
+                if (isLiked) {
+                    currentPoints = Math.max(0, currentPoints - 1);
+                } else {
+                    currentPoints += 1;
+                }
+                await update(ref(db, `profiles/${item.uid}`), { points: currentPoints });
+            }
+        }
+    } catch (e) {
+        window.showModalAlert("Gagal memproses like.");
+    }
+};
 
 window.toggleVote = async (itemId) => {
     if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); return; }
@@ -635,73 +1008,123 @@ window.toggleVote = async (itemId) => {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
         updates[`items_public/${itemId}/stars`] = currentStars + 1;
     }
-    try { await update(ref(db), updates); } catch(e) { window.showModalAlert("Gagal mengirim vote."); }
-}
+    try { await update(ref(db), updates); } catch (e) { window.showModalAlert("Gagal mengirim vote."); }
+};
 
 window.openDetail = async (itemId) => {
-    const item = globalAllItems.find(i => i.id === itemId); if(!item) return;
+    const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
     currentDetailItemId = itemId;
     if (item.category.toLowerCase() === 'server') return;
 
-    const imgEl = document.getElementById('detail-img'); if(imgEl) imgEl.src = item.url_img; 
-    const titleEl = document.getElementById('detail-title'); if(titleEl) titleEl.innerText = item.title; 
-    const nameEl = document.getElementById('detail-uploader-name'); if(nameEl) nameEl.innerText = item.username || 'System';
+    const imgEl = document.getElementById('detail-img'); if (imgEl) imgEl.src = item.url_img; 
+    const titleEl = document.getElementById('detail-title'); if (titleEl) titleEl.innerText = item.title; 
+    const nameEl = document.getElementById('detail-uploader-name'); if (nameEl) nameEl.innerText = item.username || 'System';
     
-    let uploaderRole = 'member'; let avatarUrl = generateDefaultAvatar(item.username);
-    if(item.uid) {
-         try { const pSnap = await get(ref(db, `profiles/${item.uid}`)); if(pSnap.exists()) { const p = pSnap.val(); uploaderRole = p.role; avatarUrl = p.avatar || generateDefaultAvatar(item.username); } } catch(e){}
-    } else if (item.source === 'github') uploaderRole = 'dev';
+    let uploaderRole = 'member';
+    let avatarUrl = generateDefaultAvatar(item.username);
+    if (item.uid) {
+         try {
+             const pSnap = await get(ref(db, `profiles/${item.uid}`));
+             if (pSnap.exists()) {
+                 const p = pSnap.val();
+                 uploaderRole = p.role;
+                 avatarUrl = p.avatar || generateDefaultAvatar(item.username);
+             }
+         } catch (e) {}
+    } else if (item.source === 'github') {
+        uploaderRole = 'dev';
+    }
     
-    const badgeEl = document.getElementById('detail-uploader-badge'); if(badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
-    const avatarEl = document.getElementById('detail-uploader-avatar'); if(avatarEl) avatarEl.src = avatarUrl;
-    if(nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
+    const badgeEl = document.getElementById('detail-uploader-badge'); if (badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
+    const avatarEl = document.getElementById('detail-uploader-avatar'); if (avatarEl) avatarEl.src = avatarUrl;
+    if (nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
     
-    const catEl = document.getElementById('detail-category'); if(catEl) catEl.innerText = item.category; 
-    const verEl = document.getElementById('detail-version'); if(verEl) verEl.innerText = item.version || 'All Vers.'; 
-    const descEl = document.getElementById('detail-desc'); if(descEl) { descEl.innerText = item.desc_id || item.desc || '-'; }
+    const catEl = document.getElementById('detail-category'); if (catEl) catEl.innerText = item.category; 
+    const verEl = document.getElementById('detail-version'); if (verEl) verEl.innerText = item.version || 'All Vers.'; 
+    const descEl = document.getElementById('detail-desc'); if (descEl) { descEl.innerText = item.desc_id || item.desc || '-'; }
 
     const actionContainer = document.getElementById('detail-action-container'); 
     const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
 
+    const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+    const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+
     let adminActionHTML = '';
     if (isAdmin && adminModeActive) {
-        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active');" style="flex:1; margin-left:10px;">Hapus Item</button>`;
+        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${item.title}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active');" style="flex:1;">Hapus</button>`;
     }
 
-    if(actionContainer) actionContainer.innerHTML = `<div style="display:flex; width:100%;">
-         <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">Download File</span></button>
-         ${adminActionHTML}
-    </div>`;
+    if (actionContainer) {
+        actionContainer.innerHTML = `
+        <div style="display:flex; width:100%; gap:10px;">
+             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">Download File</span></button>
+             <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="window.toggleLike('${item.id}')" style="padding:10px 16px;">
+                 ${likeIconSVG} <span>${likesCount}</span>
+             </button>
+             ${adminActionHTML}
+        </div>`;
+    }
     window.applyTranslation();
 
     loadComments(itemId);
-    const cfContainer = document.getElementById('comment-form-container'); const cpPrompt = document.getElementById('comment-login-prompt');
-    if(currentUser){ if(cfContainer) cfContainer.classList.remove('hidden'); if(cpPrompt) cpPrompt.classList.add('hidden'); } 
-    else { if(cfContainer) cfContainer.classList.add('hidden'); if(cpPrompt) cpPrompt.classList.remove('hidden'); }
+    const cfContainer = document.getElementById('comment-form-container');
+    const cpPrompt = document.getElementById('comment-login-prompt');
+    if (currentUser) {
+        if (cfContainer) cfContainer.classList.remove('hidden');
+        if (cpPrompt) cpPrompt.classList.add('hidden');
+    } else {
+        if (cfContainer) cfContainer.classList.add('hidden');
+        if (cpPrompt) cpPrompt.classList.remove('hidden');
+    }
     
-    const dContainer = document.getElementById('screen-detail-container'); if(dContainer) { dContainer.classList.add('active'); document.body.style.overflow = 'hidden'; }
-}
-window.closeDetailAndLogin = () => { const dContainer = document.getElementById('screen-detail-container'); if(dContainer) dContainer.classList.remove('active'); document.body.style.overflow=''; window.switchScreen('screen-login'); }
+    const dContainer = document.getElementById('screen-detail-container');
+    if (dContainer) {
+        dContainer.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+window.closeDetailAndLogin = () => {
+    const dContainer = document.getElementById('screen-detail-container');
+    if (dContainer) dContainer.classList.remove('active');
+    document.body.style.overflow = '';
+    window.switchScreen('screen-login');
+};
 
 function renderItemsToUI() {
-  const container = document.getElementById('public-items-container'); if(!container) return; container.innerHTML = '';
+  const container = document.getElementById('public-items-container');
+  if (!container) return;
+  container.innerHTML = '';
 
   let displayItems = globalAllItems;
   const isSemua = currentCategoryFilter === 'Semua';
   
-  if (isSemua) { displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server'); } 
-  else { displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase()); }
+  if (isSemua) {
+      displayItems = displayItems.filter(item => item.category.toLowerCase() !== 'server');
+  } else {
+      displayItems = displayItems.filter(item => item.category.toLowerCase() === currentCategoryFilter.toLowerCase());
+  }
 
-  if (currentSearchQuery.trim() !== '') displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
-  if (currentCategoryFilter === 'Server') displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0)); else displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  if (currentSearchQuery.trim() !== '') {
+      displayItems = displayItems.filter(item => item.title.toLowerCase().includes(currentSearchQuery));
+  }
+  if (currentCategoryFilter === 'Server') {
+      displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0));
+  } else {
+      displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
   
-  if (displayItems.length === 0 && container) { container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">Tidak ditemukan.</p>`; }
+  if (displayItems.length === 0 && container) {
+      container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">Tidak ditemukan.</p>`;
+  }
 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
   let htmlBuf = '';
   
   displayItems.forEach(item => {
-      let adminEditBtn = ''; let adminDeleteBtn = '';
+      let adminEditBtn = '';
+      let adminDeleteBtn = '';
       if (isAdmin && adminModeActive) {
           adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
           adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${item.title}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
@@ -715,7 +1138,7 @@ function renderItemsToUI() {
         const isVideo = item.url_img && (item.url_img.includes('data:video') || item.url_img.endsWith('.mp4'));
         const mediaHTML = isVideo ? `<video src="${item.url_img}" class="server-banner-media" autoplay loop muted playsinline></video>` : `<img src="${item.url_img}" class="server-banner-media lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">`;
         
-        setTimeout(()=>fetchServerStatus(item.id, ipTarget), 100);
+        setTimeout(() => fetchServerStatus(item.id, ipTarget), 100);
 
         htmlBuf += `
         <div class="card-server-compact">
@@ -749,56 +1172,72 @@ function renderItemsToUI() {
                 </div>
             </div>
         </div>`;
-      } else if (isSemua) {
-        htmlBuf += `
-        <div class="card-compact-all">
-            <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
-            <div class="card-body">
-                <h3 class="text-main">${item.title}</h3>
-                <div style="display:flex; gap:6px; margin-bottom:4px; align-items:center;">
-                    <span class="card-meta">${item.category}</span>
-                    ${item.version ? `<span class="card-meta" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
-                </div>
-            </div>
-            ${adminEditBtn}
-            ${adminDeleteBtn}
-            <button class="btn-download-compact" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)">
-                <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </button>
-        </div>`;
       } else {
-        let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">Download</span></button>`;
-        htmlBuf += `
-        <div class="card-vertical" onclick="window.openDetail('${item.id}')">
-          <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
-          <div class="card-body">
-            <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
-            <div style="margin-bottom:8px; display:flex; align-items:center;">
-               <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="margin-left:6px; background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
-               ${adminEditBtn}
-               ${adminDeleteBtn}
-            </div>
-            <p class="card-desc">${item.desc_id || item.desc || ''}</p>
-            <div class="flex" style="gap:10px;">${actionBtnHTML}</div>
-          </div>
-        </div>`;
+        const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+        const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+        const likeBtnHTML = `
+            <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); window.toggleLike('${item.id}')">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span>${likesCount}</span>
+            </button>`;
+
+        if (isSemua) {
+            htmlBuf += `
+            <div class="card-compact-all">
+                <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                <div class="card-body">
+                    <h3 class="text-main">${item.title}</h3>
+                    <div style="display:flex; gap:6px; margin-bottom:4px; align-items:center;">
+                        <span class="card-meta">${item.category}</span>
+                        ${item.version ? `<span class="card-meta" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+                    </div>
+                </div>
+                ${likeBtnHTML}
+                ${adminEditBtn}
+                ${adminDeleteBtn}
+                <button class="btn-download-compact" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)">
+                    <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+            </div>`;
+        } else {
+            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">Download</span></button>`;
+            htmlBuf += `
+            <div class="card-vertical" onclick="window.openDetail('${item.id}')">
+              <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+              <div class="card-body">
+                <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title}</h3>
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                   <span class="card-meta">${item.category}</span> ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+                   ${adminEditBtn}
+                   ${adminDeleteBtn}
+                </div>
+                <p class="card-desc">${item.desc_id || item.desc || ''}</p>
+                <div class="flex" style="gap:10px; margin-top:10px;">
+                    ${actionBtnHTML}
+                    ${likeBtnHTML}
+                </div>
+              </div>
+            </div>`;
+        }
       }
   });
 
   if (currentUser) {
-      let totalMyUploads = 0; let totalMyDownloads = 0;
+      let totalMyUploads = 0;
+      let totalMyDownloads = 0;
       globalAllItems.forEach(it => {
           if (it.uid === currentUser.uid) {
               totalMyUploads++;
               if (it.downloadsData) totalMyDownloads += Object.keys(it.downloadsData).length;
           }
       });
-      const statUpEl = document.getElementById('stat-upload'); const statDlEl = document.getElementById('stat-download');
+      const statUpEl = document.getElementById('stat-upload');
+      const statDlEl = document.getElementById('stat-download');
       if (statUpEl) statUpEl.innerText = totalMyUploads;
       if (statDlEl) statDlEl.innerText = totalMyDownloads;
   }
   
-  if(container) container.innerHTML = htmlBuf;
+  if (container) container.innerHTML = htmlBuf;
   window.applyTranslation();
 }
 
@@ -815,26 +1254,26 @@ window.handleLocalImage = (e) => {
   reader.onload = (ev) => { 
       if (isServer && (file.type === 'image/gif' || file.type.startsWith('video/'))) {
           localImageBase64 = ev.target.result; 
-          const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = file.type.startsWith('video') ? `✓ Video Terpilih` : `✓ GIF dipilih`; 
-          const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ""; 
+          const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = file.type.startsWith('video') ? `✓ Video Terpilih` : `✓ GIF dipilih`; 
+          const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ""; 
       } 
       else if (isServer) {
-          const cImg = document.getElementById('cropper-image'); if(cImg) cImg.src = ev.target.result;
+          const cImg = document.getElementById('cropper-image'); if (cImg) cImg.src = ev.target.result;
           window.openDialog('dialog-cropper');
           if (cropperInstance) cropperInstance.destroy();
           const cImg2 = document.getElementById('cropper-image');
-          if(cImg2) cropperInstance = new Cropper(cImg2, { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
+          if (cImg2) cropperInstance = new Cropper(cImg2, { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
       } else {
           localImageBase64 = ev.target.result; 
-          const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = `✓ Gambar dipilih`; 
-          const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ""; 
+          const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = `✓ Gambar dipilih`; 
+          const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ""; 
       }
   };
   reader.readAsDataURL(file);
 };
-window.confirmCrop = () => { if(!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); const statEl = document.getElementById('img-status'); if(statEl) statEl.innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); }
-window.cancelCrop = () => { window.closeDialog('dialog-cropper'); const imgEl = document.getElementById('add-img'); if(imgEl) imgEl.value = ''; const fileEl = document.getElementById('file-img'); if(fileEl) fileEl.value = ''; }
-window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const cw = document.getElementById('selected-category-text-wrap').querySelector('span'); const currentCat = cw ? cw.innerText.trim() : 'Mod'; const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; const statEl = document.getElementById('file-status'); if(statEl) statEl.innerText = `✓ File dipilih`; const addEl = document.getElementById('add-file'); if(addEl) addEl.value = ""; }; reader.readAsDataURL(file); };
+window.confirmCrop = () => { if (!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); };
+window.cancelCrop = () => { window.closeDialog('dialog-cropper'); const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ''; const fileEl = document.getElementById('file-img'); if (fileEl) fileEl.value = ''; };
+window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const cw = document.getElementById('selected-category-text-wrap').querySelector('span'); const currentCat = cw ? cw.innerText.trim() : 'Mod'; const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; const statEl = document.getElementById('file-status'); if (statEl) statEl.innerText = `✓ File dipilih`; const addEl = document.getElementById('add-file'); if (addEl) addEl.value = ""; }; reader.readAsDataURL(file); };
 
 window.submitItem = async () => {
   if (!currentUser) return;
@@ -848,38 +1287,196 @@ window.submitItem = async () => {
   
   let title, finalFile, serverIp, serverPort;
   if (cat === 'Server') {
-    title = document.getElementById('add-server-name')?.value.trim(); serverIp = document.getElementById('add-server-ip')?.value.trim(); serverPort = document.getElementById('add-server-port')?.value.trim() || "19132"; finalFile = '#'; 
+    title = document.getElementById('add-server-name')?.value.trim();
+    serverIp = document.getElementById('add-server-ip')?.value.trim();
+    serverPort = document.getElementById('add-server-port')?.value.trim() || "19132";
+    finalFile = '#'; 
     if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert("Form tidak lengkap!"); return; }
   } else {
-    title = document.getElementById('add-title')?.value.trim(); finalFile = localFileBase64 || document.getElementById('add-file')?.value.trim();
+    title = document.getElementById('add-title')?.value.trim();
+    finalFile = localFileBase64 || document.getElementById('add-file')?.value.trim();
     if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert("Form tidak lengkap!"); return; }
   }
   const btnSubmit = document.getElementById('btn-submit-item');
-  if(btnSubmit) btnSubmit.disabled = true;
-  const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0 };
-  if(cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
+  if (btnSubmit) btnSubmit.disabled = true;
+  const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0, likes: {} };
+  if (cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
 
   try {
     if (isAdmin && adminModeActive) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
     else { await push(ref(db, 'items_pending'), data); window.showModalAlert("Terkirim ke antrean!"); }
     window.switchScreen('screen-home');
-    const fTitle = document.getElementById('add-title'); if(fTitle) fTitle.value = ''; 
-    const fsrvn = document.getElementById('add-server-name'); if(fsrvn) fsrvn.value = '';
-    const fsrvip = document.getElementById('add-server-ip'); if(fsrvip) fsrvip.value = '';
-    const fdesc = document.getElementById('add-desc'); if(fdesc) fdesc.value = '';
-    const fimg = document.getElementById('add-img'); if(fimg) fimg.value = '';
-    const ffile = document.getElementById('add-file'); if(ffile) ffile.value = '';
-    const fimgstat = document.getElementById('img-status'); if(fimgstat) fimgstat.innerText = '';
-    const ffilestat = document.getElementById('file-status'); if(ffilestat) ffilestat.innerText = '';
+    const fTitle = document.getElementById('add-title'); if (fTitle) fTitle.value = ''; 
+    const fsrvn = document.getElementById('add-server-name'); if (fsrvn) fsrvn.value = '';
+    const fsrvip = document.getElementById('add-server-ip'); if (fsrvip) fsrvip.value = '';
+    const fdesc = document.getElementById('add-desc'); if (fdesc) fdesc.value = '';
+    const fimg = document.getElementById('add-img'); if (fimg) fimg.value = '';
+    const ffile = document.getElementById('add-file'); if (ffile) ffile.value = '';
+    const fimgstat = document.getElementById('img-status'); if (fimgstat) fimgstat.innerText = '';
+    const ffilestat = document.getElementById('file-status'); if (ffilestat) ffilestat.innerText = '';
     localImageBase64 = null; localFileBase64 = null;
-  } catch (e) { window.showModalAlert("Error."); }
-  if(btnSubmit) btnSubmit.disabled = false;
+  } catch (e) { window.showModalAlert("Gagal mengirim data."); }
+  if (btnSubmit) btnSubmit.disabled = false;
+};
+
+// ==========================================
+// FEEDBACK & BUG REPORT SYSTEM
+// ==========================================
+window.openFeedbackForm = () => {
+    if (!currentUser) {
+        window.showModalAlert("Silakan masuk/login untuk mengirim laporan atau masukan.");
+        window.switchScreen('screen-login');
+        return;
+    }
+    const ft = document.getElementById('feedback-title');
+    const fd = document.getElementById('feedback-desc');
+    const fprev = document.getElementById('feedback-img-preview');
+    const ffile = document.getElementById('feedback-img');
+    if (ft) ft.value = '';
+    if (fd) fd.value = '';
+    if (ffile) ffile.value = '';
+    if (fprev) {
+        fprev.src = '';
+        fprev.style.display = 'none';
+    }
+    feedbackImageBase64 = null;
+    window.closeAllDrawers();
+    window.openDialog('dialog-feedback');
+};
+
+window.handleFeedbackImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+        window.showModalAlert("Ukuran screenshot maksimal 3MB.");
+        e.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        feedbackImageBase64 = ev.target.result;
+        const prev = document.getElementById('feedback-img-preview');
+        if (prev) {
+            prev.src = feedbackImageBase64;
+            prev.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+};
+
+window.submitFeedback = async () => {
+    if (!currentUser) return;
+    const title = document.getElementById('feedback-title')?.value.trim();
+    const desc = document.getElementById('feedback-desc')?.value.trim();
+    if (!title || !desc) {
+        window.showModalAlert("Harap isi judul dan deskripsi masalah.");
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-feedback');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Mengirim...";
+    }
+
+    try {
+        await push(ref(db, 'feedback'), {
+            uid: currentUser.uid,
+            username: currentUsername,
+            title: title,
+            desc: desc,
+            image: feedbackImageBase64 || null,
+            status: 'Baru',
+            createdAt: serverTimestamp()
+        });
+        window.closeDialog('dialog-feedback');
+        window.showModalAlert("Laporan Anda berhasil dikirim ke Admin!");
+    } catch (e) {
+        window.showModalAlert("Gagal mengirim laporan: " + e.message);
+    }
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Kirim Laporan";
+    }
+};
+
+window.switchAdminTab = (tab) => {
+    const queueSection = document.getElementById('admin-queue-section');
+    const feedbackSection = document.getElementById('admin-feedback-section');
+    const tabQueueBtn = document.getElementById('tab-admin-queue');
+    const tabFeedbackBtn = document.getElementById('tab-admin-feedback');
+
+    if (tab === 'queue') {
+        if (queueSection) queueSection.classList.remove('hidden');
+        if (feedbackSection) feedbackSection.classList.add('hidden');
+        if (tabQueueBtn) { tabQueueBtn.classList.add('btn-primary'); tabQueueBtn.classList.remove('btn-secondary'); }
+        if (tabFeedbackBtn) { tabFeedbackBtn.classList.add('btn-secondary'); tabFeedbackBtn.classList.remove('btn-primary'); }
+    } else {
+        if (queueSection) queueSection.classList.add('hidden');
+        if (feedbackSection) feedbackSection.classList.remove('hidden');
+        if (tabQueueBtn) { tabQueueBtn.classList.add('btn-secondary'); tabQueueBtn.classList.remove('btn-primary'); }
+        if (tabFeedbackBtn) { tabFeedbackBtn.classList.add('btn-primary'); tabFeedbackBtn.classList.remove('btn-secondary'); }
+        loadAdminFeedback();
+    }
+};
+
+function loadAdminFeedback() {
+    if (!isAdmin || !adminModeActive) return;
+    const cont = document.getElementById('admin-feedback-list');
+    if (!cont) return;
+    cont.innerHTML = '<div class="loader" style="margin-top: 30px;"></div>';
+
+    onValue(ref(db, 'feedback'), (snapshot) => {
+        cont.innerHTML = '';
+        if (!snapshot.exists()) {
+            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada laporan masuk.</p>';
+            return;
+        }
+
+        const list = [];
+        snapshot.forEach(c => list.push({ id: c.key, ...c.val() }));
+        list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        let html = '';
+        list.forEach(f => {
+            const isNew = f.status === 'Baru';
+            const badgeClass = isNew ? 'feedback-badge baru' : 'feedback-badge selesai';
+            const statusText = isNew ? 'Baru' : 'Selesai';
+            const imgHTML = f.image ? `<img src="${f.image}" style="max-width:100%; max-height:220px; object-fit:contain; border-radius:6px; margin-top:10px; border:1px solid var(--border-color); display:block; cursor:pointer;" onclick="window.open('${f.image}', '_blank')">` : '';
+            const actionBtn = isNew ? `<button class="btn btn-success" style="padding:8px 12px; font-size:11px; margin-top:10px; width:auto;" onclick="window.markFeedbackHandled('${f.id}')">Tandai Selesai</button>` : '';
+
+            html += `
+            <div class="feedback-card">
+                <div class="feedback-header">
+                    <div>
+                        <h4 class="font-bold text-main" style="font-size:14px; margin-bottom:2px;">${f.title}</h4>
+                        <span style="font-size:11px; color:var(--text-muted);">Oleh: <b class="text-main">${f.username}</b> &bull; ${formatDate(f.createdAt)}</span>
+                    </div>
+                    <span class="${badgeClass}">${statusText}</span>
+                </div>
+                <p style="font-size:13px; color:var(--text-main); white-space:pre-wrap; line-height:1.4;">${escapeHtml(f.desc)}</p>
+                ${imgHTML}
+                <div style="display:flex; justify-content:flex-end;">
+                    ${actionBtn}
+                </div>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    });
+}
+
+window.markFeedbackHandled = async (id) => {
+    try {
+        await update(ref(db, `feedback/${id}`), { status: 'Selesai' });
+    } catch (e) {
+        window.showModalAlert("Gagal memperbarui status.");
+    }
 };
 
 function loadPendingItems() {
-  if(!isAdmin || !adminModeActive) return;
+  if (!isAdmin || !adminModeActive) return;
   onValue(ref(db, 'items_pending'), (snapshot) => {
-    const container = document.getElementById('pending-items-container'); if(!container) return; container.innerHTML = ''; let count = 0;
+    const container = document.getElementById('pending-items-container'); if (!container) return; container.innerHTML = ''; let count = 0;
     adminQueueMemory = {}; 
     
     if (snapshot.exists()) {
@@ -917,29 +1514,43 @@ function loadPendingItems() {
           </div>`;
       });
     } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;" data-i18n="no_queue">Tidak ada antrean.</p>`; }
-    const badgeCount = document.getElementById('pending-count'); if(badgeCount) badgeCount.innerText = count;
+    const badgeCount = document.getElementById('pending-count'); if (badgeCount) badgeCount.innerText = count;
   });
 }
 
-window.testAdminFile = (key) => { const item = adminQueueMemory[key]; if(item && item.url_file) { window.handleDownload(item.url_file, key); } };
-window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if(item && item.url_img) { if (item.url_img.startsWith('data:')) { const newTab = window.open(); newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`; } else { window.open(item.url_img, '_blank'); } } };
+window.testAdminFile = (key) => { const item = adminQueueMemory[key]; if (item && item.url_file) { window.handleDownload(item.url_file, key); } };
+window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if (item && item.url_img) { if (item.url_img.startsWith('data:')) { const newTab = window.open(); newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`; } else { window.open(item.url_img, '_blank'); } } };
 
-window.approveItem = async (id, uid, title) => { try { const snap = await get(ref(db, `items_pending/${id}`)); if(snap.exists()){ await set(ref(db, `items_public/${id}`), snap.val()); await remove(ref(db, `items_pending/${id}`)); await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false }); const pSnap = await get(ref(db, `profiles/${uid}`)); if(pSnap.exists()) { await update(ref(db, `profiles/${uid}`), {itemCount: (pSnap.val().itemCount||0) + 1}); } window.showModalAlert("Disetujui!"); } } catch(e) {} };
-window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if(rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
-window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Ditolak."); currentRejectItem = null; } catch(e) {} };
+window.approveItem = async (id, uid, title) => {
+    try {
+        const snap = await get(ref(db, `items_pending/${id}`));
+        if (snap.exists()) {
+            await set(ref(db, `items_public/${id}`), snap.val());
+            await remove(ref(db, `items_pending/${id}`));
+            await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false });
+            const pSnap = await get(ref(db, `profiles/${uid}`));
+            if (pSnap.exists()) {
+                await update(ref(db, `profiles/${uid}`), { itemCount: (pSnap.val().itemCount||0) + 1 });
+            }
+            window.showModalAlert("Disetujui dan berhasil dipublikasikan!");
+        }
+    } catch (e) {}
+};
+
+window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if (rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
+window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Item ditolak."); currentRejectItem = null; } catch (e) {} };
 
 window.deletePublicItem = (id, title, status) => { 
     window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { 
         try { 
-            if(status === 'Pending') await remove(ref(db, `items_pending/${id}`));
+            if (status === 'Pending') await remove(ref(db, `items_pending/${id}`));
             else await remove(ref(db, `items_public/${id}`)); 
             window.showModalAlert("Item berhasil dihapus.");
-            if(window.loadMyContent) window.loadMyContent(); 
-        } catch(e) { window.showModalAlert("Gagal menghapus."); } 
+            if (window.loadMyContent) window.loadMyContent(); 
+        } catch (e) { window.showModalAlert("Gagal menghapus."); } 
     }); 
 };
 
-// FIX: FITUR EDIT ADMIN LENGKAP (Judul, Deskripsi, Gambar, File)
 window.openAdminEdit = (id) => {
     const item = globalAllItems.find(i => i.id === id);
     if (!item) return;
@@ -952,6 +1563,7 @@ window.openAdminEdit = (id) => {
     
     window.openDialog('dialog-edit-admin');
 };
+
 window.saveAdminEdit = async () => {
     const id = document.getElementById('edit-item-id').value;
     const title = document.getElementById('edit-title').value.trim();
@@ -959,7 +1571,7 @@ window.saveAdminEdit = async () => {
     const imgUrl = document.getElementById('edit-img-url').value.trim();
     const fileUrl = document.getElementById('edit-file-url').value.trim();
     
-    if(!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert('Semua field (Judul, Deskripsi, URL) tidak boleh kosong'); return; }
+    if (!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert('Semua field wajib diisi.'); return; }
     
     try {
         await update(ref(db, `items_public/${id}`), { 
@@ -968,17 +1580,17 @@ window.saveAdminEdit = async () => {
             url_img: imgUrl, 
             url_file: fileUrl 
         });
-        window.showModalAlert('Berhasil diupdate!');
+        window.showModalAlert('Berhasil diperbarui!');
         window.closeDialog('dialog-edit-admin');
-    } catch(e) { window.showModalAlert('Gagal update: ' + e.message); }
+    } catch (e) { window.showModalAlert('Gagal update: ' + e.message); }
 };
 
-window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if(inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
+window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if (inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
 const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
 let globalProfilesCache = {};
 function loadComments(itemId) {
-    const commentsList = document.getElementById('comments-list'); if(!commentsList) return; 
+    const commentsList = document.getElementById('comments-list'); if (!commentsList) return; 
     commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat...</p>`;
     
     if (currentCommentRef) { off(currentCommentRef); }
@@ -996,9 +1608,21 @@ function loadComments(itemId) {
 
         let htmlBuf = '';
         for (const comment of mainComments) {
-            let avatarUrl = generateDefaultAvatar(comment.username); let roleBadge = getRoleBadge('member');
-            if(globalProfilesCache[comment.uid]) { avatarUrl=globalProfilesCache[comment.uid].avatar || avatarUrl; roleBadge=getRoleBadge(globalProfilesCache[comment.uid].role); }
-            else { try { const pSnap = await get(ref(db, `profiles/${comment.uid}`)); if(pSnap.exists()){ globalProfilesCache[comment.uid]=pSnap.val(); avatarUrl=pSnap.val().avatar||avatarUrl; roleBadge=getRoleBadge(pSnap.val().role); } } catch(e){} }
+            let avatarUrl = generateDefaultAvatar(comment.username);
+            let roleBadge = getRoleBadge('member');
+            if (globalProfilesCache[comment.uid]) {
+                avatarUrl = globalProfilesCache[comment.uid].avatar || avatarUrl;
+                roleBadge = getRoleBadge(globalProfilesCache[comment.uid].role);
+            } else {
+                try {
+                    const pSnap = await get(ref(db, `profiles/${comment.uid}`));
+                    if (pSnap.exists()) {
+                        globalProfilesCache[comment.uid] = pSnap.val();
+                        avatarUrl = pSnap.val().avatar || avatarUrl;
+                        roleBadge = getRoleBadge(pSnap.val().role);
+                    }
+                } catch (e) {}
+            }
             const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
             
             htmlBuf += `
@@ -1014,7 +1638,74 @@ function loadComments(itemId) {
         commentsList.innerHTML = htmlBuf;
     });
 }
-window.postComment = async () => { if(!currentUser) return; const tEl = document.getElementById('new-comment-text'); if(!tEl) return; const txt = tEl.value.trim(); if(!txt) return; const now = Date.now(); if(now - lastCommentTime < 30000) { window.showModalAlert(`Tunggu sebentar.`); return; } try { const refC = push(ref(db, `comments/${currentDetailItemId}`)); const updates = {}; updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null }; updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp(); await update(ref(db), updates); lastCommentTime = now; tEl.value = ''; window.updateCommentCounter('new-comment-text', 'new-comment-counter'); } catch(e) {} }
-window.deleteComment = async (itemId, commentId) => { window.showModalConfirm("Yakin menghapus komentar ini?", async () => { try { await update(ref(db), {[`comments/${itemId}/${commentId}`]: null}); } catch(e) {} }); }
-function escapeHtml(u) { return (u||"").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-window.translateDesc = async () => { const el = document.getElementById('detail-desc'); const bEl = document.getElementById('text-translate-desc'); if(!el || !bEl) return; const isT = el.dataset.translated === "true"; const orig = el.dataset.originalText; if(isT) { el.innerText = orig; el.dataset.translated = "false"; bEl.innerText = 'Translate'; } else { bEl.innerText = "..."; try { const tgt = currentLang === 'id' ? 'id' : 'en'; const res = await translateText(orig, tgt); if(res !== "ALREADY_SAME"){ el.innerText = res; el.dataset.translated = "true"; bEl.innerText = 'Show original'; } else {bEl.innerText = 'Translate';} } catch(e) {bEl.innerText = 'Translate';} } }
+
+window.postComment = async () => {
+    if (!currentUser) return;
+    const tEl = document.getElementById('new-comment-text');
+    if (!tEl) return;
+    const txt = tEl.value.trim();
+    if (!txt) return;
+    const now = Date.now();
+    if (now - lastCommentTime < 30000) {
+        window.showModalAlert("Tunggu sebentar sebelum berkomentar lagi.");
+        return;
+    }
+    try {
+        const refC = push(ref(db, `comments/${currentDetailItemId}`));
+        const updates = {};
+        updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null };
+        updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp();
+        await update(ref(db), updates);
+        lastCommentTime = now;
+        tEl.value = '';
+        window.updateCommentCounter('new-comment-text', 'new-comment-counter');
+    } catch (e) {}
+};
+
+window.deleteComment = async (itemId, commentId) => {
+    window.showModalConfirm("Yakin menghapus komentar ini?", async () => {
+        try {
+            await update(ref(db), { [`comments/${itemId}/${commentId}`]: null });
+        } catch (e) {}
+    });
+};
+
+function escapeHtml(u) {
+    return (u || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+window.translateDesc = async () => {
+    const el = document.getElementById('detail-desc');
+    const bEl = document.getElementById('text-translate-desc');
+    if (!el || !bEl) return;
+    const isT = el.dataset.translated === "true";
+    const orig = el.dataset.originalText || el.innerText;
+    el.dataset.originalText = orig;
+
+    if (isT) {
+        el.innerText = orig;
+        el.dataset.translated = "false";
+        bEl.innerText = 'Translate';
+    } else {
+        bEl.innerText = "...";
+        try {
+            const item = globalAllItems.find(i => i.id === currentDetailItemId);
+            if (item) {
+                if (currentLang === 'en' && item.desc_en) {
+                    el.innerText = item.desc_en;
+                    el.dataset.translated = "true";
+                    bEl.innerText = 'Show original';
+                    return;
+                } else if (currentLang === 'id' && item.desc_id) {
+                    el.innerText = item.desc_id;
+                    el.dataset.translated = "true";
+                    bEl.innerText = 'Show original';
+                    return;
+                }
+            }
+            bEl.innerText = 'Translate';
+        } catch (e) {
+            bEl.innerText = 'Translate';
+        }
+    }
+};
