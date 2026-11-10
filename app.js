@@ -46,7 +46,6 @@ window.applyTheme = () => {
     } else {
         document.body.classList.remove('light-theme');
     }
-    
     const lightCard = document.getElementById('theme-card-light');
     const darkCard = document.getElementById('theme-card-dark');
     if (lightCard && darkCard) {
@@ -66,7 +65,11 @@ window.setTheme = (mode) => {
     window.applyTheme();
 };
 
+// ==========================================
+// SISTEM TRANSLATE FULL UI (Bahasa)
+// ==========================================
 let currentLang = localStorage.getItem('lang') || 'id';
+
 const uiTranslations = {
     id: {
         "info": "Informasi", "ok": "Oke", "confirm": "Konfirmasi", "cancel": "Batal", "sure": "Yakin",
@@ -74,9 +77,9 @@ const uiTranslations = {
         "reject_item": "Tolak Item", "reject_reason": "Alasan penolakan (dikirim ke user).", "reject_placeholder": "Contoh: File rusak...", "reject_submit": "Tolak Item",
         "edit_item": "Edit Item", "edit_img_url": "URL Gambar Preview:", "edit_file_url": "URL File Download:", "save_update": "Simpan Update",
         "loading_sys": "Memuat sistem...", "error_title": "Terjadi Kesalahan", "error_msg": "Gagal memuat akun, coba lagi.", "try_again": "Coba Lagi",
-        "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim Komentar",
+        "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim",
         "login_comment_prompt": "Silakan masuk untuk memberikan komentar.", "loading_comments": "Memuat...", "nav_admin": "Admin Panel", "mode_admin": "Mode Admin", 
-        "nav_translate": "Translate UI (EN)", "nav_help": "Lapor Bug / Feedback", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
+        "nav_help": "Lapor Bug / Feedback", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
         "register_here": "Daftar di sini", "email_placeholder": "Alamat Email", "pass_placeholder": "Password (Min 6)", "btn_login": "Masuk", "or_via": "atau via", 
         "login_google": "Masuk dengan Google", "create_user": "Buat Username", "user_rule": "Hanya huruf, angka, dan underscore (3-16 karakter).", "save_user": "Simpan Username",
         "search_placeholder": "Cari item...", "nav_home": "Beranda", "nav_upload": "Upload", "nav_profile": "Profil", "my_profile": "Profil Saya",
@@ -86,7 +89,7 @@ const uiTranslations = {
         "old_pass": "Password Lama", "new_pass": "Password Baru (Min 6)", "confirm_pass": "Konfirmasi Password Baru", "update_pass": "Update Password",
         "title_upload": "Kirim Baru", "lbl_cat": "Kategori*", "lbl_title": "Judul Item*", "lbl_server_name": "Nama Server*", "lbl_server_loc": "Negara / Lokasi Server*",
         "lbl_version": "Versi MCPE*", "lbl_img": "Gambar Preview*", "url_img": "URL Gambar...", "lbl_file": "File Download / Mod*", "url_file": "URL File Download...", "btn_upload": "Upload Sekarang",
-        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean."
+        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean.", "btn_download": "Download File", "wa_channel": "Channel WhatsApp", "lang_title": "Bahasa", "theme_title": "Mode Warna"
     },
     en: {
         "info": "Information", "ok": "OK", "confirm": "Confirm", "cancel": "Cancel", "sure": "Sure",
@@ -94,9 +97,9 @@ const uiTranslations = {
         "reject_item": "Reject Item", "reject_reason": "Reason for rejection (sent to user).", "reject_placeholder": "Example: Broken file...", "reject_submit": "Reject Item",
         "edit_item": "Edit Item", "edit_img_url": "Preview Image URL:", "edit_file_url": "Download File URL:", "save_update": "Save Update",
         "loading_sys": "Loading system...", "error_title": "An Error Occurred", "error_msg": "Failed to load account, try again.", "try_again": "Try Again",
-        "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send Comment",
+        "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send",
         "login_comment_prompt": "Please login to comment.", "loading_comments": "Loading...", "nav_admin": "Admin Panel", "mode_admin": "Admin Mode", 
-        "nav_translate": "Translate UI (ID)", "nav_help": "Bug Report / Feedback", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
+        "nav_help": "Bug Report / Feedback", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
         "register_here": "Register here", "email_placeholder": "Email Address", "pass_placeholder": "Password (Min 6)", "btn_login": "Login", "or_via": "or via", 
         "login_google": "Login with Google", "create_user": "Create Username", "user_rule": "Letters, numbers, and underscores only (3-16 chars).", "save_user": "Save Username",
         "search_placeholder": "Search items...", "nav_home": "Home", "nav_upload": "Upload", "nav_profile": "Profile", "my_profile": "My Profile",
@@ -106,7 +109,7 @@ const uiTranslations = {
         "old_pass": "Old Password", "new_pass": "New Password (Min 6)", "confirm_pass": "Confirm New Password", "update_pass": "Update Password",
         "title_upload": "Submit New", "lbl_cat": "Category*", "lbl_title": "Item Title*", "lbl_server_name": "Server Name*", "lbl_server_loc": "Country / Location*",
         "lbl_version": "MCPE Version*", "lbl_img": "Preview Image*", "url_img": "Image URL...", "lbl_file": "Download File / Mod*", "url_file": "Download File URL...", "btn_upload": "Upload Now",
-        "review_queue": "Review Queue", "no_queue": "No queue."
+        "review_queue": "Review Queue", "no_queue": "No queue.", "btn_download": "Download File", "wa_channel": "WhatsApp Channel", "lang_title": "Language", "theme_title": "Color Mode"
     }
 };
 
@@ -121,13 +124,25 @@ window.applyTranslation = () => {
     });
 };
 
-window.toggleAutoTranslate = (e) => {
-    if (e) e.preventDefault();
-    currentLang = currentLang === 'id' ? 'en' : 'id';
-    localStorage.setItem('lang', currentLang);
-    const cb = document.getElementById('auto-translate-checkbox');
-    if (cb) cb.checked = (currentLang === 'en');
+window.setLang = (lang) => {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    
+    // Update visual kartu di Pengaturan Profil
+    const idCard = document.getElementById('lang-card-id');
+    const enCard = document.getElementById('lang-card-en');
+    if (idCard && enCard) {
+        if (lang === 'id') {
+            idCard.classList.add('active');
+            enCard.classList.remove('active');
+        } else {
+            enCard.classList.add('active');
+            idCard.classList.remove('active');
+        }
+    }
+    
     window.applyTranslation();
+    renderItemsToUI(); // Re-render card buttons (e.g. Download text)
 };
 
 const catIcons = {
@@ -167,10 +182,8 @@ function renderCategoryChips() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.applyTheme(); 
-    const cb = document.getElementById('auto-translate-checkbox');
-    if (cb) cb.checked = (currentLang === 'en');
-    window.applyTranslation();
+    window.applyTheme();
+    window.setLang(currentLang); 
     renderCategoryChips();
 });
 
@@ -327,7 +340,7 @@ window.requireLoginAndSwitch = (id) => {
     if (currentUser) {
         window.switchScreen(id);
     } else {
-        window.showModalAlert("Silakan masuk untuk mengakses halaman ini.");
+        window.showModalAlert(currentLang === 'id' ? "Silakan masuk untuk mengakses halaman ini." : "Please login to access this page.");
         window.switchScreen('screen-login');
     }
 };
@@ -365,7 +378,6 @@ window.openCategorySheet = () => {
     document.getElementById('bottom-sheet-overlay')?.classList.add('active');
 };
 
-// BUG FIX #1 & #2: Tambahan proteksi trim() agar icon selalu terdeteksi
 window.selectCategoryForm = (cat) => {
     cat = (cat || 'Mod').trim(); 
     const wrap = document.getElementById('selected-category-text-wrap');
@@ -384,15 +396,15 @@ window.selectCategoryForm = (cat) => {
         if (wsrv) wsrv.classList.remove('hidden'); 
         if (wf) wf.classList.add('hidden'); 
         if (fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
-        if (inputImg) inputImg.placeholder = "URL Gambar / GIF / Video...";
-        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar / Banner Server*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
+        if (inputImg) inputImg.placeholder = currentLang === 'id' ? "URL Gambar / GIF / Video..." : "Image / GIF / Video URL...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">${currentLang === 'id' ? 'Gambar / Banner Server*' : 'Server Banner*'}</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
     } else { 
         if (ws) ws.classList.remove('hidden'); 
         if (wsrv) wsrv.classList.add('hidden'); 
         if (wf) wf.classList.remove('hidden'); 
         if (fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
-        if (inputImg) inputImg.placeholder = "URL Gambar...";
-        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
+        if (inputImg) inputImg.placeholder = currentLang === 'id' ? "URL Gambar..." : "Image URL...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">${currentLang === 'id' ? 'Gambar Preview*' : 'Preview Image*'}</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
     }
 };
 
@@ -462,14 +474,14 @@ window.toggleAuthMode = () => {
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.innerText = '';
     const submitBtn = document.getElementById('auth-submit-btn');
-    if (submitBtn) submitBtn.innerText = isSignUpMode ? 'Daftar' : 'Masuk';
+    if (submitBtn) submitBtn.innerText = isSignUpMode ? (currentLang==='id'?'Daftar':'Register') : (currentLang==='id'?'Masuk':'Login');
 };
 
 window.processEmailAuth = async () => {
     const email = document.getElementById('auth-email')?.value.trim();
     const password = document.getElementById('auth-password')?.value;
     if (!email || !password) {
-        window.showModalAlert('Isi form dengan lengkap.');
+        window.showModalAlert(currentLang === 'id' ? 'Isi form dengan lengkap.' : 'Fill the form completely.');
         return;
     }
     const btn = document.getElementById('auth-submit-btn');
@@ -492,13 +504,13 @@ window.loginGoogle = async () => {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
     } catch (err) {
-        window.showModalAlert("Gagal masuk dengan Google: " + err.message);
+        window.showModalAlert((currentLang==='id'?"Gagal masuk dengan Google: ":"Google login failed: ") + err.message);
     }
 };
 
 window.customLogout = () => {
     window.closeAllDrawers();
-    window.showModalConfirm("Keluar dari Akun?", () => {
+    window.showModalConfirm(currentLang === 'id' ? "Keluar dari Akun?" : "Logout from Account?", () => {
         signOut(auth).then(() => {
             isAdmin = false;
             currentUser = null;
@@ -539,7 +551,7 @@ function updateHeaderAuthUI() {
         if (adminMenu) adminMenu.classList.add('hidden');
         if (adminToggle) adminToggle.classList.add('hidden');
         if (profImg) profImg.src = "https://via.placeholder.com/60"; 
-        if (profName) profName.innerText = "Tamu"; 
+        if (profName) profName.innerText = currentLang === 'id' ? "Tamu" : "Guest"; 
         if (profRole) profRole.innerHTML = "";
     }
 }
@@ -625,7 +637,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
           }
       } catch (err) {
           const errEl = document.getElementById('screen-error-msg');
-          if (errEl) errEl.innerText = "Gagal memuat akun: " + err.message;
+          if (errEl) errEl.innerText = (currentLang==='id'?"Gagal memuat akun: ":"Failed loading account: ") + err.message;
           window.switchScreen('screen-error');
       }
     } else {
@@ -649,21 +661,21 @@ window.saveUsername = async () => {
   const errEl = document.getElementById('username-error');
   const btn = document.getElementById('btn-save-username');
   if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
-      if (errEl) errEl.innerText = "Hanya huruf, angka, dan underscore (3-16 karakter).";
+      if (errEl) errEl.innerText = currentLang === 'id' ? "Hanya huruf, angka, dan underscore (3-16 karakter)." : "Letters, numbers, and underscores only (3-16 chars).";
       return;
   }
   if (btn) {
       btn.disabled = true;
-      btn.innerText = "Menyimpan...";
+      btn.innerText = "Mengirim...";
   }
   if (errEl) errEl.innerText = "";
   try {
     const unSnap = await get(ref(db, `usernames/${usernameLower}`));
     if (unSnap.exists() && unSnap.val() !== currentUser.uid) {
-        if (errEl) errEl.innerText = "Username sudah dipakai orang lain.";
+        if (errEl) errEl.innerText = currentLang === 'id' ? "Username sudah dipakai orang lain." : "Username already taken.";
         if (btn) {
             btn.disabled = false;
-            btn.innerText = "Simpan Username";
+            btn.innerText = currentLang === 'id' ? "Simpan Username" : "Save Username";
         }
         return;
     }
@@ -678,7 +690,7 @@ window.saveUsername = async () => {
       if (errEl) errEl.innerText = "Akses ditolak: " + e.message;
       if (btn) {
           btn.disabled = false;
-          btn.innerText = "Simpan Username";
+          btn.innerText = currentLang === 'id' ? "Simpan Username" : "Save Username";
       }
   }
 };
@@ -708,7 +720,7 @@ window.handleProfileUpload = async (event) => {
               if (imgEl1) imgEl1.src = base64Image;
               if (imgEl2) imgEl2.src = base64Image;
           } catch (err) {
-              window.showModalAlert("Gagal upload foto profil.");
+              window.showModalAlert(currentLang==='id'?"Gagal upload foto profil.":"Failed to upload profile picture.");
           }
         };
         img.src = e.target.result;
@@ -753,7 +765,7 @@ window.loadMyContent = () => {
         }
         
         if (myItems.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">Belum ada konten.</p>';
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">${currentLang==='id'?'Belum ada konten.':'No content yet.'}</p>`;
             return;
         }
         
@@ -784,7 +796,7 @@ function loadNotifications() {
         const badge = document.getElementById('notif-badge-profile');
         if (!cont) return;
         if (!snapshot.exists()) {
-            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada notifikasi.</p>';
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">${currentLang==='id'?'Belum ada notifikasi.':'No notifications yet.'}</p>`;
             if (badge) badge.style.display = 'none';
             return;
         }
@@ -800,7 +812,7 @@ function loadNotifications() {
             const icon = n.type === 'accepted' ? '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
             html += `
             <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
-                <div style="font-weight:bold; color:${color}; margin-bottom:4px; display:flex; align-items:center; gap:6px;">${icon} Item ${n.type === 'accepted' ? 'Disetujui' : 'Ditolak'}</div>
+                <div style="font-weight:bold; color:${color}; margin-bottom:4px; display:flex; align-items:center; gap:6px;">${icon} Item ${n.type === 'accepted' ? (currentLang==='id'?'Disetujui':'Approved') : (currentLang==='id'?'Ditolak':'Rejected')}</div>
                 <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
                 ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
             </div>`;
@@ -826,7 +838,7 @@ window.saveBioSelf = async () => {
     if (bio.length > 80) return;
     try {
         await update(ref(db, `profiles/${currentUser.uid}`), { bio: bio });
-        window.showModalAlert("Bio berhasil disimpan.");
+        window.showModalAlert(currentLang==='id'?"Bio berhasil disimpan.":"Bio saved successfully.");
     } catch (e) {}
 };
 
@@ -836,30 +848,30 @@ window.changeUserPassword = async () => {
     const newPass = document.getElementById('input-new-password').value;
     const confPass = document.getElementById('input-confirm-password').value;
 
-    if (!oldPass || !newPass || !confPass) { window.showModalAlert("Harap isi semua kolom password."); return; }
-    if (newPass !== confPass) { window.showModalAlert("Password baru dan konfirmasi tidak cocok."); return; }
-    if (newPass.length < 6) { window.showModalAlert("Password baru minimal 6 karakter."); return; }
+    if (!oldPass || !newPass || !confPass) { window.showModalAlert(currentLang==='id'?"Harap isi semua kolom password.":"Please fill all password fields."); return; }
+    if (newPass !== confPass) { window.showModalAlert(currentLang==='id'?"Password baru dan konfirmasi tidak cocok.":"Passwords do not match."); return; }
+    if (newPass.length < 6) { window.showModalAlert(currentLang==='id'?"Password baru minimal 6 karakter.":"New password must be at least 6 characters."); return; }
 
     try {
         const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
         await reauthenticateWithCredential(currentUser, credential);
         await updatePassword(currentUser, newPass);
         
-        window.showModalAlert("Password berhasil diubah!");
+        window.showModalAlert(currentLang==='id'?"Password berhasil diubah!":"Password changed successfully!");
         document.getElementById('input-old-password').value = '';
         document.getElementById('input-new-password').value = '';
         document.getElementById('input-confirm-password').value = '';
     } catch (error) {
-        if (error.code === 'auth/invalid-credential') window.showModalAlert("Password lama salah atau mendaftar menggunakan Google.");
-        else window.showModalAlert("Gagal mengubah password: " + error.message);
+        if (error.code === 'auth/invalid-credential') window.showModalAlert(currentLang==='id'?"Password lama salah atau mendaftar menggunakan Google.":"Wrong old password or registered via Google.");
+        else window.showModalAlert(currentLang==='id'?"Gagal mengubah password: ":"Failed changing password: " + error.message);
     }
 };
 
 window.changeUsernameSettings = async () => {
     if (!currentUser) return;
     const newName = document.getElementById('input-self-username').value.trim();
-    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert("Username hanya boleh berisi huruf, angka, underscore (3-16 karakter)."); return; }
-    if (newName === currentUsername) { window.showModalAlert("Username masih sama dengan yang sekarang."); return; }
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert(currentLang==='id'?"Username hanya boleh berisi huruf, angka, underscore (3-16 karakter).":"Letters, numbers, and underscores only (3-16 chars)."); return; }
+    if (newName === currentUsername) { window.showModalAlert(currentLang==='id'?"Username masih sama dengan yang sekarang.":"Username is still the same."); return; }
 
     try {
         const pSnap = await get(ref(db, `profiles/${currentUser.uid}`));
@@ -870,14 +882,14 @@ window.changeUsernameSettings = async () => {
         
         if (daysPassed < 30) {
             const remaining = Math.ceil(30 - daysPassed);
-            document.getElementById('username-cooldown-text').innerText = `Anda baru bisa mengganti username dalam ${remaining} hari lagi.`;
+            document.getElementById('username-cooldown-text').innerText = currentLang==='id'?`Anda baru bisa mengganti username dalam ${remaining} hari lagi.`:`You can change username in ${remaining} days.`;
             document.getElementById('input-self-username').value = currentUsername; 
             return;
         }
 
         const usernameLower = newName.toLowerCase();
         const unSnap = await get(ref(db, `usernames/${usernameLower}`));
-        if (unSnap.exists()) { window.showModalAlert("Username ini sudah dipakai orang lain."); return; }
+        if (unSnap.exists()) { window.showModalAlert(currentLang==='id'?"Username ini sudah dipakai orang lain.":"Username already taken."); return; }
 
         const updates = {};
         if (currentUsername) updates[`usernames/${currentUsername.toLowerCase()}`] = null;
@@ -889,11 +901,11 @@ window.changeUsernameSettings = async () => {
         currentUsername = newName;
         document.getElementById('profile-name').innerText = currentUsername;
         document.getElementById('sidebar-name').innerText = currentUsername;
-        document.getElementById('username-cooldown-text').innerText = "Username berhasil diperbarui!";
+        document.getElementById('username-cooldown-text').innerText = currentLang==='id'?"Username berhasil diperbarui!":"Username updated!";
         document.getElementById('username-cooldown-text').style.color = "var(--success)";
         
     } catch (error) {
-        window.showModalAlert("Gagal mengganti username.");
+        window.showModalAlert(currentLang==='id'?"Gagal mengganti username.":"Failed changing username.");
     }
 };
 
@@ -958,18 +970,18 @@ setInterval(() => {
   }
 }, 30000);
 
-// SISTEM LIKE REAL-TIME DENGAN ANTI-ABUSE & POIN (BUG FIX #3)
+// SISTEM JEMPOL LIKE REAL-TIME PERMANEN (BUG FIX #3)
 window.toggleLike = async (itemId) => {
     if (!currentUser) {
-        window.showModalAlert("Silakan masuk/login terlebih dahulu untuk menyukai item ini.");
-        window.switchScreen('screen-login'); // Lempar user ke halaman login jika belum login
+        window.showModalAlert(currentLang === 'id' ? "Silakan masuk/login terlebih dahulu untuk menyukai item ini." : "Please login first to like this item.");
+        window.switchScreen('screen-login'); 
         return;
     }
     const item = globalAllItems.find(i => i.id === itemId);
     if (!item) return;
 
     if (item.uid === currentUser.uid && item.source !== 'github') {
-        window.showModalAlert("Kamu tidak bisa like item milikmu sendiri.");
+        window.showModalAlert(currentLang === 'id' ? "Kamu tidak bisa like item milikmu sendiri." : "You cannot like your own item.");
         return;
     }
 
@@ -998,14 +1010,14 @@ window.toggleLike = async (itemId) => {
             }
         }
     } catch (e) {
-        window.showModalAlert("Gagal memproses like. Cek koneksi Anda.");
+        window.showModalAlert((currentLang === 'id' ? "Gagal memproses like. Cek koneksi Anda. " : "Failed to process like. ") + e.message);
     }
 };
 
 window.toggleVote = async (itemId) => {
-    if (!currentUser) { window.showModalAlert("Silakan masuk/login untuk mem-vote!"); window.switchScreen('screen-login'); return; }
+    if (!currentUser) { window.showModalAlert(currentLang==='id'?"Silakan masuk/login untuk mem-vote!":"Please login to vote!"); window.switchScreen('screen-login'); return; }
     const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
-    if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert("Kamu tidak bisa vote server milikmu sendiri."); return; }
+    if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert(currentLang==='id'?"Kamu tidak bisa vote server milikmu sendiri.":"You can't vote your own server."); return; }
 
     const isVoted = item.votes && item.votes[currentUser.uid];
     let currentStars = item.stars || 0;
@@ -1017,7 +1029,7 @@ window.toggleVote = async (itemId) => {
         updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
         updates[`items_public/${itemId}/stars`] = currentStars + 1;
     }
-    try { await update(ref(db), updates); } catch (e) { window.showModalAlert("Gagal mengirim vote."); }
+    try { await update(ref(db), updates); } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal mengirim vote.":"Failed submitting vote."); }
 };
 
 window.openDetail = async (itemId) => {
@@ -1057,7 +1069,7 @@ window.openDetail = async (itemId) => {
 
     const likesCount = item.likes ? Object.keys(item.likes).length : 0;
     const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
-    // IKON JEMPOL / THUMBS UP
+    // IKON JEMPOL THUMBS UP
     const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 
     let adminActionHTML = '';
@@ -1066,9 +1078,10 @@ window.openDetail = async (itemId) => {
     }
 
     if (actionContainer) {
+        const textDl = currentLang === 'id' ? 'Download File' : 'Download File';
         actionContainer.innerHTML = `
         <div style="display:flex; width:100%; gap:10px;">
-             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">Download File</span></button>
+             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">${textDl}</span></button>
              <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="window.toggleLike('${item.id}')" style="padding:10px 16px;">
                  ${likeIconSVG} <span>${likesCount}</span>
              </button>
@@ -1111,7 +1124,6 @@ function renderItemsToUI() {
   const isSemua = currentCategoryFilter === 'Semua';
   
   if (isSemua) {
-      // BUG FIX #3: Pelindung untuk data lama yang mungkin field category-nya hilang/undefined
       displayItems = displayItems.filter(item => (item.category || '').toLowerCase() !== 'server');
   } else {
       displayItems = displayItems.filter(item => (item.category || '').toLowerCase() === currentCategoryFilter.toLowerCase());
@@ -1128,7 +1140,7 @@ function renderItemsToUI() {
   }
   
   if (displayItems.length === 0 && container) {
-      container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">Tidak ditemukan.</p>`;
+      container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">${currentLang==='id'?'Tidak ditemukan.':'No items found.'}</p>`;
   }
 
   const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
@@ -1213,7 +1225,8 @@ function renderItemsToUI() {
                 </button>
             </div>`;
         } else {
-            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">Download</span></button>`;
+            const textDl = currentLang === 'id' ? 'Download' : 'Download';
+            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">${textDl}</span></button>`;
             htmlBuf += `
             <div class="card-vertical" onclick="window.openDetail('${item.id}')">
               <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
@@ -1305,11 +1318,11 @@ window.submitItem = async () => {
     serverIp = document.getElementById('add-server-ip')?.value.trim();
     serverPort = document.getElementById('add-server-port')?.value.trim() || "19132";
     finalFile = '#'; 
-    if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert("Form tidak lengkap!"); return; }
+    if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert(currentLang==='id'?"Form tidak lengkap!":"Incomplete form!"); return; }
   } else {
     title = document.getElementById('add-title')?.value.trim();
     finalFile = localFileBase64 || document.getElementById('add-file')?.value.trim();
-    if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert("Form tidak lengkap!"); return; }
+    if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert(currentLang==='id'?"Form tidak lengkap!":"Incomplete form!"); return; }
   }
   const btnSubmit = document.getElementById('btn-submit-item');
   if (btnSubmit) btnSubmit.disabled = true;
@@ -1317,8 +1330,8 @@ window.submitItem = async () => {
   if (cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
 
   try {
-    if (isAdmin && adminModeActive) { await push(ref(db, 'items_public'), data); window.showModalAlert("Dipublikasikan!"); } 
-    else { await push(ref(db, 'items_pending'), data); window.showModalAlert("Terkirim ke antrean!"); }
+    if (isAdmin && adminModeActive) { await push(ref(db, 'items_public'), data); window.showModalAlert(currentLang==='id'?"Dipublikasikan!":"Published!"); } 
+    else { await push(ref(db, 'items_pending'), data); window.showModalAlert(currentLang==='id'?"Terkirim ke antrean!":"Sent to queue!"); }
     window.switchScreen('screen-home');
     const fTitle = document.getElementById('add-title'); if (fTitle) fTitle.value = ''; 
     const fsrvn = document.getElementById('add-server-name'); if (fsrvn) fsrvn.value = '';
@@ -1329,7 +1342,7 @@ window.submitItem = async () => {
     const fimgstat = document.getElementById('img-status'); if (fimgstat) fimgstat.innerText = '';
     const ffilestat = document.getElementById('file-status'); if (ffilestat) ffilestat.innerText = '';
     localImageBase64 = null; localFileBase64 = null;
-  } catch (e) { window.showModalAlert("Gagal mengirim data."); }
+  } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal mengirim data.":"Failed sending data."); }
   if (btnSubmit) btnSubmit.disabled = false;
 };
 
@@ -1338,7 +1351,7 @@ window.submitItem = async () => {
 // ==========================================
 window.openFeedbackForm = () => {
     if (!currentUser) {
-        window.showModalAlert("Silakan masuk/login untuk mengirim laporan atau masukan.");
+        window.showModalAlert(currentLang==='id'?"Silakan masuk/login untuk mengirim laporan atau masukan.":"Please login to send reports or feedback.");
         window.switchScreen('screen-login');
         return;
     }
@@ -1362,7 +1375,7 @@ window.handleFeedbackImage = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
-        window.showModalAlert("Ukuran screenshot maksimal 3MB.");
+        window.showModalAlert(currentLang==='id'?"Ukuran screenshot maksimal 3MB.":"Max screenshot size 3MB.");
         e.target.value = '';
         return;
     }
@@ -1383,14 +1396,14 @@ window.submitFeedback = async () => {
     const title = document.getElementById('feedback-title')?.value.trim();
     const desc = document.getElementById('feedback-desc')?.value.trim();
     if (!title || !desc) {
-        window.showModalAlert("Harap isi judul dan deskripsi masalah.");
+        window.showModalAlert(currentLang==='id'?"Harap isi judul dan deskripsi masalah.":"Please fill title and description.");
         return;
     }
 
     const btn = document.getElementById('btn-submit-feedback');
     if (btn) {
         btn.disabled = true;
-        btn.innerText = "Mengirim...";
+        btn.innerText = currentLang==='id'?"Mengirim...":"Sending...";
     }
 
     try {
@@ -1404,13 +1417,13 @@ window.submitFeedback = async () => {
             createdAt: serverTimestamp()
         });
         window.closeDialog('dialog-feedback');
-        window.showModalAlert("Laporan Anda berhasil dikirim ke Admin!");
+        window.showModalAlert(currentLang==='id'?"Laporan Anda berhasil dikirim ke Admin!":"Your report sent to Admin successfully!");
     } catch (e) {
-        window.showModalAlert("Gagal mengirim laporan: " + e.message);
+        window.showModalAlert((currentLang==='id'?"Gagal mengirim laporan: ":"Failed to send report: ") + e.message);
     }
     if (btn) {
         btn.disabled = false;
-        btn.innerText = "Kirim Laporan";
+        btn.innerText = currentLang==='id'?"Kirim Laporan":"Submit Report";
     }
 };
 
@@ -1443,7 +1456,7 @@ function loadAdminFeedback() {
     onValue(ref(db, 'feedback'), (snapshot) => {
         cont.innerHTML = '';
         if (!snapshot.exists()) {
-            cont.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">Belum ada laporan masuk.</p>';
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">${currentLang==='id'?'Belum ada laporan masuk.':'No reports received.'}</p>`;
             return;
         }
 
@@ -1527,7 +1540,7 @@ function loadPendingItems() {
               </div>
           </div>`;
       });
-    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;" data-i18n="no_queue">Tidak ada antrean.</p>`; }
+    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;" data-i18n="no_queue">${currentLang==='id'?'Tidak ada antrean.':'No queue.'}</p>`; }
     const badgeCount = document.getElementById('pending-count'); if (badgeCount) badgeCount.innerText = count;
   });
 }
@@ -1546,22 +1559,22 @@ window.approveItem = async (id, uid, title) => {
             if (pSnap.exists()) {
                 await update(ref(db, `profiles/${uid}`), { itemCount: (pSnap.val().itemCount||0) + 1 });
             }
-            window.showModalAlert("Disetujui dan berhasil dipublikasikan!");
+            window.showModalAlert(currentLang==='id'?"Disetujui dan berhasil dipublikasikan!":"Approved and published successfully!");
         }
     } catch (e) {}
 };
 
 window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if (rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
-window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert("Item ditolak."); currentRejectItem = null; } catch (e) {} };
+window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert(currentLang==='id'?"Item ditolak.":"Item rejected."); currentRejectItem = null; } catch (e) {} };
 
 window.deletePublicItem = (id, title, status) => { 
-    window.showModalConfirm(`Hapus permanen: "${title}"?`, async () => { 
+    window.showModalConfirm(currentLang==='id'?`Hapus permanen: "${title}"?`:`Permanently delete: "${title}"?`, async () => { 
         try { 
             if (status === 'Pending') await remove(ref(db, `items_pending/${id}`));
             else await remove(ref(db, `items_public/${id}`)); 
-            window.showModalAlert("Item berhasil dihapus.");
+            window.showModalAlert(currentLang==='id'?"Item berhasil dihapus.":"Item deleted successfully.");
             if (window.loadMyContent) window.loadMyContent(); 
-        } catch (e) { window.showModalAlert("Gagal menghapus."); } 
+        } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal menghapus.":"Failed deleting."); } 
     }); 
 };
 
@@ -1585,7 +1598,7 @@ window.saveAdminEdit = async () => {
     const imgUrl = document.getElementById('edit-img-url').value.trim();
     const fileUrl = document.getElementById('edit-file-url').value.trim();
     
-    if (!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert('Semua field wajib diisi.'); return; }
+    if (!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert(currentLang==='id'?'Semua field wajib diisi.':'All fields required.'); return; }
     
     try {
         await update(ref(db, `items_public/${id}`), { 
@@ -1594,7 +1607,7 @@ window.saveAdminEdit = async () => {
             url_img: imgUrl, 
             url_file: fileUrl 
         });
-        window.showModalAlert('Berhasil diperbarui!');
+        window.showModalAlert(currentLang==='id'?'Berhasil diperbarui!':'Updated successfully!');
         window.closeDialog('dialog-edit-admin');
     } catch (e) { window.showModalAlert('Gagal update: ' + e.message); }
 };
@@ -1612,7 +1625,7 @@ function loadComments(itemId) {
     
     onValue(currentCommentRef, async (snapshot) => {
         commentsList.innerHTML = ''; 
-        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">Belum ada komentar.</p>`; return; }
+        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">${currentLang==='id'?'Belum ada komentar.':'No comments yet.'}</p>`; return; }
         
         const allComments = []; 
         snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
@@ -1661,7 +1674,7 @@ window.postComment = async () => {
     if (!txt) return;
     const now = Date.now();
     if (now - lastCommentTime < 30000) {
-        window.showModalAlert("Tunggu sebentar sebelum berkomentar lagi.");
+        window.showModalAlert(currentLang==='id'?"Tunggu sebentar sebelum berkomentar lagi.":"Wait a moment before commenting again.");
         return;
     }
     try {
@@ -1677,7 +1690,7 @@ window.postComment = async () => {
 };
 
 window.deleteComment = async (itemId, commentId) => {
-    window.showModalConfirm("Yakin menghapus komentar ini?", async () => {
+    window.showModalConfirm(currentLang==='id'?"Yakin menghapus komentar ini?":"Are you sure you want to delete this comment?", async () => {
         try {
             await update(ref(db), { [`comments/${itemId}/${commentId}`]: null });
         } catch (e) {}
