@@ -84,7 +84,7 @@
 
     <!-- DIALOG FORM LAPOR BUG / FEEDBACK -->
     <div id="dialog-feedback" class="dialog-box">
-      <h3 class="text-primary font-bold" style="margin-bottom: 15px;">Lapor Bug / Feedback</h3>
+      <h3 class="text-primary font-bold" style="margin-bottom: 15px;" data-i18n="nav_help">Lapor Bug / Feedback</h3>
       <input type="text" id="feedback-title" class="input-field text-selectable" placeholder="Judul singkat masalah...">
       <textarea id="feedback-desc" class="input-field text-selectable" rows="4" placeholder="Jelaskan detail bug atau kendala yang dialami..."></textarea>
       
@@ -97,7 +97,7 @@
       
       <div class="flex" style="gap:10px;">
         <button class="btn btn-secondary" style="flex:1;" onclick="window.closeDialog('dialog-feedback')" data-i18n="cancel">Batal</button>
-        <button class="btn btn-primary" style="flex:1;" id="btn-submit-feedback" onclick="window.submitFeedback()">Kirim Laporan</button>
+        <button class="btn btn-primary" style="flex:1;" id="btn-submit-feedback" onclick="window.submitFeedback()" data-i18n="btn_upload">Kirim Laporan</button>
       </div>
     </div>
   </div>
@@ -162,9 +162,12 @@
                 <div id="comment-form-container">
                     <div class="comment-input-area">
                         <textarea id="new-comment-text" class="comment-textarea text-selectable" data-i18n="comment_placeholder" placeholder="Tulis komentar..." maxlength="200" oninput="window.updateCommentCounter('new-comment-text', 'new-comment-counter')"></textarea>
-                        <div class="flex justify-between items-center" style="margin-top:6px;">
+                        <div class="flex justify-between items-center" style="margin-top:8px;">
                             <span id="new-comment-counter" class="char-counter" style="font-size: 11px; color: var(--text-muted);">0/200</span>
-                            <button class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 12px;" onclick="window.postComment()" data-i18n="send_comment">Kirim Komentar</button>
+                            <!-- TOMBOL PESAWAT KERTAS (KIRIM KOMENTAR) -->
+                            <button class="btn-send-comment" onclick="window.postComment()" title="Kirim">
+                                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -181,7 +184,7 @@
 
   <div id="drawer-overlay" class="drawer-overlay" onclick="window.closeAllDrawers()"></div>
   <div id="side-drawer" class="side-drawer drawer-left">
-    <div style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:10px;">
+    <div style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:16px;">
       <div class="avatar-container skeleton" style="width:60px; height:60px; border:2px solid var(--primary); margin:0 auto;" id="sidebar-avatar-wrap">
           <img id="sidebar-profile-img" src="https://via.placeholder.com/60" class="lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
       </div>
@@ -189,14 +192,14 @@
       <div id="sidebar-role"></div>
     </div>
     
-    <ul class="drawer-menu">
-      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="background: rgba(244, 67, 54, 0.1); border-left: 4px solid var(--danger); border-bottom: 1px solid var(--border-color); margin-bottom: 10px; border-radius: 0 4px 4px 0;">
+    <!-- SECTION 1: ADMIN CONTROLS (HANYA MUNCUL UNTUK ADMIN) -->
+    <ul class="sidebar-section">
+      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="color:var(--danger); font-weight:bold;">
         <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--danger)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span class="text-danger font-bold" data-i18n="nav_admin">Admin Panel</span>
+        <span data-i18n="nav_admin">Admin Panel</span>
       </li>
       
-      <!-- TOGGLE KHUSUS ADMIN (Mode Penyamaran) -->
-      <li id="drawer-menu-admin-toggle" class="hidden" onclick="window.toggleAdminMode()" style="justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+      <li id="drawer-menu-admin-toggle" class="hidden" onclick="window.toggleAdminMode()" style="justify-content: space-between;">
         <div class="flex items-center" style="gap:12px;">
            <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--primary)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
            <span style="color:var(--primary);" data-i18n="mode_admin">Mode Admin</span>
@@ -206,23 +209,18 @@
             <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
         </label>
       </li>
+    </ul>
 
-      <!-- TRANSLATE UI -->
-      <li onclick="window.toggleAutoTranslate(event)" id="menu-auto-translate" style="justify-content: space-between; border-bottom: 1px solid var(--border-color);">
-        <div class="flex items-center" style="gap:12px;">
-           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" fill="currentColor" stroke="none"/></svg>
-           <span data-i18n="nav_translate">Translate UI (EN)</span>
-        </div>
-        <label class="mcpe-toggle" style="pointer-events:none;">
-            <input type="checkbox" id="auto-translate-checkbox" class="mcpe-toggle-checkbox">
-            <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
-        </label>
-      </li>
-
-      <!-- FITUR IN-APP LAPOR BUG / FEEDBACK -->
+    <!-- SECTION 2: BANTUAN & KOMUNITAS -->
+    <ul class="sidebar-section">
       <li onclick="window.openFeedbackForm()">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
         <span data-i18n="nav_help">Lapor Bug / Feedback</span>
+      </li>
+
+      <li onclick="window.open('https://whatsapp.com/channel/0029VbDz79vFcow0kZYpNW3V', '_blank')">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></svg>
+        <span data-i18n="wa_channel">Channel WhatsApp</span>
       </li>
     </ul>
 
@@ -375,10 +373,26 @@
     <!-- SUB-TAB PENGATURAN -->
     <div id="tab-settings" class="profile-content-section hidden">
         
+        <!-- SECTION: PILIHAN BAHASA DENGAN IKON BENDERA -->
+        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; align-items:center; gap:8px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span data-i18n="lang_title">Bahasa</span>
+        </h3>
+        <div style="display:flex; gap:12px; margin-bottom:25px;">
+            <div class="lang-card active" id="lang-card-id" onclick="window.setLang('id')">
+                <img src="https://flagcdn.com/id.svg" alt="ID">
+                <span>Indonesia</span>
+            </div>
+            <div class="lang-card" id="lang-card-en" onclick="window.setLang('en')">
+                <img src="https://flagcdn.com/us.svg" alt="EN">
+                <span>English</span>
+            </div>
+        </div>
+
         <!-- SECTION: MODE WARNA (CARD VISUAL THEME) -->
         <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; align-items:center; gap:8px;">
             <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            Mode Warna
+            <span data-i18n="theme_title">Mode Warna</span>
         </h3>
         <div class="theme-selection-container">
             <div class="theme-card light-card" id="theme-card-light" onclick="window.setTheme('light')">
@@ -424,9 +438,9 @@
     </div>
     
     <nav class="bottom-nav">
-      <button class="nav-item" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span></button>
-      <button class="nav-item" onclick="window.switchScreen('screen-add')"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav_upload">Upload</span></button>
-      <button class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="nav_profile">Profil</span></button>
+      <button class="nav-item active" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span></button>
+      <button class="nav-item" onclick="window.requireLoginAndSwitch('screen-add')"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav_upload">Upload</span></button>
+      <button class="nav-item" onclick="window.requireLoginAndSwitch('screen-profile')"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="nav_profile">Profil</span></button>
     </nav>
   </div>
 
