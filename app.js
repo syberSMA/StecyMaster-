@@ -1,570 +1,1746 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>StecyMaster Forum</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-</head>
-<body>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getDatabase, ref, onValue, off, set, get, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { staticItems } from "./data-static.js";
 
-  <!-- Fallback iFrame untuk Download -->
-  <iframe id="download-iframe" style="display:none;"></iframe>
+const firebaseConfig = {
+  apiKey: "AIzaSyDKAeiozNSKsrt2m91D0utim2VvddzE-cw",
+  authDomain: "stetecymasterfire.firebaseapp.com",
+  databaseURL: "https://stetecymasterfire-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "stetecymasterfire",
+  storageBucket: "stetecymasterfire.firebasestorage.app",
+  messagingSenderId: "636144676167",
+  appId: "1:636144676167:web:a4c658d64778d5323b3062"
+};
 
-  <div id="dialogLayer">
-    <div class="dialog-overlay" onclick="window.closeTopDialog()"></div>
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// Global State
+let currentUser = null;
+let currentUsername = null;
+let isAdmin = false;
+let isSignUpMode = false;
+let globalAllItems = [];
+let currentCategoryFilter = 'Semua';
+let currentSearchQuery = '';
+let localImageBase64 = null;
+let localFileBase64 = null;
+let currentRejectItem = null;
+let currentDetailItemId = null;
+let lastCommentTime = 0;
+let adminModeActive = sessionStorage.getItem('adminMode') !== 'false';
+let adminQueueMemory = {};
+let currentCommentRef = null;
+let feedbackImageBase64 = null;
+
+// ==========================================
+// TEMA TERANG / GELAP (Mode Warna)
+// ==========================================
+let isLightMode = localStorage.getItem('theme') === 'light';
+
+window.applyTheme = () => {
+    if (isLightMode) {
+        document.body.classList.add('light-theme');
+    } else {
+        document.body.classList.remove('light-theme');
+    }
     
-    <div id="dialog-alert" class="dialog-box">
-      <h3 id="dialog-alert-title" class="text-primary font-bold" style="margin-bottom: 10px;" data-i18n="info">Informasi</h3>
-      <p id="dialog-alert-msg" style="color:var(--text-main); font-size:14px; margin-bottom:20px; line-height:1.4;"></p>
-      <div class="flex" style="justify-content:center;">
-        <button class="btn btn-primary" onclick="window.closeDialog('dialog-alert')" style="width:120px;" data-i18n="ok">Oke</button>
-      </div>
-    </div>
+    const lightCard = document.getElementById('theme-card-light');
+    const darkCard = document.getElementById('theme-card-dark');
+    if (lightCard && darkCard) {
+        if (isLightMode) {
+            lightCard.classList.add('active');
+            darkCard.classList.remove('active');
+        } else {
+            darkCard.classList.add('active');
+            lightCard.classList.remove('active');
+        }
+    }
+};
+
+window.setTheme = (mode) => {
+    isLightMode = (mode === 'light');
+    localStorage.setItem('theme', mode);
+    window.applyTheme();
+};
+
+// ==========================================
+// SISTEM TRANSLATE FULL UI (Bahasa)
+// ==========================================
+let currentLang = localStorage.getItem('lang') || 'id';
+
+const uiTranslations = {
+    id: {
+        "info": "Informasi", "ok": "Oke", "confirm": "Konfirmasi", "cancel": "Batal", "sure": "Yakin",
+        "crop_banner": "Crop Banner Server", "crop_desc": "Sesuaikan area terang (Rasio 468x60).", "crop_save": "Crop & Simpan",
+        "reject_item": "Tolak Item", "reject_reason": "Alasan penolakan (dikirim ke user).", "reject_placeholder": "Contoh: File rusak...", "reject_submit": "Tolak Item",
+        "edit_item": "Edit Item", "edit_img_url": "URL Gambar Preview:", "edit_file_url": "URL File Download:", "save_update": "Simpan Update",
+        "loading_sys": "Memuat sistem...", "error_title": "Terjadi Kesalahan", "error_msg": "Gagal memuat akun, coba lagi.", "try_again": "Coba Lagi",
+        "select_option": "Pilih Opsi", "by": "Oleh:", "description": "Deskripsi", "comments": "Komentar", "comment_placeholder": "Tulis komentar...", "send_comment": "Kirim",
+        "login_comment_prompt": "Silakan masuk untuk memberikan komentar.", "loading_comments": "Memuat...", "nav_admin": "Admin Panel", "mode_admin": "Mode Admin", 
+        "nav_help": "Lapor Bug / Feedback", "nav_login": "Masuk / Daftar", "login_title": "Masuk ke Akun", "no_account": "Belum punya akun?", 
+        "register_here": "Daftar di sini", "email_placeholder": "Alamat Email", "pass_placeholder": "Password (Min 6)", "btn_login": "Masuk", "or_via": "atau via", 
+        "login_google": "Masuk dengan Google", "create_user": "Buat Username", "user_rule": "Hanya huruf, angka, dan underscore (3-16 karakter).", "save_user": "Simpan Username",
+        "search_placeholder": "Cari item...", "nav_home": "Beranda", "nav_upload": "Upload", "nav_profile": "Profil", "my_profile": "Profil Saya",
+        "total_up": "Total Upload", "total_down": "Total Download", "menu_content": "Konten Saya", "menu_notif": "Notifikasi", "menu_settings": "Pengaturan Akun", "menu_logout": "Keluar Akun",
+        "list_content": "Daftar Konten Saya", "no_content": "Belum ada konten.", "history_notif": "Riwayat Notifikasi", "edit_profile": "Edit Profil", "edit_bio": "Edit Bio (Maks 80 kar):",
+        "save_bio": "Simpan Bio", "change_user": "Ganti Username (Batas 1x / 30 Hari):", "btn_change": "Ubah", "change_pass": "Ganti Password (Hanya via Email):",
+        "old_pass": "Password Lama", "new_pass": "Password Baru (Min 6)", "confirm_pass": "Konfirmasi Password Baru", "update_pass": "Update Password",
+        "title_upload": "Kirim Baru", "lbl_cat": "Kategori*", "lbl_title": "Judul Item*", "lbl_server_name": "Nama Server*", "lbl_server_loc": "Negara / Lokasi Server*",
+        "lbl_version": "Versi MCPE*", "lbl_img": "Gambar Preview*", "url_img": "URL Gambar...", "lbl_file": "File Download / Mod*", "url_file": "URL File Download...", "btn_upload": "Upload Sekarang",
+        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean.", "btn_download": "Unduh", "wa_channel": "Channel WhatsApp", "lang_title": "Bahasa", "theme_title": "Mode Warna", "copy_ip": "Salin IP"
+    },
+    en: {
+        "info": "Information", "ok": "OK", "confirm": "Confirm", "cancel": "Cancel", "sure": "Sure",
+        "crop_banner": "Crop Server Banner", "crop_desc": "Adjust bright area (Ratio 468x60).", "crop_save": "Crop & Save",
+        "reject_item": "Reject Item", "reject_reason": "Reason for rejection (sent to user).", "reject_placeholder": "Example: Broken file...", "reject_submit": "Reject Item",
+        "edit_item": "Edit Item", "edit_img_url": "Preview Image URL:", "edit_file_url": "Download File URL:", "save_update": "Save Update",
+        "loading_sys": "Loading system...", "error_title": "An Error Occurred", "error_msg": "Failed to load account, try again.", "try_again": "Try Again",
+        "select_option": "Select Option", "by": "By:", "description": "Description", "comments": "Comments", "comment_placeholder": "Write a comment...", "send_comment": "Send",
+        "login_comment_prompt": "Please login to comment.", "loading_comments": "Loading...", "nav_admin": "Admin Panel", "mode_admin": "Admin Mode", 
+        "nav_help": "Bug Report / Feedback", "nav_login": "Login / Register", "login_title": "Login to Account", "no_account": "Don't have an account?", 
+        "register_here": "Register here", "email_placeholder": "Email Address", "pass_placeholder": "Password (Min 6)", "btn_login": "Login", "or_via": "or via", 
+        "login_google": "Login with Google", "create_user": "Create Username", "user_rule": "Letters, numbers, and underscores only (3-16 chars).", "save_user": "Save Username",
+        "search_placeholder": "Search items...", "nav_home": "Home", "nav_upload": "Upload", "nav_profile": "Profile", "my_profile": "My Profile",
+        "total_up": "Total Uploads", "total_down": "Total Downloads", "menu_content": "My Content", "menu_notif": "Notifications", "menu_settings": "Account Settings", "menu_logout": "Logout",
+        "list_content": "My Content List", "no_content": "No content yet.", "history_notif": "Notification History", "edit_profile": "Edit Profile", "edit_bio": "Edit Bio (Max 80 char):",
+        "save_bio": "Save Bio", "change_user": "Change Username (Limit 1x / 30 Days):", "btn_change": "Change", "change_pass": "Change Password (Email only):",
+        "old_pass": "Old Password", "new_pass": "New Password (Min 6)", "confirm_pass": "Confirm New Password", "update_pass": "Update Password",
+        "title_upload": "Submit New", "lbl_cat": "Category*", "lbl_title": "Item Title*", "lbl_server_name": "Server Name*", "lbl_server_loc": "Country / Location*",
+        "lbl_version": "MCPE Version*", "lbl_img": "Preview Image*", "url_img": "Image URL...", "lbl_file": "Download File / Mod*", "url_file": "Download File URL...", "btn_upload": "Upload Now",
+        "review_queue": "Review Queue", "no_queue": "No queue.", "btn_download": "Download", "wa_channel": "WhatsApp Channel", "lang_title": "Language", "theme_title": "Color Mode", "copy_ip": "Copy IP"
+    }
+};
+
+window.applyTranslation = () => {
+    const dict = uiTranslations[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = dict[key];
+            else el.innerHTML = dict[key];
+        }
+    });
+};
+
+window.setLang = (lang) => {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
     
-    <div id="dialog-confirm" class="dialog-box">
-      <h3 id="dialog-confirm-title" class="text-primary font-bold" style="margin-bottom: 10px;" data-i18n="confirm">Konfirmasi</h3>
-      <p id="dialog-confirm-msg" style="color:var(--text-main); font-size:14px; margin-bottom:20px; line-height:1.4;"></p>
-      <div class="flex" style="gap:10px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="window.closeDialog('dialog-confirm')" data-i18n="cancel">Batal</button>
-        <button class="btn btn-danger" style="flex:1;" id="btn-dialog-confirm" data-i18n="sure">Yakin</button>
-      </div>
-    </div>
-
-    <!-- CROPPER MODAL -->
-    <div id="dialog-cropper" class="dialog-box" style="width:95%; max-width: 600px; padding:15px;">
-       <h3 class="font-bold text-main" style="margin-bottom:10px;" data-i18n="crop_banner">Crop Banner Server</h3>
-       <p style="font-size:11px; color:var(--text-muted); margin-bottom:15px;" data-i18n="crop_desc">Sesuaikan area terang (Rasio 468x60).</p>
-       <div style="width: 100%; height: 250px; background: #000; overflow:hidden;">
-           <img id="cropper-image" src="" style="max-width: 100%; display:block;">
-       </div>
-       <div class="flex" style="gap:10px; margin-top:15px;">
-           <button class="btn btn-secondary" style="flex:1;" onclick="window.cancelCrop()" data-i18n="cancel">Batal</button>
-           <button class="btn btn-primary" style="flex:1;" onclick="window.confirmCrop()" data-i18n="crop_save">Crop & Simpan</button>
-       </div>
-    </div>
+    const idCard = document.getElementById('lang-card-id');
+    const enCard = document.getElementById('lang-card-en');
+    if (idCard && enCard) {
+        if (lang === 'id') {
+            idCard.classList.add('active');
+            enCard.classList.remove('active');
+        } else {
+            enCard.classList.add('active');
+            idCard.classList.remove('active');
+        }
+    }
     
-    <!-- ADMIN REJECT MODAL -->
-    <div id="dialog-reject-admin" class="dialog-box">
-      <h3 class="text-danger font-bold" style="margin-bottom: 10px;" data-i18n="reject_item">Tolak Item</h3>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;" data-i18n="reject_reason">Alasan penolakan (dikirim ke user).</p>
-      <textarea id="reject-reason" class="input-field text-selectable" rows="3" data-i18n="reject_placeholder" placeholder="Contoh: File rusak..."></textarea>
-      <div class="flex" style="gap:10px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="window.closeDialog('dialog-reject-admin')" data-i18n="cancel">Batal</button>
-        <button class="btn btn-danger" style="flex:1;" onclick="window.submitReject()" data-i18n="reject_submit">Tolak Item</button>
-      </div>
-    </div>
+    window.applyTranslation();
+    renderItemsToUI(); 
+};
 
-    <!-- ADMIN EDIT MODAL -->
-    <div id="dialog-edit-admin" class="dialog-box">
-      <h3 class="text-primary font-bold" style="margin-bottom: 15px;" data-i18n="edit_item">Edit Item</h3>
-      <input type="hidden" id="edit-item-id">
-      
-      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">Judul Item:</label>
-      <input type="text" id="edit-title" class="input-field text-selectable" style="padding:10px; font-size:12px;">
-      
-      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;">Deskripsi Item:</label>
-      <textarea id="edit-desc" class="input-field text-selectable" rows="3" style="padding:10px; font-size:12px;"></textarea>
+const catIcons = {
+    'Semua': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+    'Mod': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    'Texture': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    'Map': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+    'Launcher': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    'Plugin Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>',
+    'MCPE and Craftman': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="17" cy="12" r="2"></circle><path d="M7 12h4m-2-2v4"></path></svg>',
+    'Server': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"></rect><rect x="2" y="15" width="20" height="5" rx="1"></rect><circle cx="6" cy="6.5" r="1"></circle><circle cx="6" cy="17.5" r="1"></circle></svg>'
+};
 
-      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;" data-i18n="edit_img_url">URL Gambar Preview:</label>
-      <input type="text" id="edit-img-url" class="input-field text-selectable" style="padding:10px; font-size:12px;">
-      
-      <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:4px;" data-i18n="edit_file_url">URL File Download:</label>
-      <input type="text" id="edit-file-url" class="input-field text-selectable" style="padding:10px; font-size:12px;">
-      
-      <div class="flex" style="gap:10px;">
-        <button class="btn btn-secondary" style="flex:1; padding:10px;" onclick="window.closeDialog('dialog-edit-admin')" data-i18n="cancel">Batal</button>
-        <button class="btn btn-primary" style="flex:1; padding:10px;" onclick="window.saveAdminEdit()" data-i18n="save_update">Simpan Update</button>
-      </div>
-    </div>
+const flagIcons = { 
+    'Indonesia': 'id', 'Amerika Serikat': 'us', 'India': 'in', 'Singapura': 'sg', 'Malaysia': 'my', 'Brasil': 'br', 'Rusia': 'ru', 'Inggris': 'gb',
+    'Arab Saudi': 'sa', 'Kolombia': 'co', 'Pakistan': 'pk', 'Jerman': 'de', 'Filipina': 'ph', 'Korea Selatan': 'kr', 'Turki': 'tr', 'Irak': 'iq', 'Paraguay': 'py', 'Tiongkok': 'cn', 'Italia': 'it', 'Norwegia': 'no', 'Meksiko': 'mx', 'Uni Eropa': 'eu'
+};
 
-    <!-- DIALOG FORM LAPOR BUG / FEEDBACK -->
-    <div id="dialog-feedback" class="dialog-box">
-      <h3 class="text-primary font-bold" style="margin-bottom: 15px;" data-i18n="nav_help">Lapor Bug / Feedback</h3>
-      <input type="text" id="feedback-title" class="input-field text-selectable" placeholder="Judul singkat masalah...">
-      <textarea id="feedback-desc" class="input-field text-selectable" rows="4" placeholder="Jelaskan detail bug atau kendala yang dialami..."></textarea>
-      
-      <label style="background:var(--bg-elevated); color:var(--text-main); padding:10px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:6px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:12px; justify-content: center; font-weight: 600;">
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-          Lampirkan Screenshot (Opsional)
-          <input type="file" id="feedback-img" accept="image/*" class="hidden" onchange="window.handleFeedbackImage(event)">
-      </label>
-      <img id="feedback-img-preview" style="max-width:100%; max-height:140px; display:none; margin-bottom:15px; border-radius:8px; object-fit:contain; border:1px solid var(--border-color);">
-      
-      <div class="flex" style="gap:10px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="window.closeDialog('dialog-feedback')" data-i18n="cancel">Batal</button>
-        <button class="btn btn-primary" style="flex:1;" id="btn-submit-feedback" onclick="window.submitFeedback()" data-i18n="btn_upload">Kirim Laporan</button>
-      </div>
-    </div>
-  </div>
+const versionOptions = ['0.15.10', '0.14.3', '0.14.3 - 0.15.10', '0.14.3 - 1.1'];
 
-  <div id="screen-splash" class="app-container screen splash-container">
-    <div class="logo font-bold" style="margin-bottom: 30px; display:flex; align-items:center; justify-content:center; gap:8px;">
-      <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:48px; border-radius:4px;">
-      <!-- Gambar text logo di splash screen -->
-      <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:32px; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
-    </div>
-    <div class="loader"></div>
-    <p style="color: var(--text-muted); margin-top: 20px; font-size: 14px; font-weight: bold;" data-i18n="loading_sys">Memuat sistem...</p>
-  </div>
+function formatDate(timestamp) {
+    if (!timestamp) return '';
+    return new Intl.DateTimeFormat('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp));
+}
+function getSafeIcon(cat) {
+    return catIcons[cat] || '';
+}
 
-  <div id="screen-error" class="app-container screen hidden" style="justify-content: center; padding: 20px; text-align: center;">
-      <div style="background: var(--bg-surface); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">
-          <h2 class="text-danger font-bold" style="margin-bottom: 10px;" data-i18n="error_title">Terjadi Kesalahan</h2>
-          <p id="screen-error-msg" style="color:var(--text-muted); font-size:14px; margin-bottom:20px;" data-i18n="error_msg">Gagal memuat akun, coba lagi.</p>
-          <button class="btn btn-primary" onclick="window.location.reload()" data-i18n="try_again">Coba Lagi</button>
-          <button class="btn btn-secondary" style="margin-top: 10px;" onclick="window.customLogout()" data-i18n="nav_logout">Keluar</button>
-      </div>
-  </div>
+function renderCategoryChips() {
+    const cont = document.getElementById('category-filter-container');
+    if (!cont) return;
+    cont.innerHTML = '';
+    Object.keys(catIcons).forEach(cat => {
+        const isActive = cat === currentCategoryFilter;
+        cont.innerHTML += `<button class="chip ${isActive ? 'active' : ''}" onclick="window.setCategoryFilter('${cat}', this)">${catIcons[cat]} <span>${cat}</span></button>`;
+    });
+}
 
-  <div id="bottom-sheet-overlay" class="bottom-sheet-overlay" onclick="window.closeBottomSheet()">
-    <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
-      <div style="width:40px; height:5px; background:var(--border-color); border-radius:3px; margin:0 auto 20px;"></div>
-      <h3 id="sheet-title" class="font-bold text-main" style="margin-bottom:15px; font-size:18px;" data-i18n="select_option">Pilih Opsi</h3>
-      <div id="sheet-options" style="display:flex; flex-direction:column;"></div>
-    </div>
-  </div>
+document.addEventListener('DOMContentLoaded', () => {
+    window.applyTheme();
+    window.setLang(currentLang); 
+    renderCategoryChips();
+});
 
-  <!-- MODAL DETAIL ITEM -->
-  <div id="screen-detail-container">
-        <div class="detail-header-img-wrapper skeleton">
-             <button class="detail-close-btn" onclick="document.getElementById('screen-detail-container').classList.remove('active'); document.body.classList.remove('modal-open');">
-                 <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-             </button>
-             <img id="detail-img" src="" class="lazy-img" alt="Preview" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
-        </div>
-        <div class="detail-content-area">
-            <h2 id="detail-title" class="font-bold text-main text-selectable" style="font-size: 20px; margin-bottom: 8px;">Judul</h2>
-            <div style="font-size:12px; margin-bottom:10px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
-                 <img id="detail-uploader-avatar" src="" style="width:20px; height:20px; border-radius:50%; object-fit:cover; background:var(--bg-elevated);">
-                 <span><span data-i18n="by">Oleh:</span> <span id="detail-uploader-name" class="text-main font-bold">Name</span></span>
-                 <span id="detail-uploader-badge"></span>
-            </div>
-            <div style="margin-bottom: 15px;">
-                 <span id="detail-category" class="card-meta">Kategori</span>
-                 <span id="detail-version" class="card-meta" style="background:var(--bg-elevated); color:var(--text-muted); border:1px solid var(--border-color);">Versi</span>
-            </div>
+let activeDialogs = [];
+window.openDialog = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    document.getElementById('dialogLayer')?.classList.remove('hidden');
+    document.getElementById('dialogLayer')?.classList.add('active');
+    el.classList.add('active');
+    activeDialogs.push(id);
+    document.body.classList.add('modal-open'); 
+};
+
+window.closeDialog = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('active');
+    activeDialogs = activeDialogs.filter(d => d !== id);
+    if (activeDialogs.length === 0) {
+        document.getElementById('dialogLayer')?.classList.remove('active');
+        setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 200);
+        document.body.classList.remove('modal-open'); 
+    }
+};
+
+window.closeTopDialog = () => {
+    if (activeDialogs.length > 0) window.closeDialog(activeDialogs[activeDialogs.length - 1]);
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.closeTopDialog();
+});
+
+window.showModalAlert = (msg) => {
+    const el = document.getElementById('dialog-alert-msg');
+    if (el) {
+        el.innerText = msg;
+        window.openDialog('dialog-alert');
+    }
+};
+
+window.showModalConfirm = (msg, onConfirmCallback) => {
+    const el = document.getElementById('dialog-confirm-msg');
+    if (el) {
+        el.innerText = msg;
+        document.getElementById('btn-dialog-confirm').onclick = () => {
+            window.closeDialog('dialog-confirm');
+            onConfirmCallback();
+        };
+        window.openDialog('dialog-confirm');
+    }
+};
+
+window.copyText = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+        window.showModalAlert(currentLang === 'id' ? "Berhasil disalin!" : "Copied successfully!");
+    });
+};
+
+window.downloadBase64File = (dataUrl, filename) => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+window.handleDownload = async (url, itemId, event) => {
+    if (!url || url === '#') return;
+    if (url.startsWith('data:')) {
+        window.downloadBase64File(url, "downloaded_file");
+        return;
+    }
+    let finalUrl = url;
+    let isRedirect = false;
+    let providerName = '';
+    const lowerUrl = url.toLowerCase();
+    
+    if (lowerUrl.includes('mediafire.com')) { providerName = 'MediaFire'; isRedirect = true; }
+    else if (lowerUrl.includes('drive.google.com')) { providerName = 'Google Drive'; isRedirect = true; }
+    else if (lowerUrl.includes('linkvertise.com') || lowerUrl.includes('adf.ly')) { providerName = 'Situs Pihak Ketiga'; isRedirect = true; } 
+    else if (lowerUrl.includes('dropbox.com')) {
+        finalUrl = url.replace('?dl=0', '?dl=1');
+        if (!finalUrl.includes('?dl=1')) finalUrl += (finalUrl.includes('?') ? '&dl=1' : '?dl=1');
+    }
+
+    if (isRedirect) { 
+        window.showModalConfirm(currentLang === 'id' ? `Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?` : `Link protected by ${providerName}. Continue to provider's site?`, () => window.open(finalUrl, '_blank')); 
+    } else {
+        const btn = event?.currentTarget;
+        const origHTML = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = '<div class="loader-inline"></div>...';
+        
+        try {
+            const proxyUrl = '/api/download?url=' + encodeURIComponent(finalUrl);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error("Gagal Unduh");
             
-            <h4 class="font-bold text-main" style="margin-bottom: 8px; font-size:14px;" data-i18n="description">Deskripsi</h4>
-            <div style="position: relative;">
-                <p id="detail-desc" class="text-selectable" style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; white-space: pre-wrap; word-break: break-word; user-select:text;"></p>
-                <button id="btn-translate-desc" class="comment-action-btn" style="position: absolute; top: -30px; right: 0; background:var(--bg-elevated); padding:4px 8px; border-radius:4px; border:1px solid var(--border-color);" onclick="window.translateDesc()">
-                    <svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg> <span id="text-translate-desc">Translate</span>
-                </button>
-            </div>
-            <div id="detail-action-container" style="margin-bottom: 25px;"></div>
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            
+            const uniqueId = Math.floor(Math.random() * 100000);
+            let filename = url.split('/').pop().split('?')[0] || 'file.zip';
+            if (!filename.includes('.')) filename += '.zip';
+            a.download = `stecy_${uniqueId}_${filename}`;
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                if (btn) btn.innerHTML = origHTML;
+            }, 1000);
+        } catch (e) {
+            let iframe = document.getElementById('download-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'download-iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = '/api/download?url=' + encodeURIComponent(finalUrl) + '&t=' + Date.now();
+            if (btn) btn.innerHTML = origHTML;
+        }
+    }
+};
 
-            <!-- KOMENTAR -->
-            <div class="comments-section">
-                <h3 class="font-bold text-main" style="font-size: 16px; margin-bottom: 15px;" data-i18n="comments">Komentar</h3>
-                <div id="comment-form-container">
-                    <div class="comment-input-area">
-                        <textarea id="new-comment-text" class="comment-textarea text-selectable" data-i18n="comment_placeholder" placeholder="Tulis komentar..." maxlength="200" oninput="window.updateCommentCounter('new-comment-text', 'new-comment-counter')"></textarea>
-                        <div class="flex justify-between items-center" style="margin-top:8px;">
-                            <span id="new-comment-counter" class="char-counter" style="font-size: 11px; color: var(--text-muted);">0/200</span>
-                            <!-- TOMBOL PESAWAT KERTAS UNTUK MENGIRIM KOMENTAR -->
-                            <button class="btn-send-comment" onclick="window.postComment()" title="Kirim">
-                                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                            </button>
-                        </div>
+window.closeBottomSheet = () => {
+    document.getElementById('bottom-sheet-overlay')?.classList.remove('active');
+};
+
+window.switchScreen = (id) => { 
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
+    
+    // Update visual indikator navigasi bawah
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    if(id === 'screen-home') document.getElementById('nav-btn-home')?.classList.add('active');
+    else if(id === 'screen-add') document.getElementById('nav-btn-upload')?.classList.add('active');
+    else if(id === 'screen-profile') document.getElementById('nav-btn-profile')?.classList.add('active');
+
+    const el = document.getElementById(id); 
+    if (el) {
+        el.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+    
+    if (id === 'screen-add') {
+        const wrap = document.getElementById('selected-category-text-wrap');
+        if (wrap && wrap.innerHTML === '') window.selectCategoryForm('Mod');
+    }
+};
+
+window.requireLoginAndSwitch = (id) => {
+    if (currentUser) {
+        window.switchScreen(id);
+    } else {
+        window.showModalAlert(currentLang === 'id' ? "Silakan masuk untuk mengakses halaman ini." : "Please login to access this page.");
+        window.switchScreen('screen-login');
+    }
+};
+
+window.toggleDrawer = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isAct = el.classList.contains('active');
+    window.closeAllDrawers();
+    if (!isAct) {
+        el.classList.add('active');
+        document.getElementById('drawer-overlay')?.classList.add('active');
+    }
+};
+
+window.closeAllDrawers = () => {
+    document.querySelectorAll('.side-drawer').forEach(el => el.classList.remove('active'));
+    document.getElementById('drawer-overlay')?.classList.remove('active');
+};
+
+const categoryOptions = ['Mod', 'Texture', 'Map', 'Launcher', 'Plugin Server', 'MCPE and Craftman', 'Server'];
+
+window.openCategorySheet = () => {
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const currentWrap = document.getElementById('selected-category-text-wrap')?.querySelector('span');
+    const current = currentWrap ? currentWrap.innerText.trim() : 'Mod';
+    if (opts) {
+        categoryOptions.forEach(cat => {
+            const isSel = cat === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCategoryForm('${cat}')"><div class="flex items-center" style="gap:10px;">${catIcons[cat]} <span>${cat}</span></div> ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+};
+
+window.selectCategoryForm = (cat) => {
+    cat = (cat || 'Mod').trim(); 
+    const wrap = document.getElementById('selected-category-text-wrap');
+    if (wrap) wrap.innerHTML = `${getSafeIcon(cat)} <span>${cat}</span>`;
+    window.closeBottomSheet();
+    
+    const ws = document.getElementById('wrapper-title-standard'); 
+    const wsrv = document.getElementById('wrapper-title-server'); 
+    const wf = document.getElementById('form-file-container');
+    const fileImg = document.getElementById('file-img');
+    const labelImg = document.getElementById('label-img-preview');
+    const inputImg = document.getElementById('add-img');
+    
+    if (cat === 'Server') { 
+        if (ws) ws.classList.add('hidden'); 
+        if (wsrv) wsrv.classList.remove('hidden'); 
+        if (wf) wf.classList.add('hidden'); 
+        if (fileImg) fileImg.accept = "image/*, video/mp4, video/webm";
+        if (inputImg) inputImg.placeholder = currentLang === 'id' ? "URL Gambar / GIF / Video..." : "Image / GIF / Video URL...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">${currentLang === 'id' ? 'Gambar / Banner Server*' : 'Server Banner*'}</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 8MB, GIF/Video support, rasio 468x60)</span>`;
+    } else { 
+        if (ws) ws.classList.remove('hidden'); 
+        if (wsrv) wsrv.classList.add('hidden'); 
+        if (wf) wf.classList.remove('hidden'); 
+        if (fileImg) fileImg.accept = "image/jpeg, image/png, image/webp";
+        if (inputImg) inputImg.placeholder = currentLang === 'id' ? "URL Gambar..." : "Image URL...";
+        if (labelImg) labelImg.innerHTML = `<span data-i18n="lbl_img">${currentLang === 'id' ? 'Gambar Preview*' : 'Preview Image*'}</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span>`;
+    }
+};
+
+window.openVersionSheet = () => {
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const current = document.getElementById('selected-version-text')?.innerText || '0.15.10';
+    if (opts) {
+        versionOptions.forEach(ver => {
+            const isSel = ver === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectVersionForm('${ver}')">${ver} ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+};
+window.selectVersionForm = (ver) => {
+    const el = document.getElementById('selected-version-text');
+    if (el) el.innerText = ver;
+    window.closeBottomSheet();
+};
+
+window.openCountrySheet = () => {
+    const opts = document.getElementById('sheet-options');
+    if (opts) opts.innerHTML = '';
+    const currentWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
+    const current = currentWrap ? currentWrap.innerText.trim() : 'Indonesia';
+    if (opts) {
+        Object.keys(flagIcons).forEach(country => {
+            const isSel = country === current;
+            const checkSVG = isSel ? `<svg class="sheet-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+            opts.innerHTML += `<div class="sheet-option ${isSel ? 'selected' : ''}" onclick="window.selectCountryForm('${country}')"><div class="flex items-center" style="gap:10px;"><img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:24px; height:18px; object-fit:contain; border-radius:2px;"><span>${country}</span></div> ${checkSVG}</div>`;
+        });
+    }
+    document.getElementById('bottom-sheet-overlay')?.classList.add('active');
+};
+window.selectCountryForm = (country) => {
+    const el = document.getElementById('selected-country-text-wrap');
+    if (el) el.innerHTML = `<img src="https://flagcdn.com/${flagIcons[country]}.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>${country}</span>`;
+    window.closeBottomSheet();
+};
+
+function getRoleBadge(role) {
+    if ((role === 'admin' || role === 'dev') && adminModeActive) {
+        return `<span class="badge-role badge-dev"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Dev</span>`;
+    }
+    return `<span class="badge-role badge-user"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> User</span>`;
+}
+
+function generateDefaultAvatar(name) {
+    const c = document.createElement('canvas');
+    c.width = 100;
+    c.height = 100;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ff8c00';
+    ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 50px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((name || '?').charAt(0).toUpperCase(), 50, 50);
+    return c.toDataURL('image/jpeg', 0.8);
+}
+
+window.toggleAuthMode = () => {
+    isSignUpMode = !isSignUpMode;
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.innerText = '';
+    const submitBtn = document.getElementById('auth-submit-btn');
+    if (submitBtn) submitBtn.innerText = isSignUpMode ? (currentLang==='id'?'Daftar':'Register') : (currentLang==='id'?'Masuk':'Login');
+};
+
+window.processEmailAuth = async () => {
+    const email = document.getElementById('auth-email')?.value.trim();
+    const password = document.getElementById('auth-password')?.value;
+    if (!email || !password) {
+        window.showModalAlert(currentLang === 'id' ? 'Isi form dengan lengkap.' : 'Fill the form completely.');
+        return;
+    }
+    const btn = document.getElementById('auth-submit-btn');
+    if (btn) btn.disabled = true;
+    try {
+        if (isSignUpMode) {
+            await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+        }
+    } catch (err) {
+        const errEl = document.getElementById('login-error');
+        if (errEl) errEl.innerText = err.message;
+        if (btn) btn.disabled = false;
+    }
+};
+
+window.loginGoogle = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    } catch (err) {
+        window.showModalAlert((currentLang==='id'?"Gagal masuk dengan Google: ":"Google login failed: ") + err.message);
+    }
+};
+
+window.customLogout = () => {
+    window.closeAllDrawers();
+    window.showModalConfirm(currentLang === 'id' ? "Keluar dari Akun?" : "Logout from Account?", () => {
+        signOut(auth).then(() => {
+            isAdmin = false;
+            currentUser = null;
+            currentUsername = null;
+            window.switchScreen('screen-login');
+            updateHeaderAuthUI();
+        });
+    });
+};
+
+function updateHeaderAuthUI() {
+    const loginBtn = document.getElementById('btn-login-header');
+    const adminMenu = document.getElementById('drawer-menu-admin');
+    const adminToggle = document.getElementById('drawer-menu-admin-toggle');
+    const profImg = document.getElementById('sidebar-profile-img');
+    const profName = document.getElementById('sidebar-name');
+    const profRole = document.getElementById('sidebar-role');
+    const authSection = document.getElementById('sidebar-auth-section');
+
+    if (currentUser) {
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (authSection) authSection.classList.add('hidden');
+        if (isAdmin) {
+             if (adminToggle) adminToggle.classList.remove('hidden');
+             const cb = document.getElementById('admin-mode-checkbox');
+             if (cb) cb.checked = adminModeActive;
+             if (adminMenu) {
+                 if (adminModeActive) adminMenu.classList.remove('hidden');
+                 else adminMenu.classList.add('hidden');
+             }
+        } else {
+             if (adminMenu) adminMenu.classList.add('hidden');
+             if (adminToggle) adminToggle.classList.add('hidden');
+        }
+    } else {
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (authSection) authSection.classList.remove('hidden');
+        if (adminMenu) adminMenu.classList.add('hidden');
+        if (adminToggle) adminToggle.classList.add('hidden');
+        if (profImg) profImg.src = "https://via.placeholder.com/60"; 
+        if (profName) profName.innerText = currentLang === 'id' ? "Tamu" : "Guest"; 
+        if (profRole) profRole.innerHTML = "";
+    }
+}
+
+window.toggleAdminMode = () => {
+    adminModeActive = !adminModeActive;
+    sessionStorage.setItem('adminMode', adminModeActive);
+    updateHeaderAuthUI();
+    renderItemsToUI();
+    if (adminModeActive && isAdmin) loadPendingItems();
+};
+
+let splashTimeout = setTimeout(() => {
+    try {
+        window.switchScreen('screen-home');
+        fetchAllItemsAndRender();
+    } catch (e) {}
+}, 5000);
+
+async function proceedToHome(user, pData) {
+     try {
+         currentUsername = pData.username || 'User'; 
+         isAdmin = pData.role === 'admin' || pData.role === 'dev';
+         
+         const profNameEl = document.getElementById('profile-name');
+         const sideNameEl = document.getElementById('sidebar-name');
+         const profImgEl = document.getElementById('profile-img');
+         const sideImgEl = document.getElementById('sidebar-profile-img');
+         const profRoleBadge = document.getElementById('profile-role-badge');
+         const sideRoleBadge = document.getElementById('sidebar-role');
+         
+         if (profNameEl) profNameEl.innerText = currentUsername; 
+         if (sideNameEl) sideNameEl.innerText = currentUsername;
+         
+         const dp = pData.avatar || user.photoURL || generateDefaultAvatar(currentUsername);
+         if (profImgEl) profImgEl.src = dp; 
+         if (sideImgEl) sideImgEl.src = dp;
+         
+         const roleB = getRoleBadge(pData.role);
+         if (profRoleBadge) profRoleBadge.innerHTML = roleB; 
+         if (sideRoleBadge) sideRoleBadge.innerHTML = roleB;
+         
+         const iUserEl = document.getElementById('input-self-username');
+         if (iUserEl) iUserEl.value = currentUsername;
+         const iBio = document.getElementById('input-self-bio');
+         if (iBio) iBio.value = pData.bio || '';
+         
+         updateHeaderAuthUI();
+         if (isAdmin && adminModeActive) loadPendingItems(); 
+         loadNotifications();
+         
+         window.switchScreen('screen-home'); 
+         fetchAllItemsAndRender();
+     } catch (e) {
+         window.switchScreen('screen-home');
+     }
+}
+
+setPersistence(auth, browserLocalPersistence).then(() => {
+  onAuthStateChanged(auth, async (user) => {
+    clearTimeout(splashTimeout); 
+    if (user) {
+      currentUser = user;
+      updateHeaderAuthUI();
+      try {
+          const pSnap = await get(ref(db, `profiles/${user.uid}`));
+          if (pSnap.exists() && pSnap.val().username) {
+              proceedToHome(user, pSnap.val());
+          } else {
+             const uSnap = await get(ref(db, `users/${user.uid}/username`));
+             if (uSnap.exists() && uSnap.val()) {
+                 const oldUsername = uSnap.val();
+                 const oldUserLower = oldUsername.toLowerCase();
+                 const isAdm = (await get(ref(db, `admins/${user.uid}`))).val() === true;
+                 const updates = {};
+                 updates[`profiles/${user.uid}`] = { username: oldUsername, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), avatar: user.photoURL || '', itemCount: 0, points: 0 };
+                 updates[`usernames/${oldUserLower}`] = user.uid;
+                 await update(ref(db), updates);
+                 proceedToHome(user, updates[`profiles/${user.uid}`]);
+             } else {
+                 window.switchScreen('screen-username');
+             }
+          }
+      } catch (err) {
+          const errEl = document.getElementById('screen-error-msg');
+          if (errEl) errEl.innerText = (currentLang==='id'?"Gagal memuat akun: ":"Failed loading account: ") + err.message;
+          window.switchScreen('screen-error');
+      }
+    } else {
+      currentUser = null;
+      currentUsername = null;
+      isAdmin = false;
+      updateHeaderAuthUI();
+      window.switchScreen('screen-home');
+      fetchAllItemsAndRender();
+    }
+  });
+}).catch(() => {
+    clearTimeout(splashTimeout);
+    window.switchScreen('screen-home');
+    fetchAllItemsAndRender();
+});
+
+window.saveUsername = async () => {
+  const username = document.getElementById('input-username').value.trim();
+  const usernameLower = username.toLowerCase();
+  const errEl = document.getElementById('username-error');
+  const btn = document.getElementById('btn-save-username');
+  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
+      if (errEl) errEl.innerText = currentLang === 'id' ? "Hanya huruf, angka, dan underscore (3-16 karakter)." : "Letters, numbers, and underscores only (3-16 chars).";
+      return;
+  }
+  if (btn) {
+      btn.disabled = true;
+      btn.innerText = currentLang === 'id' ? "Menyimpan..." : "Saving...";
+  }
+  if (errEl) errEl.innerText = "";
+  try {
+    const unSnap = await get(ref(db, `usernames/${usernameLower}`));
+    if (unSnap.exists() && unSnap.val() !== currentUser.uid) {
+        if (errEl) errEl.innerText = currentLang === 'id' ? "Username sudah dipakai orang lain." : "Username already taken.";
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = currentLang === 'id' ? "Simpan Username" : "Save Username";
+        }
+        return;
+    }
+    const isAdm = (await get(ref(db, `admins/${currentUser.uid}`))).val() === true;
+    const dp = currentUser.photoURL || generateDefaultAvatar(username);
+    const updates = {};
+    updates[`usernames/${usernameLower}`] = currentUser.uid;
+    updates[`profiles/${currentUser.uid}`] = { username: username, avatar: dp, role: isAdm ? 'admin' : 'user', joinedAt: serverTimestamp(), itemCount: 0, points: 0 };
+    await update(ref(db), updates);
+    proceedToHome(currentUser, updates[`profiles/${currentUser.uid}`]);
+  } catch (e) {
+      if (errEl) errEl.innerText = "Akses ditolak: " + e.message;
+      if (btn) {
+          btn.disabled = false;
+          btn.innerText = currentLang === 'id' ? "Simpan Username" : "Save Username";
+      }
+  }
+};
+
+window.handleProfileUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = async () => {
+          try {
+              const canvas = document.createElement('canvas');
+              const size = Math.min(img.width, img.height);
+              const targetSize = 256;
+              canvas.width = targetSize;
+              canvas.height = targetSize;
+              const ctx = canvas.getContext('2d');
+              const offsetX = (img.width - size) / 2;
+              const offsetY = (img.height - size) / 2;
+              ctx.drawImage(img, offsetX, offsetY, size, size, 0, 0, targetSize, targetSize);
+              let base64Image = canvas.toDataURL('image/jpeg', 0.8); 
+              await update(ref(db, `profiles/${currentUser.uid}`), { avatar: base64Image });
+              const imgEl1 = document.getElementById('profile-img');
+              const imgEl2 = document.getElementById('sidebar-profile-img');
+              if (imgEl1) imgEl1.src = base64Image;
+              if (imgEl2) imgEl2.src = base64Image;
+          } catch (err) {
+              window.showModalAlert(currentLang==='id'?"Gagal upload foto profil.":"Failed to upload profile picture.");
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+  } catch (error) {}
+};
+
+window.switchProfileTab = (tab) => {
+    document.querySelectorAll('.profile-content-section').forEach(el => {
+        el.classList.remove('active');
+        el.classList.add('hidden');
+    });
+    
+    const target = document.getElementById(`tab-${tab}`);
+    if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
+    }
+    
+    if (tab === 'content') window.loadMyContent();
+    if (tab === 'notif') {
+        const badge = document.getElementById('notif-badge-profile');
+        if (badge) badge.style.display = 'none';
+    }
+};
+
+window.loadMyContent = () => {
+    const cont = document.getElementById('my-content-list');
+    if (!cont || !currentUser) return;
+    
+    let myItems = globalAllItems.filter(i => i.uid === currentUser.uid).map(i => ({...i, status: 'Approved'}));
+    
+    get(ref(db, 'items_pending')).then(snap => {
+        if (snap.exists()) {
+            snap.forEach(child => {
+                const val = child.val();
+                if (val.uid === currentUser.uid) {
+                    myItems.push({ id: child.key, status: 'Pending', ...val });
+                }
+            });
+        }
+        
+        if (myItems.length === 0) {
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">${currentLang==='id'?'Belum ada konten.':'No content yet.'}</p>`;
+            return;
+        }
+        
+        myItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        let html = '';
+        myItems.forEach(item => {
+            const statusBadge = item.status === 'Approved' ? '<span class="item-status-badge status-approved">Approved</span>' : '<span class="item-status-badge status-pending">Pending</span>';
+            
+            html += `
+            <div class="card-horizontal" style="height:auto; min-height:80px; align-items:center; margin-bottom:10px;">
+                <div class="card-img-wrapper skeleton" style="width:80px; min-width:80px; height:80px;"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                <div class="card-body" style="padding:8px;">
+                    <h3 style="font-size:13px; margin-bottom:4px;">${item.title}</h3>
+                    <div style="font-size:10px; margin-bottom:4px;">${statusBadge}</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Kategori: ${item.category || ''}</div>
+                </div>
+                <button class="icon-btn" style="color:var(--danger); border-color:var(--danger); margin-right:10px; flex-shrink:0;" onclick="window.deletePublicItem('${item.id}', '${item.title}', '${item.status}')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    });
+};
+
+function loadNotifications() {
+    if (!currentUser) return;
+    onValue(ref(db, `notifications/${currentUser.uid}`), (snapshot) => {
+        const cont = document.getElementById('notif-list-profile');
+        const badge = document.getElementById('notif-badge-profile');
+        if (!cont) return;
+        if (!snapshot.exists()) {
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">${currentLang==='id'?'Belum ada notifikasi.':'No notifications yet.'}</p>`;
+            if (badge) badge.style.display = 'none';
+            return;
+        }
+        let html = '';
+        let unreadCount = 0;
+        const notifs = [];
+        snapshot.forEach(c => notifs.push({ id: c.key, ...c.val() }));
+        notifs.sort((a,b) => (b.time||0) - (a.time||0));
+        
+        notifs.forEach(n => {
+            if (!n.read) unreadCount++;
+            const color = n.type === 'accepted' ? 'var(--success)' : 'var(--danger)';
+            const icon = n.type === 'accepted' ? '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg class="icon icon-sm" style="width:14px;height:14px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            html += `
+            <div class="notif-card" onclick="window.markNotifRead('${n.id}')">
+                <div style="font-weight:bold; color:${color}; margin-bottom:4px; display:flex; align-items:center; gap:6px;">${icon} Item ${n.type === 'accepted' ? (currentLang==='id'?'Disetujui':'Approved') : (currentLang==='id'?'Ditolak':'Rejected')}</div>
+                <div style="font-size:13px; color:var(--text-main); margin-bottom:4px;">${n.title}</div>
+                ${n.reason && n.reason !== '-' ? `<div style="font-size:11px; color:var(--text-muted); background:var(--bg-dark); padding:6px; border-radius:4px; margin-top:4px;">Alasan: ${n.reason}</div>` : ''}
+            </div>`;
+        });
+        cont.innerHTML = html;
+        if (badge) {
+            badge.innerText = unreadCount;
+            badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        }
+    });
+}
+
+window.markNotifRead = async (id) => {
+    try {
+        await update(ref(db, `notifications/${currentUser.uid}/${id}`), { read: true });
+    } catch (e) {}
+};
+
+window.saveBioSelf = async () => {
+    const el = document.getElementById('input-self-bio');
+    if (!el) return;
+    const bio = el.value.trim();
+    if (bio.length > 80) return;
+    try {
+        await update(ref(db, `profiles/${currentUser.uid}`), { bio: bio });
+        window.showModalAlert(currentLang==='id'?"Bio berhasil disimpan.":"Bio saved successfully.");
+    } catch (e) {}
+};
+
+window.changeUserPassword = async () => {
+    if (!currentUser) return;
+    const oldPass = document.getElementById('input-old-password').value;
+    const newPass = document.getElementById('input-new-password').value;
+    const confPass = document.getElementById('input-confirm-password').value;
+
+    if (!oldPass || !newPass || !confPass) { window.showModalAlert(currentLang==='id'?"Harap isi semua kolom password.":"Please fill all password fields."); return; }
+    if (newPass !== confPass) { window.showModalAlert(currentLang==='id'?"Password baru dan konfirmasi tidak cocok.":"Passwords do not match."); return; }
+    if (newPass.length < 6) { window.showModalAlert(currentLang==='id'?"Password baru minimal 6 karakter.":"New password must be at least 6 characters."); return; }
+
+    try {
+        const credential = EmailAuthProvider.credential(currentUser.email, oldPass);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPass);
+        
+        window.showModalAlert(currentLang==='id'?"Password berhasil diubah!":"Password changed successfully!");
+        document.getElementById('input-old-password').value = '';
+        document.getElementById('input-new-password').value = '';
+        document.getElementById('input-confirm-password').value = '';
+    } catch (error) {
+        if (error.code === 'auth/invalid-credential') window.showModalAlert(currentLang==='id'?"Password lama salah atau mendaftar menggunakan Google.":"Wrong old password or registered via Google.");
+        else window.showModalAlert(currentLang==='id'?"Gagal mengubah password: ":"Failed changing password: " + error.message);
+    }
+};
+
+window.changeUsernameSettings = async () => {
+    if (!currentUser) return;
+    const newName = document.getElementById('input-self-username').value.trim();
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(newName)) { window.showModalAlert(currentLang==='id'?"Username hanya boleh berisi huruf, angka, underscore (3-16 karakter).":"Letters, numbers, and underscores only (3-16 chars)."); return; }
+    if (newName === currentUsername) { window.showModalAlert(currentLang==='id'?"Username masih sama dengan yang sekarang.":"Username is still the same."); return; }
+
+    try {
+        const pSnap = await get(ref(db, `profiles/${currentUser.uid}`));
+        const pData = pSnap.val();
+        const now = Date.now();
+        const lastChange = pData.lastUsernameChange || 0;
+        const daysPassed = (now - lastChange) / (1000 * 60 * 60 * 24);
+        
+        if (daysPassed < 30) {
+            const remaining = Math.ceil(30 - daysPassed);
+            document.getElementById('username-cooldown-text').innerText = currentLang==='id'?`Anda baru bisa mengganti username dalam ${remaining} hari lagi.`:`You can change username in ${remaining} days.`;
+            document.getElementById('input-self-username').value = currentUsername; 
+            return;
+        }
+
+        const usernameLower = newName.toLowerCase();
+        const unSnap = await get(ref(db, `usernames/${usernameLower}`));
+        if (unSnap.exists()) { window.showModalAlert(currentLang==='id'?"Username ini sudah dipakai orang lain.":"Username already taken."); return; }
+
+        const updates = {};
+        if (currentUsername) updates[`usernames/${currentUsername.toLowerCase()}`] = null;
+        updates[`usernames/${usernameLower}`] = currentUser.uid;
+        updates[`profiles/${currentUser.uid}/username`] = newName;
+        updates[`profiles/${currentUser.uid}/lastUsernameChange`] = now; 
+
+        await update(ref(db), updates);
+        currentUsername = newName;
+        document.getElementById('profile-name').innerText = currentUsername;
+        document.getElementById('sidebar-name').innerText = currentUsername;
+        document.getElementById('username-cooldown-text').innerText = currentLang==='id'?"Username berhasil diperbarui!":"Username updated!";
+        document.getElementById('username-cooldown-text').style.color = "var(--success)";
+        
+    } catch (error) {
+        window.showModalAlert(currentLang==='id'?"Gagal mengganti username.":"Failed changing username.");
+    }
+};
+
+// ==========================================
+// RENDERING & KELOLA ITEM
+// ==========================================
+window.handleSearch = (query) => {
+    currentSearchQuery = query.toLowerCase();
+    renderItemsToUI();
+};
+
+window.setCategoryFilter = (category, btnElement) => {
+    currentCategoryFilter = category;
+    renderCategoryChips();
+    renderItemsToUI();
+};
+
+function fetchAllItemsAndRender() {
+  // Mendengarkan perubahan data secara real-time
+  onValue(ref(db, 'items_public'), (snapshot) => {
+    let dynamicItems = [];
+    if (snapshot.exists()) {
+        snapshot.forEach(child => {
+            dynamicItems.push({ id: child.key, source: 'firebase', ...child.val() });
+        });
+    }
+    globalAllItems = [...staticItems, ...dynamicItems]; 
+    renderItemsToUI(); 
+  });
+}
+
+function fetchServerStatus(id, target) {
+  const statusEl = document.getElementById(`status-${id}`);
+  const playersEl = document.getElementById(`players-${id}`);
+  if (!statusEl) return;
+  const [host, portRaw] = target.split(':');
+  const port = portRaw || '19132';
+  fetch(`/api/server?host=${host}&port=${port}`).then(res => res.json()).then(data => {
+      if (data.online) {
+          statusEl.className = 'badge-status online';
+          statusEl.innerText = 'Online';
+          if (playersEl) playersEl.innerText = `${data.players.online} / ${data.players.max}`;
+      } else {
+          statusEl.className = 'badge-status offline';
+          statusEl.innerText = data.error === 'Timeout' ? 'Timeout' : 'Offline';
+      }
+    }).catch(() => {
+        statusEl.className = 'badge-status offline';
+        statusEl.innerText = 'Error';
+    });
+}
+
+setInterval(() => {
+  const homeEl = document.getElementById('screen-home');
+  if (homeEl && !homeEl.classList.contains('hidden')) {
+      if (currentCategoryFilter === 'Semua' || currentCategoryFilter === 'Server') {
+          document.querySelectorAll('.badge-status').forEach(el => {
+              const t = el.getAttribute('data-target');
+              const id = el.id.replace('status-', '');
+              if (t) fetchServerStatus(id, t);
+          });
+      }
+  }
+}, 30000);
+
+// SISTEM JEMPOL LIKE REAL-TIME PERMANEN
+window.toggleLike = async (itemId) => {
+    if (!currentUser) {
+        window.showModalAlert(currentLang === 'id' ? "Silakan masuk/login terlebih dahulu untuk menyukai item ini." : "Please login first to like this item.");
+        window.switchScreen('screen-login'); 
+        return;
+    }
+    const item = globalAllItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (item.uid === currentUser.uid && item.source !== 'github') {
+        window.showModalAlert(currentLang === 'id' ? "Kamu tidak bisa like item milikmu sendiri." : "You cannot like your own item.");
+        return;
+    }
+
+    const isLiked = item.likes && item.likes[currentUser.uid];
+    
+    // Perbaikan: Langsung target path spesifik agar bisa write (Firebase Rules update)
+    const likeRef = ref(db, `items_public/${itemId}/likes/${currentUser.uid}`);
+    
+    try {
+        if (isLiked) {
+            await remove(likeRef);
+        } else {
+            await set(likeRef, true);
+        }
+
+        if (item.uid && item.uid !== currentUser.uid) {
+            const pSnap = await get(ref(db, `profiles/${item.uid}`));
+            if (pSnap.exists()) {
+                let currentPoints = pSnap.val().points || 0;
+                if (isLiked) currentPoints = Math.max(0, currentPoints - 1);
+                else currentPoints += 1;
+                await update(ref(db, `profiles/${item.uid}`), { points: currentPoints });
+            }
+        }
+    } catch (e) {
+        window.showModalAlert((currentLang === 'id' ? "Gagal memproses like. Cek koneksi Anda. " : "Failed to process like. ") + e.message);
+    }
+};
+
+window.toggleVote = async (itemId) => {
+    if (!currentUser) { window.showModalAlert(currentLang==='id'?"Silakan masuk/login untuk mem-vote!":"Please login to vote!"); window.switchScreen('screen-login'); return; }
+    const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
+    if (item.uid === currentUser.uid && item.source !== 'github') { window.showModalAlert(currentLang==='id'?"Kamu tidak bisa vote server milikmu sendiri.":"You can't vote your own server."); return; }
+
+    const isVoted = item.votes && item.votes[currentUser.uid];
+    let currentStars = item.stars || 0;
+    const updates = {};
+    if (isVoted) {
+        updates[`items_public/${itemId}/votes/${currentUser.uid}`] = null;
+        updates[`items_public/${itemId}/stars`] = Math.max(0, currentStars - 1);
+    } else {
+        updates[`items_public/${itemId}/votes/${currentUser.uid}`] = true;
+        updates[`items_public/${itemId}/stars`] = currentStars + 1;
+    }
+    try { await update(ref(db), updates); } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal mengirim vote.":"Failed submitting vote."); }
+};
+
+window.openDetail = async (itemId) => {
+    const item = globalAllItems.find(i => i.id === itemId); if (!item) return;
+    currentDetailItemId = itemId;
+    if ((item.category || '').toLowerCase() === 'server') return;
+
+    const imgEl = document.getElementById('detail-img'); if (imgEl) imgEl.src = item.url_img; 
+    const titleEl = document.getElementById('detail-title'); if (titleEl) titleEl.innerText = item.title; 
+    const nameEl = document.getElementById('detail-uploader-name'); if (nameEl) nameEl.innerText = item.username || 'System';
+    
+    let uploaderRole = 'member';
+    let avatarUrl = generateDefaultAvatar(item.username);
+    if (item.uid) {
+         try {
+             const pSnap = await get(ref(db, `profiles/${item.uid}`));
+             if (pSnap.exists()) {
+                 const p = pSnap.val();
+                 uploaderRole = p.role;
+                 avatarUrl = p.avatar || generateDefaultAvatar(item.username);
+             }
+         } catch (e) {}
+    } else if (item.source === 'github') {
+        uploaderRole = 'dev';
+    }
+    
+    const badgeEl = document.getElementById('detail-uploader-badge'); if (badgeEl) badgeEl.innerHTML = getRoleBadge(uploaderRole); 
+    const avatarEl = document.getElementById('detail-uploader-avatar'); if (avatarEl) avatarEl.src = avatarUrl;
+    if (nameEl) nameEl.innerHTML = `${item.username || 'System'}`;
+    
+    const catEl = document.getElementById('detail-category'); if (catEl) catEl.innerText = item.category || ''; 
+    const verEl = document.getElementById('detail-version'); if (verEl) verEl.innerText = item.version || 'All Vers.'; 
+    const descEl = document.getElementById('detail-desc'); if (descEl) { descEl.innerText = item.desc_id || item.desc || '-'; }
+
+    const actionContainer = document.getElementById('detail-action-container'); 
+    const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+
+    const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+    const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+    
+    // IKON JEMPOL THUMBS UP
+    const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+
+    let adminActionHTML = '';
+    if (isAdmin && adminModeActive) {
+        adminActionHTML = `<button class="btn btn-danger" onclick="window.deletePublicItem('${item.id}', '${escapeHtml(item.title)}', 'Approved'); window.document.getElementById('screen-detail-container').classList.remove('active'); document.body.style.overflow='';" style="flex:1;">Hapus</button>`;
+    }
+
+    if (actionContainer) {
+        const textDl = currentLang === 'id' ? 'Unduh' : 'Download';
+        actionContainer.innerHTML = `
+        <div style="display:flex; width:100%; gap:10px;">
+             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span>${textDl}</span></button>
+             <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="window.toggleLike('${item.id}')" style="padding:10px 16px;">
+                 ${likeIconSVG} <span>${likesCount}</span>
+             </button>
+             ${adminActionHTML}
+        </div>`;
+    }
+    window.applyTranslation();
+
+    loadComments(itemId);
+    const cfContainer = document.getElementById('comment-form-container');
+    const cpPrompt = document.getElementById('comment-login-prompt');
+    if (currentUser) {
+        if (cfContainer) cfContainer.classList.remove('hidden');
+        if (cpPrompt) cpPrompt.classList.add('hidden');
+    } else {
+        if (cfContainer) cfContainer.classList.add('hidden');
+        if (cpPrompt) cpPrompt.classList.remove('hidden');
+    }
+    
+    const dContainer = document.getElementById('screen-detail-container');
+    if (dContainer) {
+        dContainer.classList.add('active');
+        document.body.classList.add('modal-open'); 
+    }
+};
+
+window.closeDetailAndLogin = () => {
+    const dContainer = document.getElementById('screen-detail-container');
+    if (dContainer) dContainer.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    window.switchScreen('screen-login');
+};
+
+function renderItemsToUI() {
+  const container = document.getElementById('public-items-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  let displayItems = globalAllItems;
+  const isSemua = currentCategoryFilter === 'Semua';
+  
+  if (isSemua) {
+      displayItems = displayItems.filter(item => (item.category || '').toLowerCase() !== 'server');
+  } else {
+      displayItems = displayItems.filter(item => (item.category || '').toLowerCase() === currentCategoryFilter.toLowerCase());
+  }
+
+  if (currentSearchQuery.trim() !== '') {
+      displayItems = displayItems.filter(item => (item.title || '').toLowerCase().includes(currentSearchQuery));
+  }
+  
+  if (currentCategoryFilter === 'Server') {
+      displayItems.sort((a,b) => (b.stars || 0) - (a.stars || 0));
+  } else {
+      displayItems.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+  
+  if (displayItems.length === 0 && container) {
+      container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding:20px;" data-i18n="no_content">${currentLang==='id'?'Tidak ditemukan.':'No items found.'}</p>`;
+  }
+
+  const dlIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+  let htmlBuf = '';
+  
+  displayItems.forEach(item => {
+      let adminEditBtn = '';
+      let adminDeleteBtn = '';
+      if (isAdmin && adminModeActive) {
+          adminEditBtn = `<button class="btn btn-secondary" onclick="event.stopPropagation(); window.openAdminEdit('${item.id}')" style="padding:6px 10px; margin-left:auto; font-size:11px;">Edit</button>`;
+          adminDeleteBtn = `<button class="btn btn-danger" onclick="event.stopPropagation(); window.deletePublicItem('${item.id}', '${escapeHtml(item.title)}', 'Approved')" style="padding:6px 10px; font-size:11px; margin-left:6px;">Hapus</button>`;
+      }
+
+      if ((item.category || '').toLowerCase() === 'server') {
+        const ipTarget = item.server_ip ? `${item.server_ip}:${item.server_port || 19132}` : item.version; 
+        const countryFlag = item.country ? `<div class="server-flag-badge"><img src="https://flagcdn.com/${flagIcons[item.country] || 'id'}.svg" style="width:16px; object-fit:contain; border-radius:2px;"></div>` : '';
+        const isVoted = currentUser && item.votes && item.votes[currentUser.uid];
+        const starClass = isVoted ? 'badge-star voted' : 'badge-star';
+        const isVideo = item.url_img && (item.url_img.includes('data:video') || item.url_img.endsWith('.mp4'));
+        const mediaHTML = isVideo ? `<video src="${item.url_img}" class="server-banner-media" autoplay loop muted playsinline></video>` : `<img src="${item.url_img}" class="server-banner-media lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/468x60'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">`;
+        
+        setTimeout(() => fetchServerStatus(item.id, ipTarget), 100);
+
+        htmlBuf += `
+        <div class="card-server-compact">
+            <div class="server-banner-wrapper skeleton">
+                ${mediaHTML}
+                ${countryFlag}
+            </div>
+            <div class="server-body-compact">
+                <div class="server-header-row">
+                    <div class="server-title-row">
+                        <span class="server-title-text">${item.title}</span>
+                    </div>
+                    <button class="icon-btn btn-copy-ip" onclick="window.copyText('${ipTarget}')" style="padding:4px; border:none; background:none;">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                </div>
+                <div class="server-ip-text"><svg class="icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path><circle cx="12" cy="9" r="2.5"></circle></svg> ${ipTarget}</div>
+                
+                <div class="server-badges-row">
+                    <div class="badge-status" id="status-${item.id}" data-target="${ipTarget}">Mengecek...</div>
+                    <div class="${starClass}" onclick="window.toggleVote('${item.id}')">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="${isVoted ? '#fbc02d' : 'none'}" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <span>${item.stars || 0}</span>
+                    </div>
+                    <div class="badge-players">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span id="players-${item.id}">0 / 0</span>
+                    </div>
+                    ${adminEditBtn}
+                    ${adminDeleteBtn}
+                </div>
+            </div>
+        </div>`;
+      } else {
+        const likesCount = item.likes ? Object.keys(item.likes).length : 0;
+        const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+        
+        // IKON JEMPOL
+        const likeBtnHTML = `
+            <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); window.toggleLike('${item.id}')">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                <span>${likesCount}</span>
+            </button>`;
+
+        const textDl = currentLang === 'id' ? 'Unduh' : 'Download';
+
+        if (isSemua) {
+            htmlBuf += `
+            <div class="card-compact-all">
+                <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/150'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                <div class="card-body">
+                    <h3 class="text-main">${item.title || 'Tanpa Judul'}</h3>
+                    <div class="card-meta-container">
+                        <span class="card-meta">${item.category || 'Lainnya'}</span>
+                        ${item.version ? `<span class="card-meta" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
                     </div>
                 </div>
-                <div id="comment-login-prompt" class="hidden" style="text-align:center; padding:15px; background:var(--bg-elevated); border-radius:8px; margin-bottom:20px; border:1px solid var(--border-color);">
-                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;" data-i18n="login_comment_prompt">Silakan masuk untuk memberikan komentar.</p>
-                    <button class="btn btn-primary" style="width:auto; display:inline-block; padding:8px 20px; font-size:12px;" onclick="window.closeDetailAndLogin()" data-i18n="nav_login">Masuk / Daftar</button>
+                ${likeBtnHTML}
+                ${adminEditBtn}
+                ${adminDeleteBtn}
+                <button class="btn-download-compact" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)">
+                    <svg class="icon icon-sm" style="width:14px; height:14px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+            </div>`;
+        } else {
+            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span>${textDl}</span></button>`;
+            htmlBuf += `
+            <div class="card-vertical" onclick="window.openDetail('${item.id}')">
+              <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+              <div class="card-body">
+                <h3 class="font-bold text-main" style="margin-bottom:4px;">${item.title || 'Tanpa Judul'}</h3>
+                <div class="card-meta-container" style="margin-bottom:8px;">
+                   <span class="card-meta">${item.category || 'Lainnya'}</span> 
+                   ${item.version ? `<span class="card-meta" style="background:none; border:1px solid var(--border-color); color:var(--text-muted);">${item.version}</span>` : ''}
+                   ${adminEditBtn}
+                   ${adminDeleteBtn}
                 </div>
-                <div id="comments-list">
-                    <p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat komentar...</p>
+                <p class="card-desc">${item.desc_id || item.desc || ''}</p>
+                <div class="flex" style="gap:10px; margin-top:12px;">
+                    ${actionBtnHTML}
+                    ${likeBtnHTML}
                 </div>
-            </div>
-        </div>
-  </div>
+              </div>
+            </div>`;
+        }
+      }
+  });
 
-  <div id="drawer-overlay" class="drawer-overlay" onclick="window.closeAllDrawers()"></div>
-  <div id="side-drawer" class="side-drawer drawer-left">
-    <div style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:16px;">
-      <div class="avatar-container skeleton" style="width:60px; height:60px; border:2px solid var(--primary); margin:0 auto;" id="sidebar-avatar-wrap">
-          <img id="sidebar-profile-img" src="https://via.placeholder.com/60" class="lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
-      </div>
-      <h3 id="sidebar-name" style="margin-top:10px; font-size:16px;">Tamu</h3>
-      <div id="sidebar-role"></div>
-    </div>
+  if (currentUser) {
+      let totalMyUploads = 0;
+      let totalMyDownloads = 0;
+      globalAllItems.forEach(it => {
+          if (it.uid === currentUser.uid) {
+              totalMyUploads++;
+              if (it.downloadsData) totalMyDownloads += Object.keys(it.downloadsData).length;
+          }
+      });
+      const statUpEl = document.getElementById('stat-upload');
+      const statDlEl = document.getElementById('stat-download');
+      if (statUpEl) statUpEl.innerText = totalMyUploads;
+      if (statDlEl) statDlEl.innerText = totalMyDownloads;
+  }
+  
+  if (container) container.innerHTML = htmlBuf;
+  window.applyTranslation();
+}
+
+let cropperInstance = null;
+window.handleLocalImage = (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const currentCatWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+  const currentCat = currentCatWrap ? currentCatWrap.innerText.trim() : 'Mod';
+  const isServer = currentCat === 'Server';
+  const maxSizeMB = isServer ? 8 : 5;
+  if (file.size > maxSizeMB * 1024 * 1024) { window.showModalAlert(`Ukuran maksimal gambar/video preview adalah ${maxSizeMB}MB!`); e.target.value = ''; return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => { 
+      if (isServer && (file.type === 'image/gif' || file.type.startsWith('video/'))) {
+          localImageBase64 = ev.target.result; 
+          const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = file.type.startsWith('video') ? `✓ Video Terpilih` : `✓ GIF dipilih`; 
+          const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ""; 
+      } 
+      else if (isServer) {
+          const cImg = document.getElementById('cropper-image'); if (cImg) cImg.src = ev.target.result;
+          window.openDialog('dialog-cropper');
+          if (cropperInstance) cropperInstance.destroy();
+          const cImg2 = document.getElementById('cropper-image');
+          if (cImg2) cropperInstance = new Cropper(cImg2, { aspectRatio: 468 / 60, viewMode: 1, background: false, zoomable: true });
+      } else {
+          localImageBase64 = ev.target.result; 
+          const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = `✓ Gambar dipilih`; 
+          const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ""; 
+      }
+  };
+  reader.readAsDataURL(file);
+};
+window.confirmCrop = () => { if (!cropperInstance) return; const canvas = cropperInstance.getCroppedCanvas({ width: 468, height: 60 }); localImageBase64 = canvas.toDataURL('image/jpeg', 0.9); const statEl = document.getElementById('img-status'); if (statEl) statEl.innerText = '✓ Banner di-crop (468x60)'; window.closeDialog('dialog-cropper'); };
+window.cancelCrop = () => { window.closeDialog('dialog-cropper'); const imgEl = document.getElementById('add-img'); if (imgEl) imgEl.value = ''; const fileEl = document.getElementById('file-img'); if (fileEl) fileEl.value = ''; };
+window.handleLocalFile = (e) => { const file = e.target.files[0]; if (!file) return; const cw = document.getElementById('selected-category-text-wrap').querySelector('span'); const currentCat = cw ? cw.innerText.trim() : 'Mod'; const maxMB = (currentCat === 'MCPE and Craftman') ? 90 : 5; if (file.size > maxMB * 1024 * 1024) { window.showModalAlert(`Max ${maxMB}MB!`); e.target.value = ''; return; } const reader = new FileReader(); reader.onload = (e) => { localFileBase64 = e.target.result; const statEl = document.getElementById('file-status'); if (statEl) statEl.innerText = `✓ File dipilih`; const addEl = document.getElementById('add-file'); if (addEl) addEl.value = ""; }; reader.readAsDataURL(file); };
+
+window.submitItem = async () => {
+  if (!currentUser) return;
+  const catWrap = document.getElementById('selected-category-text-wrap').querySelector('span');
+  const cat = catWrap ? catWrap.innerText.trim() : 'Mod';
+  const desc_id = document.getElementById('add-desc')?.value.trim();
+  const finalImg = localImageBase64 || document.getElementById('add-img')?.value.trim();
+  const version = document.getElementById('selected-version-text')?.innerText;
+  const countryWrap = document.getElementById('selected-country-text-wrap')?.querySelector('span');
+  const country = countryWrap ? countryWrap.innerText.trim() : 'Indonesia';
+  
+  let title, finalFile, serverIp, serverPort;
+  if (cat === 'Server') {
+    title = document.getElementById('add-server-name')?.value.trim();
+    serverIp = document.getElementById('add-server-ip')?.value.trim();
+    serverPort = document.getElementById('add-server-port')?.value.trim() || "19132";
+    finalFile = '#'; 
+    if (!title || !serverIp || !desc_id || !finalImg) { window.showModalAlert(currentLang==='id'?"Form tidak lengkap!":"Incomplete form!"); return; }
+  } else {
+    title = document.getElementById('add-title')?.value.trim();
+    finalFile = localFileBase64 || document.getElementById('add-file')?.value.trim();
+    if (!title || !desc_id || !finalImg || !finalFile) { window.showModalAlert(currentLang==='id'?"Form tidak lengkap!":"Incomplete form!"); return; }
+  }
+  const btnSubmit = document.getElementById('btn-submit-item');
+  if (btnSubmit) btnSubmit.disabled = true;
+  const data = { title, category: cat, version, desc_id, url_img: finalImg, url_file: finalFile, uid: currentUser.uid, username: currentUsername, createdAt: serverTimestamp(), stars: 0, likes: {} };
+  if (cat === 'Server') { data.server_ip = serverIp; data.server_port = serverPort; data.country = country; }
+
+  try {
+    if (isAdmin && adminModeActive) { await push(ref(db, 'items_public'), data); window.showModalAlert(currentLang==='id'?"Dipublikasikan!":"Published!"); } 
+    else { await push(ref(db, 'items_pending'), data); window.showModalAlert(currentLang==='id'?"Terkirim ke antrean!":"Sent to queue!"); }
+    window.switchScreen('screen-home');
+    const fTitle = document.getElementById('add-title'); if (fTitle) fTitle.value = ''; 
+    const fsrvn = document.getElementById('add-server-name'); if (fsrvn) fsrvn.value = '';
+    const fsrvip = document.getElementById('add-server-ip'); if (fsrvip) fsrvip.value = '';
+    const fdesc = document.getElementById('add-desc'); if (fdesc) fdesc.value = '';
+    const fimg = document.getElementById('add-img'); if (fimg) fimg.value = '';
+    const ffile = document.getElementById('add-file'); if (ffile) ffile.value = '';
+    const fimgstat = document.getElementById('img-status'); if (fimgstat) fimgstat.innerText = '';
+    const ffilestat = document.getElementById('file-status'); if (ffilestat) ffilestat.innerText = '';
+    localImageBase64 = null; localFileBase64 = null;
+  } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal mengirim data.":"Failed sending data."); }
+  if (btnSubmit) btnSubmit.disabled = false;
+};
+
+// ==========================================
+// FEEDBACK & BUG REPORT SYSTEM
+// ==========================================
+window.openFeedbackForm = () => {
+    if (!currentUser) {
+        window.showModalAlert(currentLang==='id'?"Silakan masuk/login untuk mengirim laporan atau masukan.":"Please login to send reports or feedback.");
+        window.switchScreen('screen-login');
+        return;
+    }
+    const ft = document.getElementById('feedback-title');
+    const fd = document.getElementById('feedback-desc');
+    const fprev = document.getElementById('feedback-img-preview');
+    const ffile = document.getElementById('feedback-img');
+    if (ft) ft.value = '';
+    if (fd) fd.value = '';
+    if (ffile) ffile.value = '';
+    if (fprev) {
+        fprev.src = '';
+        fprev.style.display = 'none';
+    }
+    feedbackImageBase64 = null;
+    window.closeAllDrawers();
+    window.openDialog('dialog-feedback');
+};
+
+window.handleFeedbackImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+        window.showModalAlert(currentLang==='id'?"Ukuran screenshot maksimal 3MB.":"Max screenshot size 3MB.");
+        e.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        feedbackImageBase64 = ev.target.result;
+        const prev = document.getElementById('feedback-img-preview');
+        if (prev) {
+            prev.src = feedbackImageBase64;
+            prev.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+};
+
+window.submitFeedback = async () => {
+    if (!currentUser) return;
+    const title = document.getElementById('feedback-title')?.value.trim();
+    const desc = document.getElementById('feedback-desc')?.value.trim();
+    if (!title || !desc) {
+        window.showModalAlert(currentLang==='id'?"Harap isi judul dan deskripsi masalah.":"Please fill title and description.");
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-feedback');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = currentLang==='id'?"Mengirim...":"Sending...";
+    }
+
+    try {
+        await push(ref(db, 'feedback'), {
+            uid: currentUser.uid,
+            username: currentUsername,
+            title: title,
+            desc: desc,
+            image: feedbackImageBase64 || null,
+            status: 'Baru',
+            createdAt: serverTimestamp()
+        });
+        window.closeDialog('dialog-feedback');
+        window.showModalAlert(currentLang==='id'?"Laporan Anda berhasil dikirim ke Admin!":"Your report sent to Admin successfully!");
+    } catch (e) {
+        window.showModalAlert((currentLang==='id'?"Gagal mengirim laporan: ":"Failed to send report: ") + e.message);
+    }
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = currentLang==='id'?"Kirim Laporan":"Submit Report";
+    }
+};
+
+window.switchAdminTab = (tab) => {
+    const queueSection = document.getElementById('admin-queue-section');
+    const feedbackSection = document.getElementById('admin-feedback-section');
+    const tabQueueBtn = document.getElementById('tab-admin-queue');
+    const tabFeedbackBtn = document.getElementById('tab-admin-feedback');
+
+    if (tab === 'queue') {
+        if (queueSection) queueSection.classList.remove('hidden');
+        if (feedbackSection) feedbackSection.classList.add('hidden');
+        if (tabQueueBtn) { tabQueueBtn.classList.add('btn-primary'); tabQueueBtn.classList.remove('btn-secondary'); }
+        if (tabFeedbackBtn) { tabFeedbackBtn.classList.add('btn-secondary'); tabFeedbackBtn.classList.remove('btn-primary'); }
+    } else {
+        if (queueSection) queueSection.classList.add('hidden');
+        if (feedbackSection) feedbackSection.classList.remove('hidden');
+        if (tabQueueBtn) { tabQueueBtn.classList.add('btn-secondary'); tabQueueBtn.classList.remove('btn-primary'); }
+        if (tabFeedbackBtn) { tabFeedbackBtn.classList.add('btn-primary'); tabFeedbackBtn.classList.remove('btn-secondary'); }
+        loadAdminFeedback();
+    }
+};
+
+function loadAdminFeedback() {
+    if (!isAdmin || !adminModeActive) return;
+    const cont = document.getElementById('admin-feedback-list');
+    if (!cont) return;
+    cont.innerHTML = '<div class="loader" style="margin-top: 30px;"></div>';
+
+    onValue(ref(db, 'feedback'), (snapshot) => {
+        cont.innerHTML = '';
+        if (!snapshot.exists()) {
+            cont.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;">${currentLang==='id'?'Belum ada laporan masuk.':'No reports received.'}</p>`;
+            return;
+        }
+
+        const list = [];
+        snapshot.forEach(c => list.push({ id: c.key, ...c.val() }));
+        list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        let html = '';
+        list.forEach(f => {
+            const isNew = f.status === 'Baru';
+            const badgeClass = isNew ? 'feedback-badge baru' : 'feedback-badge selesai';
+            const statusText = isNew ? 'Baru' : 'Selesai';
+            const imgHTML = f.image ? `<img src="${f.image}" style="max-width:100%; max-height:220px; object-fit:contain; border-radius:6px; margin-top:10px; border:1px solid var(--border-color); display:block; cursor:pointer;" onclick="window.open('${f.image}', '_blank')">` : '';
+            const actionBtn = isNew ? `<button class="btn btn-success" style="padding:8px 12px; font-size:11px; margin-top:10px; width:auto;" onclick="window.markFeedbackHandled('${f.id}')">Tandai Selesai</button>` : '';
+
+            html += `
+            <div class="feedback-card">
+                <div class="feedback-header">
+                    <div>
+                        <h4 class="font-bold text-main" style="font-size:14px; margin-bottom:2px;">${f.title}</h4>
+                        <span style="font-size:11px; color:var(--text-muted);">Oleh: <b class="text-main">${f.username}</b> &bull; ${formatDate(f.createdAt)}</span>
+                    </div>
+                    <span class="${badgeClass}">${statusText}</span>
+                </div>
+                <p style="font-size:13px; color:var(--text-main); white-space:pre-wrap; line-height:1.4;">${escapeHtml(f.desc)}</p>
+                ${imgHTML}
+                <div style="display:flex; justify-content:flex-end;">
+                    ${actionBtn}
+                </div>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    });
+}
+
+window.markFeedbackHandled = async (id) => {
+    try {
+        await update(ref(db, `feedback/${id}`), { status: 'Selesai' });
+    } catch (e) {
+        window.showModalAlert("Gagal memperbarui status.");
+    }
+};
+
+function loadPendingItems() {
+  if (!isAdmin || !adminModeActive) return;
+  onValue(ref(db, 'items_pending'), (snapshot) => {
+    const container = document.getElementById('pending-items-container'); if (!container) return; container.innerHTML = ''; let count = 0;
+    adminQueueMemory = {}; 
     
-    <!-- SECTION 1: ADMIN CONTROLS (HANYA MUNCUL UNTUK ADMIN) -->
-    <ul class="sidebar-section">
-      <li id="drawer-menu-admin" class="hidden" onclick="window.switchScreen('screen-admin'); window.closeAllDrawers();" style="color:var(--danger); font-weight:bold;">
-        <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--danger)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span data-i18n="nav_admin">Admin Panel</span>
-      </li>
-      
-      <li id="drawer-menu-admin-toggle" class="hidden" onclick="window.toggleAdminMode()" style="justify-content: space-between;">
-        <div class="flex items-center" style="gap:12px;">
-           <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="var(--primary)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-           <span style="color:var(--primary);" data-i18n="mode_admin">Mode Admin</span>
-        </div>
-        <label class="mcpe-toggle" style="pointer-events:none;">
-            <input type="checkbox" id="admin-mode-checkbox" class="mcpe-toggle-checkbox" checked>
-            <div class="mcpe-toggle-slider"><div class="mcpe-toggle-thumb"></div></div>
-        </label>
-      </li>
-    </ul>
-
-    <!-- SECTION 2: BANTUAN & KOMUNITAS -->
-    <ul class="sidebar-section">
-      <li onclick="window.openFeedbackForm()">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-        <span data-i18n="nav_help">Lapor Bug / Feedback</span>
-      </li>
-
-      <li onclick="window.open('https://whatsapp.com/channel/0029VbDz79vFcow0kZYpNW3V', '_blank')">
-        <!-- IKON WHATSAPP VEKTOR -->
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17.47 16c-.23-.12-1.38-.68-1.59-.76-.21-.08-.36-.12-.52.12-.15.23-.6 1-.74 1.21-.13.21-.27.23-.5.12-1.07-.5-2.07-1.12-2.9-1.88a9.42 9.42 0 0 1-2-2.58c-.12-.22 0-.32.1-.44.1-.1.21-.24.32-.37a1.64 1.64 0 0 0 .21-.36c.07-.15.03-.27-.03-.38s-.52-1.25-.7-1.7c-.19-.46-.38-.4-.52-.41-.13-.01-.27-.01-.42-.01s-.41.06-.63.29c-.21.23-.82.8-.82 1.95s.85 2.27.96 2.43 1.65 2.5 3.96 3.51c.55.24.98.38 1.32.49.56.18 1.07.15 1.47.09.45-.06 1.38-.56 1.57-1.1.2-.55.2-.1.14-.11z"/><path d="M12 2C6.48 2 2 6.48 2 12c0 1.9.49 3.69 1.36 5.23L2 22l4.89-1.28A9.96 9.96 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18.23c-1.55 0-3.04-.39-4.36-1.07l-.31-.16-3.25.85.87-3.17-.18-.29A8.25 8.25 0 0 1 3.77 12c0-4.54 3.7-8.23 8.23-8.23 4.54 0 8.23 3.7 8.23 8.23s-3.69 8.23-8.23 8.23z"/></svg>
-        <span data-i18n="wa_channel">Channel WhatsApp</span>
-      </li>
-    </ul>
-
-    <!-- AUTH SECTION SIDEBAR (HILANG OTOMATIS JIKA LOGIN) -->
-    <div style="margin-top:auto;" id="sidebar-auth-section">
-      <button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;" data-i18n="nav_login">Masuk / Daftar</button>
-    </div>
-  </div>
-
-  <div id="screen-login" class="app-container screen hidden">
-    <button class="header-btn" style="position:absolute; top:20px; left:20px; padding:10px; background:var(--bg-surface); border-radius:50%; border:1px solid var(--border-color);" onclick="window.switchScreen('screen-home')">
-        <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-    </button>
-    <div style="margin: auto; padding: 30px; background: var(--bg-surface); border-radius: 12px; width: 90%; max-width: 400px; text-align: center; margin-top: 15vh; border: 1px solid var(--border-color);">
-      <h2 class="text-primary font-bold" style="font-size: 24px; margin-bottom: 5px;" data-i18n="login_title">Masuk ke Akun</h2>
-      <p style="color:var(--text-muted); font-size:14px; margin-bottom: 25px;">
-        <span data-i18n="no_account">Belum punya akun?</span>
-        <span onclick="window.toggleAuthMode()" style="color:var(--primary); cursor:pointer; font-weight:bold; margin-left: 5px;" data-i18n="register_here">Daftar di sini</span>
-      </p>
-      <input type="email" id="auth-email" class="input-field text-selectable" data-i18n="email_placeholder" placeholder="Alamat Email">
-      <input type="password" id="auth-password" class="input-field text-selectable" data-i18n="pass_placeholder" placeholder="Password (Min 6)">
-      <button id="auth-submit-btn" class="btn btn-primary" onclick="window.processEmailAuth()" data-i18n="btn_login">Masuk</button>
-      <p id="login-error" class="text-danger" style="margin-top: 10px; font-size: 13px;"></p>
-      <div class="flex items-center" style="margin: 20px 0; gap: 10px;">
-        <hr style="flex:1; border-color:var(--border-color);"><span style="color:var(--text-muted); font-size:12px;" data-i18n="or_via">atau via</span><hr style="flex:1; border-color:var(--border-color);">
-      </div>
-      <button class="btn btn-secondary" onclick="window.loginGoogle()">
-        <svg style="width:18px; height:18px;" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        <span style="margin-left:8px;" data-i18n="login_google">Masuk dengan Google</span>
-      </button>
-    </div>
-  </div>
-
-  <div id="screen-username" class="app-container screen hidden" style="justify-content: center; padding: 20px;">
-    <div style="background: var(--bg-surface); padding: 30px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color);">
-      <h2 class="text-primary font-bold" style="margin-bottom: 10px;" data-i18n="create_user">Buat Username</h2>
-      <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;" data-i18n="user_rule">Hanya huruf, angka, dan underscore (3-16 karakter).</p>
-      <input type="text" id="input-username" placeholder="Cth: Steve_01" class="input-field text-selectable">
-      <button class="btn btn-primary" id="btn-save-username" onclick="window.saveUsername()" data-i18n="save_user">Simpan Username</button>
-      <p id="username-error" class="text-danger" style="margin-top: 10px; font-size: 14px;"></p>
-    </div>
-  </div>
-
-  <div id="screen-home" class="app-container screen hidden">
-    <header style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 50;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center;">
-        <button class="icon-btn" onclick="window.toggleDrawer('side-drawer')">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-        <!-- PENAMBAHAN LOGO DI HEADER -->
-        <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:24px; margin-left:12px; border-radius:4px;">
-      </div>
-      <!-- GANTI TEKS DENGAN GAMBAR TEXT STECYMASTER -->
-      <div class="logo" style="flex: 2; text-align: center; cursor: pointer; white-space: nowrap; display: flex; justify-content: center;" onclick="window.scrollTo(0,0)">
-        <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));">
-      </div>
-      <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap:10px;">
-        <button id="btn-login-header" class="btn btn-primary" style="padding: 6px 12px; font-size:12px; width:auto;" onclick="window.switchScreen('screen-login')" data-i18n="nav_login">Masuk</button>
-      </div>
-    </header>
-
-    <div class="search-container">
-      <div class="search-box">
-        <svg class="icon icon-sm" style="color:var(--text-muted);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="search-input" class="text-selectable" data-i18n="search_placeholder" placeholder="Cari item..." oninput="window.handleSearch(this.value)">
-      </div>
-    </div>
-    
-    <div class="category-container" id="category-filter-container"></div>
-    <div id="public-items-container" class="content-list">
-      <div class="loader" style="margin-top: 40px;"></div>
-    </div>
-    
-    <nav class="bottom-nav">
-      <button class="nav-item active" id="nav-btn-home" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span></button>
-      <button class="nav-item" id="nav-btn-upload" onclick="window.requireLoginAndSwitch('screen-add')"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav_upload">Upload</span></button>
-      <button class="nav-item" id="nav-btn-profile" onclick="window.requireLoginAndSwitch('screen-profile')"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="nav_profile">Profil</span></button>
-    </nav>
-  </div>
-
-  <div id="screen-profile" class="app-container screen hidden">
-    <header class="flex items-center justify-between" style="padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
-      <div class="logo font-bold" data-i18n="my_profile">Profil Saya</div>
-    </header>
-    
-    <div class="profile-header-new">
-      <input type="file" id="profile-upload" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="window.handleProfileUpload(event)">
-      <div class="avatar-container skeleton" style="border:none;">
-        <img id="profile-img" src="" alt="Avatar" class="profile-img lazy-img" style="border: 2px solid var(--primary);" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
-        <div class="camera-btn" onclick="document.getElementById('profile-upload').click()">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-        </div>
-      </div>
-      <div class="profile-info-new">
-        <div class="flex items-center" style="gap:5px; margin-bottom:2px;">
-            <h2 id="profile-name" style="font-size: 18px; font-weight: bold; margin:0;">User</h2>
-        </div>
-        <div id="profile-role-badge" style="margin-bottom:4px;"></div>
-      </div>
-    </div>
-    
-    <div class="profile-stats-grid">
-       <div class="stat-box">
-           <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-           <div class="val" id="stat-upload">0</div><div class="lbl" data-i18n="total_up">Total Upload</div>
-       </div>
-       <div class="stat-box">
-           <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-           <div class="val" id="stat-download">0</div><div class="lbl" data-i18n="total_down">Total Download</div>
-       </div>
-    </div>
-
-    <!-- PENGATURAN AKUN MENU LIST -->
-    <div class="profile-menu-list">
-       <div class="profile-menu-item" onclick="window.switchProfileTab('content')">
-           <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-           <span data-i18n="menu_content">Konten Saya</span>
-       </div>
-       
-       <div class="profile-menu-item" onclick="window.switchProfileTab('notif')">
-           <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-           <div style="flex:1;"><span data-i18n="menu_notif">Notifikasi</span></div>
-           <span id="notif-badge-profile" class="notif-badge-icon">0</span>
-       </div>
-       
-       <div class="profile-menu-item" onclick="window.switchProfileTab('settings')">
-           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-           <span data-i18n="menu_settings">Pengaturan Akun</span>
-       </div>
-       
-       <div class="profile-menu-item danger-menu" onclick="window.customLogout()">
-           <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-           <span data-i18n="menu_logout">Keluar Akun</span>
-       </div>
-    </div>
-    
-    <!-- SUB-TAB KONTEN SAYA -->
-    <div id="tab-content" class="profile-content-section hidden">
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="list_content">Daftar Konten Saya</h3>
-        <div id="my-content-list" class="content-list" style="padding:0; gap:10px;">
-             <p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="no_content">Belum ada konten.</p>
-        </div>
-    </div>
-
-    <!-- SUB-TAB NOTIFIKASI -->
-    <div id="tab-notif" class="profile-content-section hidden">
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="history_notif">Riwayat Notifikasi</h3>
-        <div id="notif-list-profile" style="padding:0; gap:10px; display:flex; flex-direction:column;">
-             <p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_sys">Memuat...</p>
-        </div>
-    </div>
-
-    <!-- SUB-TAB PENGATURAN -->
-    <div id="tab-settings" class="profile-content-section hidden">
+    if (snapshot.exists()) {
+      snapshot.forEach(child => {
+        count++; const item = child.val();
+        adminQueueMemory[child.key] = item; 
         
-        <!-- SECTION: PILIHAN BAHASA DENGAN IKON BENDERA -->
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; align-items:center; gap:8px;">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            <span data-i18n="lang_title">Bahasa</span>
-        </h3>
-        <div style="display:flex; gap:12px; margin-bottom:25px;">
-            <div class="lang-card active" id="lang-card-id" onclick="window.setLang('id')">
-                <img src="https://flagcdn.com/id.svg" alt="ID">
-                <span>Indonesia</span>
-            </div>
-            <div class="lang-card" id="lang-card-en" onclick="window.setLang('en')">
-                <img src="https://flagcdn.com/us.svg" alt="EN">
-                <span>English</span>
-            </div>
-        </div>
+        let testBtnHTML = (item.category || '') === 'Server' 
+           ? `<button class="btn btn-secondary" onclick="window.copyText('${item.server_ip}:${item.server_port}')">Salin IP</button>` 
+           : `<button class="btn btn-secondary" onclick="window.testAdminFile('${child.key}')">
+                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Test File
+              </button>`;
+              
+        container.innerHTML += `
+          <div class="admin-queue-card">
+              <div class="admin-queue-header">
+                  <div style="flex:1;">
+                      <h4 class="font-bold text-main" style="margin-bottom:4px; font-size:16px;">${item.title || 'Tanpa Judul'}</h4>
+                      <span class="card-meta" style="margin:0;">${item.category || 'Lainnya'}</span>
+                  </div>
+                  <div style="text-align:right; font-size:11px; color:var(--text-muted);">
+                      Pengirim:<br><span class="text-main font-bold">${item.username || 'Anonim'}</span>
+                  </div>
+              </div>
+              <div class="admin-queue-actions">
+                <button class="btn btn-secondary" onclick="window.testAdminImage('${child.key}')">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Preview
+                </button>
+                ${testBtnHTML}
+              </div>
+              <div class="admin-queue-actions" style="margin-top:12px; border-top:1px dashed var(--border-color); padding-top:12px;">
+                <button class="btn btn-danger" onclick="window.promptReject('${child.key}', '${item.uid}', '${escapeHtml(item.title)}')">Tolak</button>
+                <button class="btn btn-success" onclick="window.approveItem('${child.key}', '${item.uid}', '${escapeHtml(item.title)}')">Terima & Publikasi</button>
+              </div>
+          </div>`;
+      });
+    } else { container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px; margin-top:20px;" data-i18n="no_queue">${currentLang==='id'?'Tidak ada antrean.':'No queue.'}</p>`; }
+    const badgeCount = document.getElementById('pending-count'); if (badgeCount) badgeCount.innerText = count;
+  });
+}
 
-        <!-- SECTION: MODE WARNA (CARD VISUAL THEME) -->
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px; display:flex; align-items:center; gap:8px;">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            <span data-i18n="theme_title">Mode Warna</span>
-        </h3>
-        <div class="theme-selection-container">
-            <div class="theme-card light-card" id="theme-card-light" onclick="window.setTheme('light')">
-                <div class="theme-preview-box">
-                    <div class="preview-line long"></div>
-                    <div class="preview-line short"></div>
-                    <div class="preview-accent"></div>
-                </div>
-                <div class="theme-label">Terang <div class="theme-radio"></div></div>
-            </div>
+window.testAdminFile = (key) => { const item = adminQueueMemory[key]; if (item && item.url_file) { window.handleDownload(item.url_file, key); } };
+window.testAdminImage = (key) => { const item = adminQueueMemory[key]; if (item && item.url_img) { if (item.url_img.startsWith('data:')) { const newTab = window.open(); newTab.document.body.innerHTML = `<body style="background:#000; margin:0; display:flex; justify-content:center; align-items:center; height:100vh;"><img src="${item.url_img}" style="max-width:100%; max-height:100vh; object-fit:contain;"></body>`; } else { window.open(item.url_img, '_blank'); } } };
+
+window.approveItem = async (id, uid, title) => {
+    try {
+        const snap = await get(ref(db, `items_pending/${id}`));
+        if (snap.exists()) {
+            await set(ref(db, `items_public/${id}`), snap.val());
+            await remove(ref(db, `items_pending/${id}`));
+            await push(ref(db, `notifications/${uid}`), { type: 'accepted', title: title, time: serverTimestamp(), read: false });
+            const pSnap = await get(ref(db, `profiles/${uid}`));
+            if (pSnap.exists()) {
+                await update(ref(db, `profiles/${uid}`), { itemCount: (pSnap.val().itemCount||0) + 1 });
+            }
+            window.showModalAlert(currentLang==='id'?"Disetujui dan berhasil dipublikasikan!":"Approved and published successfully!");
+        }
+    } catch (e) {}
+};
+
+window.promptReject = (id, uid, title) => { currentRejectItem = { id, uid, title }; const rr = document.getElementById('reject-reason'); if (rr) rr.value = ''; window.openDialog('dialog-reject-admin'); };
+window.submitReject = async () => { if (!currentRejectItem) return; try { await remove(ref(db, `items_pending/${currentRejectItem.id}`)); const rr = document.getElementById('reject-reason'); await push(ref(db, `notifications/${currentRejectItem.uid}`), { type: 'rejected', title: currentRejectItem.title, reason: rr ? rr.value.trim() : '-', time: serverTimestamp(), read: false }); window.closeDialog('dialog-reject-admin'); window.showModalAlert(currentLang==='id'?"Item ditolak.":"Item rejected."); currentRejectItem = null; } catch (e) {} };
+
+window.deletePublicItem = (id, title, status) => { 
+    window.showModalConfirm(currentLang==='id'?`Hapus permanen: "${title}"?`:`Permanently delete: "${title}"?`, async () => { 
+        try { 
+            if (status === 'Pending') await remove(ref(db, `items_pending/${id}`));
+            else await remove(ref(db, `items_public/${id}`)); 
+            window.showModalAlert(currentLang==='id'?"Item berhasil dihapus.":"Item deleted successfully.");
+            if (window.loadMyContent) window.loadMyContent(); 
+        } catch (e) { window.showModalAlert(currentLang==='id'?"Gagal menghapus.":"Failed deleting."); } 
+    }); 
+};
+
+window.openAdminEdit = (id) => {
+    const item = globalAllItems.find(i => i.id === id);
+    if (!item) return;
+    
+    document.getElementById('edit-item-id').value = id;
+    document.getElementById('edit-title').value = item.title || '';
+    document.getElementById('edit-desc').value = item.desc_id || item.desc || '';
+    document.getElementById('edit-img-url').value = item.url_img || '';
+    document.getElementById('edit-file-url').value = item.url_file || '';
+    
+    window.openDialog('dialog-edit-admin');
+};
+
+window.saveAdminEdit = async () => {
+    const id = document.getElementById('edit-item-id').value;
+    const title = document.getElementById('edit-title').value.trim();
+    const desc = document.getElementById('edit-desc').value.trim();
+    const imgUrl = document.getElementById('edit-img-url').value.trim();
+    const fileUrl = document.getElementById('edit-file-url').value.trim();
+    
+    if (!title || !desc || !imgUrl || !fileUrl) { window.showModalAlert(currentLang==='id'?'Semua field wajib diisi.':'All fields required.'); return; }
+    
+    try {
+        await update(ref(db, `items_public/${id}`), { 
+            title: title,
+            desc_id: desc,
+            url_img: imgUrl, 
+            url_file: fileUrl 
+        });
+        window.showModalAlert(currentLang==='id'?'Berhasil diperbarui!':'Updated successfully!');
+        window.closeDialog('dialog-edit-admin');
+    } catch (e) { window.showModalAlert('Gagal update: ' + e.message); }
+};
+
+window.updateCommentCounter = (inputId, counterId) => { const inEl = document.getElementById(inputId); const cEl = document.getElementById(counterId); if (inEl && cEl) cEl.innerText = `${inEl.value.length}/200`; };
+const trashIconSVG = `<svg class="icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+
+let globalProfilesCache = {};
+function loadComments(itemId) {
+    const commentsList = document.getElementById('comments-list'); if (!commentsList) return; 
+    commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;" data-i18n="loading_comments">Memuat...</p>`;
+    
+    if (currentCommentRef) { off(currentCommentRef); }
+    currentCommentRef = ref(db, `comments/${itemId}`);
+    
+    onValue(currentCommentRef, async (snapshot) => {
+        commentsList.innerHTML = ''; 
+        if (!snapshot.exists()) { commentsList.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:13px;">${currentLang==='id'?'Belum ada komentar.':'No comments yet.'}</p>`; return; }
+        
+        const allComments = []; 
+        snapshot.forEach(child => { allComments.push({ id: child.key, ...child.val() }); });
+        const mainComments = allComments.filter(c => !c.parentId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        
+        if (mainComments.length === 0) return;
+
+        let htmlBuf = '';
+        for (const comment of mainComments) {
+            let avatarUrl = generateDefaultAvatar(comment.username);
+            let roleBadge = getRoleBadge('member');
+            if (globalProfilesCache[comment.uid]) {
+                avatarUrl = globalProfilesCache[comment.uid].avatar || avatarUrl;
+                roleBadge = getRoleBadge(globalProfilesCache[comment.uid].role);
+            } else {
+                try {
+                    const pSnap = await get(ref(db, `profiles/${comment.uid}`));
+                    if (pSnap.exists()) {
+                        globalProfilesCache[comment.uid] = pSnap.val();
+                        avatarUrl = pSnap.val().avatar || avatarUrl;
+                        roleBadge = getRoleBadge(pSnap.val().role);
+                    }
+                } catch (e) {}
+            }
+            const isOwner = currentUser && (currentUser.uid === comment.uid || isAdmin);
             
-            <div class="theme-card dark-card" id="theme-card-dark" onclick="window.setTheme('dark')">
-                <div class="theme-preview-box">
-                    <div class="preview-line long"></div>
-                    <div class="preview-line short"></div>
-                    <div class="preview-accent"></div>
+            htmlBuf += `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <div class="comment-author-info" style="display:flex; align-items:center; gap:8px;"><img src="${avatarUrl}" class="comment-avatar"><span class="comment-author" style="font-weight:bold; font-size:14px; color:var(--text-main);">${comment.username}</span> ${roleBadge}</div>
+                    <span class="comment-date" style="font-size:11px; color:var(--text-muted);">${formatDate(comment.createdAt)}</span>
                 </div>
-                <div class="theme-label">Gelap <div class="theme-radio"></div></div>
-            </div>
-        </div>
+                <p class="comment-text">${escapeHtml(comment.text)}</p>
+                ${isOwner ? `<button class="comment-action-btn danger" style="color:var(--danger);" onclick="window.deleteComment('${itemId}', '${comment.id}')">${trashIconSVG} Hapus</button>` : ''}
+            </div>`;
+        }
+        commentsList.innerHTML = htmlBuf;
+    });
+}
 
-        <!-- SECTION: EDIT PROFIL -->
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="edit_profile">Edit Profil</h3>
-        <label class="form-label" style="text-align:left; font-size:11px;" data-i18n="edit_bio">Edit Bio (Maks 80 kar):</label>
-        <input type="text" id="input-self-bio" class="input-field text-selectable" maxlength="80" style="padding:10px; margin-bottom:10px; font-size:12px;">
-        <button class="btn btn-primary" style="padding:10px; font-size:12px; margin-bottom:25px;" onclick="window.saveBioSelf()" data-i18n="save_bio">Simpan Bio</button>
+window.postComment = async () => {
+    if (!currentUser) return;
+    const tEl = document.getElementById('new-comment-text');
+    if (!tEl) return;
+    const txt = tEl.value.trim();
+    if (!txt) return;
+    const now = Date.now();
+    if (now - lastCommentTime < 30000) {
+        window.showModalAlert(currentLang==='id'?"Tunggu sebentar sebelum berkomentar lagi.":"Wait a moment before commenting again.");
+        return;
+    }
+    try {
+        const refC = push(ref(db, `comments/${currentDetailItemId}`));
+        const updates = {};
+        updates[`comments/${currentDetailItemId}/${refC.key}`] = { uid: currentUser.uid, username: currentUsername, text: txt, createdAt: serverTimestamp(), parentId: null };
+        updates[`users/${currentUser.uid}/lastCommentAt`] = serverTimestamp();
+        await update(ref(db), updates);
+        lastCommentTime = now;
+        tEl.value = '';
+        window.updateCommentCounter('new-comment-text', 'new-comment-counter');
+    } catch (e) {}
+};
 
-        <!-- SECTION: PENGATURAN AKUN -->
-        <h3 class="font-bold text-main" style="margin-bottom:15px; border-bottom:1px solid var(--border-color); padding-bottom:10px;" data-i18n="menu_settings">Pengaturan Akun</h3>
+window.deleteComment = async (itemId, commentId) => {
+    window.showModalConfirm(currentLang==='id'?"Yakin menghapus komentar ini?":"Are you sure you want to delete this comment?", async () => {
+        try {
+            await update(ref(db), { [`comments/${itemId}/${commentId}`]: null });
+        } catch (e) {}
+    });
+};
 
-        <label class="form-label" style="text-align:left; font-size:11px;" data-i18n="change_user">Ganti Username (Batas 1x / 30 Hari):</label>
-        <div class="flex" style="gap:10px; margin-bottom:5px;">
-           <input type="text" id="input-self-username" class="input-field text-selectable" style="padding:10px; font-size:12px; margin:0;">
-           <button class="btn btn-secondary" style="padding:10px; font-size:12px; width:auto;" onclick="window.changeUsernameSettings()" data-i18n="btn_change">Ubah</button>
-        </div>
-        <p id="username-cooldown-text" style="font-size:11px; color:var(--danger); margin-bottom:20px;"></p>
-        
-        <label class="form-label" style="text-align:left; font-size:11px; display:block; margin-bottom:5px;" data-i18n="change_pass">Ganti Password (Hanya via Email):</label>
-        <input type="password" id="input-old-password" class="input-field text-selectable" data-i18n="old_pass" placeholder="Password Lama" style="padding:10px; font-size:12px; margin-bottom:10px;">
-        <input type="password" id="input-new-password" class="input-field text-selectable" data-i18n="new_pass" placeholder="Password Baru (Min 6)" style="padding:10px; font-size:12px; margin-bottom:10px;">
-        <input type="password" id="input-confirm-password" class="input-field text-selectable" data-i18n="confirm_pass" placeholder="Konfirmasi Password Baru" style="padding:10px; font-size:12px; margin-bottom:10px;">
-        <button class="btn btn-secondary" style="padding:10px; font-size:12px; margin-bottom:20px; border-color:var(--danger); color:var(--danger);" onclick="window.changeUserPassword()" data-i18n="update_pass">Update Password</button>
-    </div>
-    
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span></button>
-      <button class="nav-item" onclick="window.switchScreen('screen-add')"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav_upload">Upload</span></button>
-      <button class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="nav_profile">Profil</span></button>
-    </nav>
-  </div>
+function escapeHtml(u) {
+    return (u || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 
-  <div id="screen-add" class="app-container screen hidden">
-    <header class="flex items-center justify-between" style="padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
-      <button class="header-btn" style="padding:5px;" onclick="window.switchScreen('screen-home')" data-i18n="cancel">Batal</button>
-      <div class="logo font-bold" data-i18n="title_upload">Kirim Baru</div>
-      <div style="width:40px;"></div>
-    </header>
-    
-    <div style="padding: 20px; padding-bottom:120px;">
-      <label class="form-label" data-i18n="lbl_cat">Kategori*</label>
-      <div class="input-field flex items-center justify-between" onclick="window.openCategorySheet()" style="cursor:pointer; margin-bottom:20px;">
-        <div class="flex items-center" style="gap:8px; font-weight:600; color:var(--primary);" id="selected-category-text-wrap"></div>
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+window.translateDesc = async () => {
+    const el = document.getElementById('detail-desc');
+    const bEl = document.getElementById('text-translate-desc');
+    if (!el || !bEl) return;
+    const isT = el.dataset.translated === "true";
+    const orig = el.dataset.originalText || el.innerText;
+    el.dataset.originalText = orig;
 
-      <div id="wrapper-title-standard">
-          <label class="form-label" data-i18n="lbl_title">Judul Item*</label>
-          <input type="text" id="add-title" class="input-field text-selectable">
-      </div>
-
-      <div id="wrapper-title-server" class="hidden">
-        <label class="form-label" data-i18n="lbl_server_name">Nama Server*</label>
-        <input type="text" id="add-server-name" class="input-field text-selectable" placeholder="Masukkan nama server...">
-        
-        <label class="form-label" data-i18n="lbl_server_loc">Negara / Lokasi Server*</label>
-        <div class="input-field flex items-center justify-between" onclick="window.openCountrySheet()" style="cursor:pointer; margin-bottom:15px;">
-            <div class="flex items-center" style="gap:8px; font-weight:600;" id="selected-country-text-wrap">
-                <img src="https://flagcdn.com/id.svg" style="width:20px; height:15px; object-fit:contain; border-radius:2px;"> <span>Indonesia</span>
-            </div>
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-
-        <div class="flex" style="gap:10px;">
-          <div style="flex:2;">
-            <label class="form-label">IP Server*</label>
-            <input type="text" id="add-server-ip" class="input-field text-selectable">
-          </div>
-          <div style="flex:1;">
-            <label class="form-label">Port*</label>
-            <input type="number" id="add-server-port" class="input-field text-selectable" value="19132">
-          </div>
-        </div>
-      </div>
-
-      <label class="form-label" data-i18n="lbl_version">Versi MCPE*</label>
-      <div class="input-field flex items-center justify-between" onclick="window.openVersionSheet()" style="cursor:pointer; margin-bottom:15px;">
-        <span id="selected-version-text" style="font-weight:600;">0.15.10</span>
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-
-      <label class="form-label" data-i18n="description">Deskripsi*</label>
-      <textarea id="add-desc" rows="3" class="input-field text-selectable"></textarea>
-      
-      <label class="form-label" id="label-img-preview"><span data-i18n="lbl_img">Gambar Preview*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB, format JPG/PNG/WEBP)</span></label>
-      <div class="input-field text-selectable" style="padding:0; overflow:hidden; display:flex; margin-bottom:20px;">
-          <input type="url" id="add-img" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" data-i18n="url_img" placeholder="URL Gambar...">
-          <label style="background:var(--primary); color:#000; padding:14px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
-              <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#000"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              File
-              <input type="file" id="file-img" accept="image/jpeg, image/png, image/webp" class="hidden" onchange="window.handleLocalImage(event)">
-          </label>
-      </div>
-      <p id="img-status" style="font-size:11px; color:var(--success); margin-top:-15px; margin-bottom:15px; font-weight:600; text-align:right;"></p>
-
-      <div id="form-file-container">
-        <label class="form-label" id="label-file-download"><span data-i18n="lbl_file">File Download / Mod*</span> <span style="font-weight:normal; font-size:10px; display:block;">(Max 5MB)</span></label>
-        <div class="input-field text-selectable" style="padding:0; overflow:hidden; display:flex; margin-bottom:20px;">
-          <input type="url" id="add-file" class="input-field text-selectable" style="margin:0; border:none; border-radius:0; flex:1;" data-i18n="url_file" placeholder="URL File Download...">
-          <label style="background:var(--primary); color:#000; padding:14px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; gap:4px;">
-              <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#000"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              File
-              <input type="file" id="file-doc" class="hidden" onchange="window.handleLocalFile(event)">
-          </label>
-        </div>
-        <p id="file-status" style="font-size:11px; color:var(--success); margin-top:-15px; margin-bottom:15px; font-weight:600; text-align:right;"></p>
-      </div>
-
-      <button id="btn-submit-item" class="btn btn-primary" onclick="window.submitItem()" data-i18n="btn_upload">Upload Sekarang</button>
-    </div>
-    
-    <nav class="bottom-nav">
-      <button class="nav-item" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> <span data-i18n="nav_home">Beranda</span></button>
-      <button class="nav-item active"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="nav_upload">Upload</span></button>
-      <button class="nav-item" onclick="window.switchScreen('screen-profile')"><svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span data-i18n="nav_profile">Profil</span></button>
-    </nav>
-  </div>
-
-  <div id="screen-admin" class="app-container screen hidden">
-    <header class="flex items-center justify-between" style="padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
-      <button class="header-btn" style="padding:5px;" onclick="window.switchScreen('screen-home')"><svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
-      <div class="logo font-bold" data-i18n="nav_admin">Panel Admin</div>
-      <div style="width:24px;"></div>
-    </header>
-    
-    <div style="display:flex; gap:10px; padding:15px; background:var(--bg-surface); border-bottom: 1px solid var(--border-color);">
-        <button class="btn btn-primary" style="flex:1; padding:10px; font-size:12px;" onclick="window.switchAdminTab('queue')" id="tab-admin-queue">
-            <span data-i18n="review_queue">Antrean Review</span> (<span id="pending-count">0</span>)
-        </button>
-        <button class="btn btn-secondary" style="flex:1; padding:10px; font-size:12px;" onclick="window.switchAdminTab('feedback')" id="tab-admin-feedback">
-            Laporan Bug / Feedback
-        </button>
-    </div>
-    
-    <!-- Tab Antrean Item Review -->
-    <div id="admin-queue-section">
-      <div id="pending-items-container" class="content-list" style="padding-top: 20px;">
-        <p style="text-align:center; color: var(--text-muted);" data-i18n="no_queue">Tidak ada antrean.</p>
-      </div>
-    </div>
-
-    <!-- Tab Feedback / Bug Report -->
-    <div id="admin-feedback-section" class="hidden">
-      <div id="admin-feedback-list" class="content-list" style="padding-top: 20px;"></div>
-    </div>
-  </div>
-
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+    if (isT) {
+        el.innerText = orig;
+        el.dataset.translated = "false";
+        bEl.innerText = 'Translate';
+    } else {
+        bEl.innerText = "...";
+        try {
+            const item = globalAllItems.find(i => i.id === currentDetailItemId);
+            if (item) {
+                if (currentLang === 'en' && item.desc_en) {
+                    el.innerText = item.desc_en;
+                    el.dataset.translated = "true";
+                    bEl.innerText = 'Show original';
+                    return;
+                } else if (currentLang === 'id' && item.desc_id) {
+                    el.innerText = item.desc_id;
+                    el.dataset.translated = "true";
+                    bEl.innerText = 'Show original';
+                    return;
+                }
+            }
+            bEl.innerText = 'Translate';
+        } catch (e) {
+            bEl.innerText = 'Translate';
+        }
+    }
+};
