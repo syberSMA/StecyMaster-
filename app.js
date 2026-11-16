@@ -46,6 +46,7 @@ window.applyTheme = () => {
     } else {
         document.body.classList.remove('light-theme');
     }
+    
     const lightCard = document.getElementById('theme-card-light');
     const darkCard = document.getElementById('theme-card-dark');
     if (lightCard && darkCard) {
@@ -89,7 +90,7 @@ const uiTranslations = {
         "old_pass": "Password Lama", "new_pass": "Password Baru (Min 6)", "confirm_pass": "Konfirmasi Password Baru", "update_pass": "Update Password",
         "title_upload": "Kirim Baru", "lbl_cat": "Kategori*", "lbl_title": "Judul Item*", "lbl_server_name": "Nama Server*", "lbl_server_loc": "Negara / Lokasi Server*",
         "lbl_version": "Versi MCPE*", "lbl_img": "Gambar Preview*", "url_img": "URL Gambar...", "lbl_file": "File Download / Mod*", "url_file": "URL File Download...", "btn_upload": "Upload Sekarang",
-        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean.", "btn_download": "Download File", "wa_channel": "Channel WhatsApp", "lang_title": "Bahasa", "theme_title": "Mode Warna"
+        "review_queue": "Antrean Review", "no_queue": "Tidak ada antrean.", "btn_download": "Unduh", "wa_channel": "Channel WhatsApp", "lang_title": "Bahasa", "theme_title": "Mode Warna", "copy_ip": "Salin IP"
     },
     en: {
         "info": "Information", "ok": "OK", "confirm": "Confirm", "cancel": "Cancel", "sure": "Sure",
@@ -109,7 +110,7 @@ const uiTranslations = {
         "old_pass": "Old Password", "new_pass": "New Password (Min 6)", "confirm_pass": "Confirm New Password", "update_pass": "Update Password",
         "title_upload": "Submit New", "lbl_cat": "Category*", "lbl_title": "Item Title*", "lbl_server_name": "Server Name*", "lbl_server_loc": "Country / Location*",
         "lbl_version": "MCPE Version*", "lbl_img": "Preview Image*", "url_img": "Image URL...", "lbl_file": "Download File / Mod*", "url_file": "Download File URL...", "btn_upload": "Upload Now",
-        "review_queue": "Review Queue", "no_queue": "No queue.", "btn_download": "Download File", "wa_channel": "WhatsApp Channel", "lang_title": "Language", "theme_title": "Color Mode"
+        "review_queue": "Review Queue", "no_queue": "No queue.", "btn_download": "Download", "wa_channel": "WhatsApp Channel", "lang_title": "Language", "theme_title": "Color Mode", "copy_ip": "Copy IP"
     }
 };
 
@@ -128,7 +129,6 @@ window.setLang = (lang) => {
     currentLang = lang;
     localStorage.setItem('lang', lang);
     
-    // Update visual kartu di Pengaturan Profil
     const idCard = document.getElementById('lang-card-id');
     const enCard = document.getElementById('lang-card-en');
     if (idCard && enCard) {
@@ -142,7 +142,7 @@ window.setLang = (lang) => {
     }
     
     window.applyTranslation();
-    renderItemsToUI(); // Re-render card buttons (e.g. Download text)
+    renderItemsToUI(); 
 };
 
 const catIcons = {
@@ -195,7 +195,7 @@ window.openDialog = (id) => {
     document.getElementById('dialogLayer')?.classList.add('active');
     el.classList.add('active');
     activeDialogs.push(id);
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open'); 
 };
 
 window.closeDialog = (id) => {
@@ -206,7 +206,7 @@ window.closeDialog = (id) => {
     if (activeDialogs.length === 0) {
         document.getElementById('dialogLayer')?.classList.remove('active');
         setTimeout(() => document.getElementById('dialogLayer')?.classList.add('hidden'), 200);
-        document.body.style.overflow = '';
+        document.body.classList.remove('modal-open'); 
     }
 };
 
@@ -240,7 +240,7 @@ window.showModalConfirm = (msg, onConfirmCallback) => {
 
 window.copyText = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-        window.showModalAlert("Berhasil disalin!");
+        window.showModalAlert(currentLang === 'id' ? "Berhasil disalin!" : "Copied successfully!");
     });
 };
 
@@ -273,7 +273,7 @@ window.handleDownload = async (url, itemId, event) => {
     }
 
     if (isRedirect) { 
-        window.showModalConfirm(`Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?`, () => window.open(finalUrl, '_blank')); 
+        window.showModalConfirm(currentLang === 'id' ? `Tautan diamankan oleh ${providerName}. Lanjutkan ke web penyedia?` : `Link protected by ${providerName}. Continue to provider's site?`, () => window.open(finalUrl, '_blank')); 
     } else {
         const btn = event?.currentTarget;
         const origHTML = btn ? btn.innerHTML : '';
@@ -324,6 +324,13 @@ window.closeBottomSheet = () => {
 
 window.switchScreen = (id) => { 
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); 
+    
+    // Update visual indikator navigasi bawah
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    if(id === 'screen-home') document.getElementById('nav-btn-home')?.classList.add('active');
+    else if(id === 'screen-add') document.getElementById('nav-btn-upload')?.classList.add('active');
+    else if(id === 'screen-profile') document.getElementById('nav-btn-profile')?.classList.add('active');
+
     const el = document.getElementById(id); 
     if (el) {
         el.classList.remove('hidden');
@@ -666,7 +673,7 @@ window.saveUsername = async () => {
   }
   if (btn) {
       btn.disabled = true;
-      btn.innerText = "Mengirim...";
+      btn.innerText = currentLang === 'id' ? "Menyimpan..." : "Saving...";
   }
   if (errEl) errEl.innerText = "";
   try {
@@ -924,6 +931,7 @@ window.setCategoryFilter = (category, btnElement) => {
 };
 
 function fetchAllItemsAndRender() {
+  // Mendengarkan perubahan data secara real-time
   onValue(ref(db, 'items_public'), (snapshot) => {
     let dynamicItems = [];
     if (snapshot.exists()) {
@@ -970,7 +978,7 @@ setInterval(() => {
   }
 }, 30000);
 
-// SISTEM JEMPOL LIKE REAL-TIME PERMANEN (BUG FIX #3)
+// SISTEM JEMPOL LIKE REAL-TIME PERMANEN
 window.toggleLike = async (itemId) => {
     if (!currentUser) {
         window.showModalAlert(currentLang === 'id' ? "Silakan masuk/login terlebih dahulu untuk menyukai item ini." : "Please login first to like this item.");
@@ -986,26 +994,23 @@ window.toggleLike = async (itemId) => {
     }
 
     const isLiked = item.likes && item.likes[currentUser.uid];
-    const updates = {};
-
-    if (isLiked) {
-        updates[`items_public/${itemId}/likes/${currentUser.uid}`] = null;
-    } else {
-        updates[`items_public/${itemId}/likes/${currentUser.uid}`] = true;
-    }
-
+    
+    // Perbaikan: Langsung target path spesifik agar bisa write (Firebase Rules update)
+    const likeRef = ref(db, `items_public/${itemId}/likes/${currentUser.uid}`);
+    
     try {
-        await update(ref(db), updates);
+        if (isLiked) {
+            await remove(likeRef);
+        } else {
+            await set(likeRef, true);
+        }
 
         if (item.uid && item.uid !== currentUser.uid) {
             const pSnap = await get(ref(db, `profiles/${item.uid}`));
             if (pSnap.exists()) {
                 let currentPoints = pSnap.val().points || 0;
-                if (isLiked) {
-                    currentPoints = Math.max(0, currentPoints - 1);
-                } else {
-                    currentPoints += 1;
-                }
+                if (isLiked) currentPoints = Math.max(0, currentPoints - 1);
+                else currentPoints += 1;
                 await update(ref(db, `profiles/${item.uid}`), { points: currentPoints });
             }
         }
@@ -1069,6 +1074,7 @@ window.openDetail = async (itemId) => {
 
     const likesCount = item.likes ? Object.keys(item.likes).length : 0;
     const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+    
     // IKON JEMPOL THUMBS UP
     const likeIconSVG = `<svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
 
@@ -1078,10 +1084,10 @@ window.openDetail = async (itemId) => {
     }
 
     if (actionContainer) {
-        const textDl = currentLang === 'id' ? 'Download File' : 'Download File';
+        const textDl = currentLang === 'id' ? 'Unduh' : 'Download';
         actionContainer.innerHTML = `
         <div style="display:flex; width:100%; gap:10px;">
-             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span data-i18n="url_file">${textDl}</span></button>
+             <button class="btn btn-primary" onclick="window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:2;">${dlIconSVG} <span>${textDl}</span></button>
              <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="window.toggleLike('${item.id}')" style="padding:10px 16px;">
                  ${likeIconSVG} <span>${likesCount}</span>
              </button>
@@ -1104,14 +1110,14 @@ window.openDetail = async (itemId) => {
     const dContainer = document.getElementById('screen-detail-container');
     if (dContainer) {
         dContainer.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        document.body.classList.add('modal-open'); 
     }
 };
 
 window.closeDetailAndLogin = () => {
     const dContainer = document.getElementById('screen-detail-container');
     if (dContainer) dContainer.classList.remove('active');
-    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
     window.switchScreen('screen-login');
 };
 
@@ -1199,12 +1205,15 @@ function renderItemsToUI() {
       } else {
         const likesCount = item.likes ? Object.keys(item.likes).length : 0;
         const isLiked = currentUser && item.likes && item.likes[currentUser.uid];
+        
         // IKON JEMPOL
         const likeBtnHTML = `
             <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="event.stopPropagation(); window.toggleLike('${item.id}')">
                 <svg class="icon icon-sm" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
                 <span>${likesCount}</span>
             </button>`;
+
+        const textDl = currentLang === 'id' ? 'Unduh' : 'Download';
 
         if (isSemua) {
             htmlBuf += `
@@ -1225,8 +1234,7 @@ function renderItemsToUI() {
                 </button>
             </div>`;
         } else {
-            const textDl = currentLang === 'id' ? 'Download' : 'Download';
-            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span data-i18n="nav_upload">${textDl}</span></button>`;
+            let actionBtnHTML = `<button class="btn btn-primary" onclick="event.stopPropagation(); window.handleDownload('${item.url_file}', '${item.id}', event)" style="flex:1;">${dlIconSVG} <span>${textDl}</span></button>`;
             htmlBuf += `
             <div class="card-vertical" onclick="window.openDetail('${item.id}')">
               <div class="card-img-wrapper skeleton"><img src="${item.url_img}" class="card-img lazy-img" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')" onerror="this.src='https://via.placeholder.com/300'; this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
