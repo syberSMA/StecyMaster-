@@ -102,11 +102,11 @@
     </div>
   </div>
 
+  <!-- SPLASH SCREEN DENGAN LOGO MIRING & TEKS BESAR -->
   <div id="screen-splash" class="app-container screen splash-container">
-    <div class="logo font-bold" style="margin-bottom: 30px; display:flex; align-items:center; justify-content:center; gap:8px;">
-      <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:48px; border-radius:4px;">
-      <!-- Gambar text logo di splash screen -->
-      <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:32px; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
+    <div class="logo font-bold" style="margin-bottom: 30px; display:flex; align-items:center; justify-content:center; gap:12px;">
+      <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:56px; border-radius:8px; transform: rotate(-12deg);">
+      <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:34px; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
     </div>
     <div class="loader"></div>
     <p style="color: var(--text-muted); margin-top: 20px; font-size: 14px; font-weight: bold;" data-i18n="loading_sys">Memuat sistem...</p>
@@ -166,7 +166,6 @@
                         <textarea id="new-comment-text" class="comment-textarea text-selectable" data-i18n="comment_placeholder" placeholder="Tulis komentar..." maxlength="200" oninput="window.updateCommentCounter('new-comment-text', 'new-comment-counter')"></textarea>
                         <div class="flex justify-between items-center" style="margin-top:8px;">
                             <span id="new-comment-counter" class="char-counter" style="font-size: 11px; color: var(--text-muted);">0/200</span>
-                            <!-- TOMBOL PESAWAT KERTAS UNTUK MENGIRIM KOMENTAR -->
                             <button class="btn-send-comment" onclick="window.postComment()" title="Kirim">
                                 <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
@@ -227,7 +226,7 @@
       </li>
     </ul>
 
-    <!-- AUTH SECTION SIDEBAR (HILANG OTOMATIS JIKA LOGIN) -->
+    <!-- AUTH SECTION SIDEBAR -->
     <div style="margin-top:auto;" id="sidebar-auth-section">
       <button class="btn btn-primary" onclick="window.switchScreen('screen-login'); window.closeAllDrawers();" style="width:100%;" data-i18n="nav_login">Masuk / Daftar</button>
     </div>
@@ -268,18 +267,21 @@
   </div>
 
   <div id="screen-home" class="app-container screen hidden">
-    <header style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 50;">
+    
+    <!-- HEADER BARU DENGAN LOGO MIRING BESAR & TEXT GAMBAR -->
+    <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 50;">
       <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center;">
         <button class="icon-btn" onclick="window.toggleDrawer('side-drawer')">
           <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
-        <!-- PENAMBAHAN LOGO DI HEADER -->
-        <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:24px; margin-left:12px; border-radius:4px;">
       </div>
-      <!-- GANTI TEKS DENGAN GAMBAR TEXT STECYMASTER -->
-      <div class="logo" style="flex: 2; text-align: center; cursor: pointer; white-space: nowrap; display: flex; justify-content: center;" onclick="window.scrollTo(0,0)">
-        <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));">
+      
+      <!-- LOGO GROUP CENTER -->
+      <div class="logo" style="flex: 4; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; white-space: nowrap;" onclick="window.scrollTo(0,0)">
+        <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:42px; border-radius:6px; transform: rotate(-12deg); filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));">
+        <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:24px; max-width: 150px; object-fit: contain; margin-top:2px;">
       </div>
+      
       <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap:10px;">
         <button id="btn-login-header" class="btn btn-primary" style="padding: 6px 12px; font-size:12px; width:auto;" onclick="window.switchScreen('screen-login')" data-i18n="nav_login">Masuk</button>
       </div>
@@ -350,7 +352,7 @@
        </div>
        
        <div class="profile-menu-item" onclick="window.switchProfileTab('settings')">
-           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
            <span data-i18n="menu_settings">Pengaturan Akun</span>
        </div>
        
