@@ -103,9 +103,10 @@
   </div>
 
   <div id="screen-splash" class="app-container screen splash-container">
-    <div class="logo font-bold" style="font-size: 32px; margin-bottom: 30px;">
-      <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:32px; margin-right:8px; vertical-align:bottom;">
-      <span class="text-primary">Stecy</span><span style="color: var(--text-main);">Master</span>
+    <div class="logo font-bold" style="margin-bottom: 30px; display:flex; align-items:center; justify-content:center; gap:8px;">
+      <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:48px; border-radius:4px;">
+      <!-- Gambar text logo di splash screen -->
+      <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:32px; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">
     </div>
     <div class="loader"></div>
     <p style="color: var(--text-muted); margin-top: 20px; font-size: 14px; font-weight: bold;" data-i18n="loading_sys">Memuat sistem...</p>
@@ -275,8 +276,9 @@
         <!-- PENAMBAHAN LOGO DI HEADER -->
         <img src="https://files.catbox.moe/f7cz1u.png" alt="Logo" class="logo-img-header" style="height:24px; margin-left:12px; border-radius:4px;">
       </div>
-      <div class="logo font-bold" style="flex: 2; text-align: center; cursor: pointer; white-space: nowrap;" onclick="window.scrollTo(0,0)">
-        <span class="text-primary">Stecy</span><span style="color: var(--text-main);">Master</span>
+      <!-- GANTI TEKS DENGAN GAMBAR TEXT STECYMASTER -->
+      <div class="logo" style="flex: 2; text-align: center; cursor: pointer; white-space: nowrap; display: flex; justify-content: center;" onclick="window.scrollTo(0,0)">
+        <img src="https://files.catbox.moe/afblza.png" alt="StecyMaster" class="logo-img-header" style="height:18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));">
       </div>
       <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap:10px;">
         <button id="btn-login-header" class="btn btn-primary" style="padding: 6px 12px; font-size:12px; width:auto;" onclick="window.switchScreen('screen-login')" data-i18n="nav_login">Masuk</button>
